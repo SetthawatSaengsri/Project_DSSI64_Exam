@@ -1,0 +1,58 @@
+.body-main {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    height: 100vh; /* 100% ของความสูงของ viewport */
+    width: 100vw; /* 100% ของความกว้างของ viewport */
+ }
+
+ nav {
+    background-color: #DD5E95; /* กำหนดสีพื้นหลังของแถบนำทางเป็นสีชมพู (pink) */
+    color: white; /* กำหนดสีของข้อความภายในแถบนำทางเป็นสีขาว */
+    width: 200px; /* กำหนดความกว้างของแถบนำทางเป็น 200 พิกเซล */
+    height: 100%; /* กำหนดความสูงของแถบนำทางให้เท่ากับ 100% ของความสูงของหน้าต่างแสดงผล (viewport) */
+    position: fixed; /* กำหนดตำแหน่งของแถบนำทางให้เป็นตำแหน่งแบบ fixed ซึ่งทำให้แถบนำทางคงที่ติดตามเมื่อเลื่อนหน้าเว็บ */
+    left: 0; /* จัดให้แถบนำทางอยู่ที่ด้านซ้ายของหน้าต่างแสดงผล */
+    top: 0; /* จัดให้แถบนำทางอยู่ที่ด้านบนของหน้าต่างแสดงผล */
+    padding-top: 60px; /* เพิ่มพื้นที่ระหว่างขอบบนของแถบนำทางและข้อความภายใน (padding) เป็น 60 พิกเซล (ปรับได้ตามต้องการ) */
+    z-index: 1; /* กำหนดค่า z-index เป็น 1 เพื่อให้แถบนำทางอยู่บนสุดขององค์ประกอบอื่น ๆ ที่มี z-index ต่ำกว่า */
+  }
+  
+nav a {
+    text-decoration: none;
+    color: white;
+    padding: 15px;
+    display: block;
+}
+
+header {
+    position: relative; /* กำหนดตำแหน่งของ header เป็น relative */
+    background-color: white; /* กำหนดสีพื้นหลังของ header เป็นขาว */
+    color: white; /* กำหนดสีของข้อความภายใน header เป็นขาว */
+    padding: 60px; /* กำหนดการเพิ่มพื้นที่ padding ใน header ทั้ง 4 ขอบเป็น 60 พิกเซล */
+    text-align: center; /* จัดตำแหน่งข้อความใน header ให้อยู่ตรงกลาง */
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); /* เพิ่มเงาใต้ header */
+    z-index: 0; /* กำหนดค่า z-index เป็น 100 เพื่อให้ header อยู่ด้านบนสุดขององค์ประกอบทั้งหมดที่มี z-index ต่ำกว่า */
+  } 
+
+.edit-text {
+    position: center;
+    top: 50%;
+    right: 10px; /* Adjust this value to position the text accordingly */
+    color: rgb(0, 0, 0); /* Adjust the text color */
+    font-size: 30px; /* Adjust the font size */
+    z-index: 2;
+    text-align: center;
+}
+
+  .main-paper {
+    display: flex; /* กำหนดให้ main-paper เป็น flex container */
+    flex-wrap: wrap; /* กำหนดให้ main-paper มีการ wrap เมื่อขนาดเกิน */
+    gap: 20px; /* กำหนดระยะห่างระหว่าง children elements เป็น 20 พิกเซล */
+    width: 780px; /* กำหนดความกว้างของ main-paper เป็น 550 พิกเซล */
+    border-radius: 10px; /* กำหนดรูปร่างของขอบใน main-paper เป็นวงรี 10 พิกเซล */
+    background-color: #ffffff; /* กำหนดสีพื้นหลังของ main-paper เป็นขาว */
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); /* เพิ่มเงาใต้ main-paper */
+    padding: 20px; /* กำหนดการเพิ่มพื้นที่ padding ใน main-paper ทั้ง 4 ขอบเป็น 20 พิกเซล */
+    margin: 20px auto; /* กำหนดระยะห่างขอบล่างของ main-paper เป็น 20 พิกเซล และจัดให้ main-paper อยู่ตรงกลางด้านนอก */
+  }

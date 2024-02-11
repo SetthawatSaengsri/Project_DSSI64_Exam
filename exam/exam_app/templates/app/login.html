@@ -1,0 +1,36 @@
+{% extends 'app/base.html' %}
+{% block content %}
+{% load static %}
+
+<nav>
+  <a href="{% url 'index_view' %}">หน้าหลัก</a>
+  <a href="{% url 'login_user' %}">เข้าสู่ระบบนักเรียน</a>
+  <a href="{% url 'register_student' %}">สมัครสมาชิกนักเรียน</a>
+  <a href="{% url 'login_user' %}">เข้าสู่ระบบครู</a>
+  <a href="{% url 'register_teacher' %}">สมัครสมาชิกคุณครู</a>
+</nav>
+
+<h2>เข้าสู่ระบบ</h2>
+<!-- <img class="login-image" src="{% static 'image/sc.png' %}" alt="Login Image"> -->
+
+<form method="post" action="{% url 'login_user' %}">
+  {% csrf_token %}
+
+  {% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+      <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <label for="username">ชื่อผู้ใช้:</label>
+  <input type="text" name="username" id="username" required>
+
+  <label for="password">รหัสผ่าน:</label>
+  <input type="password" name="password" id="password" required>
+
+  <button type="submit">เข้าสู่ระบบ</button>
+</form>
+
+{% endblock %}

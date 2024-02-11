@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" type="text/css" href="{% static 'app/style_student.css' %}">
+</head>
+<body class="body-main">
+  <nav>
+    <a href="{% url 'dashboard_student'%}">Home</a>
+    <a href="{% url 'dashboard_student'%}">ฟีดข่าว</a>
+    <a href="#">ตารางสอบ</a>
+    <a href="{% url 'Examination_history' %}">ประวัติการเข้าสอบ</a>
+    <a href="{% url 'edit_student' %}">ประวัติส่วนตัว</a>
+    <a href="{% url 'qrcode_student' %}">QrCode</a>
+  </nav>
+  <header>
+    <title class="edit-text">{% block title %} testproject {% endblock %}</title>
+  </header>
+  <div class="container">
+    <div class="main-paper">
+      <div class="form-container">
+        <form>
+          {% block content %} 
+
+          {% endblock %}
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

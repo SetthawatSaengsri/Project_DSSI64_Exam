@@ -1,0 +1,29 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <!-- ส่วนหัวที่มีการปรับปรุง -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %} โรงเรียนศรีแก้วประชาสรรค์ {% endblock %}</title>
+  {% block css %}
+  <link rel="stylesheet" type="text/css" href="{% static 'app/style_index.css' %}">
+  {% endblock %}
+</head>
+<body>
+  <header>
+    <!-- เพิ่มส่วนหัวเว็บไซต์ -->
+    <div class="header-content">
+      <h1 >{% block h1 %} โรงเรียนศรีแก้วประชาสรรค์ {% endblock %}</h1>
+      <nav>
+        <!-- เนื้อหาของแถบนำทาง -->
+      </nav>
+    </div>
+  </header>
+  <div class="main-content">
+    <!-- ส่วนหลักของเนื้อหา -->
+    {% block content %} {% endblock %}
+  </div>
+</body>
+</html>
