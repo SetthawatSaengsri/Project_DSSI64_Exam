@@ -150,3 +150,42 @@ h1, h2, h3, p {
 p {
   font-size: 1rem;
 }
+
+/* Enhancements for the student list display */
+.student-list {
+    margin-top: 20px;
+    overflow-x: auto;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 600px) {
+    .content-table thead {
+        display: none;
+    }
+
+    .content-table, .content-table tbody, .content-table tr, .content-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .content-table tr {
+        margin-bottom: 15px;
+    }
+
+    .content-table td {
+        text-align: right;
+        padding-left: 50%;
+        text-align: right;
+        position: relative;
+    }
+
+    .content-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 50%;
+        padding-left: 15px;
+        font-weight: bold;
+        text-align: left;
+    }
+}

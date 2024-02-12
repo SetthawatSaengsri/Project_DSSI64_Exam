@@ -1,6 +1,7 @@
 <!-- base_teacher.html -->
 
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,7 +18,7 @@
     </header>
       
   <nav class="sidebar-navigation">
-      <a href="{% url 'index_view' %}">Home</a>
+      <a href="#">Home</a>
       <a href="#">ฟีดข่าว</a>
       <a href="#">ตารางคุบสอบ</a>
       <a href="{% url 'add_exam_subject' %}">เพิ่มวิชาที่สอบ</a>
@@ -30,6 +31,6 @@
         <div class="container">
           <p>{{ user.username }} | <a href="{% url 'logout_user' %}">Logout</a></p>
         </div>
-      </footer>
+    </footer>
 </body>
 </html>

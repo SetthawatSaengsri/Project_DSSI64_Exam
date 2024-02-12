@@ -17,12 +17,13 @@ body {
 }
 
 nav a {
-  color: #fff;
+  color: #030303;
   margin: 0 10px;
   text-decoration: none;
   padding: 5px 10px;
-  border-radius: 5px;
-  background: #444;
+  border-radius: 20px;
+  border:1px solid #ddd
+  /* background: #dc8bc9bc; */
 }
 
 nav a:hover {
@@ -60,20 +61,22 @@ nav a:hover {
   display: inline-block;
   margin: 10px;
   padding: 10px 20px;
-  color: white;
-  background-color: #333;
-  border-radius: 5px;
+  color: rgb(0, 0, 0);
+  border-radius: 20px;
+  /* border-color: #1d1d1d; */
+  backdrop-filter: blur(30px);
+  background-color: rgba(255, 255, 255, 0.59);
+
+  /* border-style: solid; */
   text-decoration: none;
   transition: background-color 0.3s ease;
 }
 
 .login-all a:hover {
-  background-color: #555;
+  /* background-color: #555; */
+  border-radius:20px
 }
 
-.login-button {
-  background-color: #4caf50;
-}
 
 .register-button {
   background-color: #00aced;
@@ -128,19 +131,20 @@ input[type="file"] {
 }
 
 
-button {
-  background-color: #4caf50; /* Green */
+button-submit {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background: #dc8bc9bc;
   color: white;
-  padding: 15px 20px;
   border: none;
-  border-radius: 5px;
+  border-radius: 20px;
   cursor: pointer;
-  font-size: 16px;
+
 }
 
-
 button:hover {
-  background-color: #45a049;
+  background: #dc8bc9bc;
 }
 
 
@@ -151,20 +155,21 @@ input[type='email'] {
   padding: 10px;
   margin: 10px 0;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 20px;
 }
 
 button {
   display: block;
   width: 100%;
   padding: 10px;
-  background: #5cb85c;
+  background: #dc8bc9bc;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 20px;
   cursor: pointer;
 }
 
-button:hover {
-  background: #4cae4c;
+text-content{
+  text-align: center; 
+
 }

@@ -41,7 +41,12 @@ urlpatterns = [
     path('exam_subject_list/', exam_subject_list, name='exam_subject_list'),
     path('exam_subject/edit/<int:subject_id>/', edit_exam_subject, name='edit_exam_subject'),
     path('exam_subject/update/', views.update_exam_subject, name='update_exam_subject'),
-    path('class/<class_slug:student_class>/students/', views.class_students_list, name='class_students_list'),
+    path('exam_subject/delete/<int:subject_id>/', views.delete_exam_subject, name='delete_exam_subject'),
+
+    # path('class/<class_slug:student_class>/students/', views.class_students_list, name='class_students_list'),
+    # path('classes/<slug:class_slug>/', views.class_students_list, name='class_students_list'),
+    path('class/<slug:class_slug>/', class_students_list, name='class_students_list'),
+
 
     
 ]

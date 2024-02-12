@@ -4,15 +4,13 @@
 
 {% load static %}
 
-   
-    {% block content %}
 
-    <h2>เพิ่มวิชาที่สอบ</h2>
-
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Add Exam Subject</button>
-    </form>
-    
-    {% endblock %}
+{% block content %}
+    <div class="container">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">เพิ่มวิชาที่สอบ</button>    
+        </form>
+    </div>
+{% endblock %}

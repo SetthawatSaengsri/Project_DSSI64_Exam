@@ -107,18 +107,50 @@ def update_exam_subject(request):
     return redirect('exam_subject_list')
 
 @login_required
+def delete_exam_subject(request, subject_id):
+    if request.method == 'POST':
+        subject = get_object_or_404(ExamSubject, id=subject_id)
+        subject.delete()
+        messages.success(request, 'Exam subject deleted successfully.')
+        return redirect('exam_subject_list')
+    else:
+        # Redirect to the exam_subject_list page if the request method is not POST
+        return redirect('exam_subject_list')
+
+@login_required
 def exam_subject_list(request):
     subjects = ExamSubject.objects.all()
     return render(request, 'app/teacher/exam_subject_list.html', {'subjects': subjects})
 
-def class_students_list(request, student_class):
-    # แปลง _ กลับเป็น / หากจำเป็น
-    student_class = student_class.replace('_', '/')
-    students = StudentProfile.objects.filter(student_class=student_class)
+@login_required
+def class_students_list(request, class_slug):
+    class_mapping = {
+        '11': '1/1',
+        '12': '1/2',
+        '21': '2/1',
+        '22': '2/2',
+        '31': '3/1',
+        '32': '3/2',
+        '41': '4/1',
+        '42': '4/2',
+        '51': '5/1',
+        '52': '5/2',
+        '61': '6/1',
+        '62': '6/2',
+    }
+
+    # Use the mapping to translate class_slug to your desired format
+    class_identifier = class_mapping.get(class_slug, class_slug)  # Fallback to original if not found
+
+    students = StudentProfile.objects.filter(student_class=class_identifier)
     return render(request, 'app/teacher/class_students_list.html', {
         'students': students,
-        'student_class': student_class
-    })  
+        'class_slug': class_identifier  # Use the translated identifier for display
+    })
+
+
+
+
 
 @login_required
 def generate_qr_code_for_exam(request, exam_subject_id):

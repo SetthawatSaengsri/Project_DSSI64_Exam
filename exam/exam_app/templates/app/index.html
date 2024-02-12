@@ -1,18 +1,17 @@
+<!-- index.html -->
+
 {% extends 'app/base.html' %}
 
 {% load static %}
 
 {% block content %}
-  <!-- <div class="outer-square"> -->
-    <div class="inner-square">
-      <h2>ระบบเช็คชื่อเข้าห้องสอบ</h2>
-      <img class="login-image" src="{% static 'images/sc.png' %}" alt="Login Image">
-      <div class="login-all">
-        <a href="{% url 'login_user' %}" class="login-button">เข้าสู่ระบบนักเรียน</a>
-        <a href="{% url 'register_student' %}" class="register-button">สมัครสมาชิกนักเรียน</a>
-        <a href="{% url 'login_user' %}" class="login-button">เข้าสู่ระบบครู</a>
-        <a href="{% url 'register_teacher' %}" class="register-button">สมัครสมาชิกคุณครู</a>
-      </div>
+<div class="inner-square">
+    <h2>Welcome to the Examination Management System</h2>
+    <img src="{% static 'images/sc.png' %}" alt="Welcome Image" class="login-image">
+    <div class="login-all a ">
+        <a href="{% url 'login_user' %}" class="login-button">เข้าสู่ระบบ</a>
+        <a href="{% url 'register_student' %}" class="register-button">Student Register</a>
+        <a href="{% url 'register_teacher' %}" class="register-button">Teacher Register</a>
     </div>
-  <!-- </div> -->
+</div>
 {% endblock %}

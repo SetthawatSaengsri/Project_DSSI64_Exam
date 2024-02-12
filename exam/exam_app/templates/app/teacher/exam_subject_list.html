@@ -27,15 +27,19 @@
                 <td>{{ subject.subject_name }}</td>
                 <td>{{ subject.subject_code }}</td>
                 <td>{{ subject.academic_year }}</td>
-
                 <td><a href="{% url 'class_students_list' subject.student_class.student_class|slugify %}">{{ subject.student_class }}</a></td>
-
-
                 <td>{{ subject.exam_room }}</td>
                 <td>{{ subject.start_time }}</td>
                 <td>{{ subject.end_time }}</td>
                 <td> 
+                    <!-- Corrected "Edit" action to use an <a> tag -->
                     <a href="{% url 'edit_exam_subject' subject.id %}" class="btn btn-primary">แก้ไข</a>
+                    
+                    <!-- "Delete" action remains unchanged -->
+                    <form action="{% url 'delete_exam_subject' subject.id %}" method="post" style="display: inline-block;" onsubmit="return confirm('คุณต้องการจะลบวิชานี้ใช่ไหม?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">ลบ</button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}

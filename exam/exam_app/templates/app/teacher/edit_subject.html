@@ -8,8 +8,8 @@
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit" class="btn btn-primary">Save changes</button>
-        <a href="{% url 'exam_subject_list' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">ยืนยัน</button>
+        <button type="submit" class="btn btn-secondary">ยกเลิก</button>
     </form>
 </div>
 {% endblock %}
