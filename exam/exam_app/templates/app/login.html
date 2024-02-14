@@ -5,12 +5,14 @@
 {% load static %}
 
 <nav>
-  <a href="{% url 'index_view' %}" >หน้าหลัก</a>
-
+  <a href="{% url 'index_view' %}">หน้าหลัก</a>
+  <a href="{% url 'login_user' %}">เข้าสู่ระบบ</a>
+  <a href="{% url 'register_student' %}">สมัครสมาชิกนักเรียน</a>
+  <a href="{% url 'register_teacher' %}">สมัครสมาชิกคุณครู</a>
 </nav>
 
 <h2 style="text-align: center;">เข้าสู่ระบบ</h2>
-<!-- <img class="login-image" src="{% static 'image/sc.png' %}" alt="Login Image"> -->
+
 
 <form method="post" action="{% url 'login_user' %}">
   {% csrf_token %}

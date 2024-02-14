@@ -32,10 +32,7 @@
                 <td>{{ subject.start_time }}</td>
                 <td>{{ subject.end_time }}</td>
                 <td> 
-                    <!-- Corrected "Edit" action to use an <a> tag -->
                     <a href="{% url 'edit_exam_subject' subject.id %}" class="btn btn-primary">แก้ไข</a>
-                    
-                    <!-- "Delete" action remains unchanged -->
                     <form action="{% url 'delete_exam_subject' subject.id %}" method="post" style="display: inline-block;" onsubmit="return confirm('คุณต้องการจะลบวิชานี้ใช่ไหม?');">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger">ลบ</button>

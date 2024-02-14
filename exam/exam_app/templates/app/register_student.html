@@ -1,16 +1,16 @@
 <!-- register_student.html -->
 
 {% extends 'app/base.html' %}
+
 {% block content %}
- <nav>
+  <nav>
     <a href="{% url 'index_view' %}">หน้าหลัก</a>
-    <a href="{% url 'login_user' %}">เข้าสู่ระบบนักเรียน</a>
+    <a href="{% url 'login_user' %}">เข้าสู่ระบบ</a>
     <a href="{% url 'register_student' %}">สมัครสมาชิกนักเรียน</a>
-    <a href="{% url 'login_user' %}">เข้าสู่ระบบครู</a>
     <a href="{% url 'register_teacher' %}">สมัครสมาชิกคุณครู</a>
   </nav>
   
-    <h2>Register as a Student</h2>
+    <h2 style="text-align: center;">สมัครสมาชิกนักเรียน</h2>
     <form method="post" action="{% url 'register_student' %}">
       {% csrf_token %}
       {{ form.as_p }}

@@ -1,21 +1,12 @@
-<!-- qr_code.html -->
+<!-- app/student/base_student.html -->
 
 {% extends 'app/student/base_student.html' %}
 
-{% load static %}
-
-{% block title %} QRCode {% endblock %}
-
 {% block content %}
-  
-  <h2>QRCode</h2>
-
-  {% for subject in exam_subjects %}
-    <div>
-        <p>{{ subject.subject_name }} - {{ subject.exam_room.name }}</p>
-        <a href="{% url 'generate_qr_code' subject.id %}">Generate QR Code</a>
-    </div>
-  {% endfor %}
-  
+<h2>QR Code for Student: {{ student.user.get_full_name }}</h2>
+{% if qr_code %}
+    <img src="{{ qr_code }}" alt="Student QR Code">
+{% else %}
+    <p>Error generating QR code. Please try again or contact support.</p>
+{% endif %}
 {% endblock %}
-

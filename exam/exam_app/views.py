@@ -9,7 +9,11 @@ from .models import *
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 import qrcode
+import base64
 from io import BytesIO
+from django.utils import timezone
+from datetime import timedelta
+
 
 def register_student(request):
     if request.method == 'POST':
@@ -54,10 +58,11 @@ def login_user(request):
             messages.error(request, 'Invalid username or password.')
     return render(request, 'app/login.html')
 
-
+@login_required
 def logout_user(request):
     logout(request)
     return redirect('index_view')
+
 
 def index_view(request):
     return render(request, 'app/index.html')
@@ -135,61 +140,84 @@ def class_students_list(request, class_slug):
         '42': '4/2',
         '51': '5/1',
         '52': '5/2',
-        '61': '6/1',
+        '61': '6/1',    
         '62': '6/2',
     }
 
-    # Use the mapping to translate class_slug to your desired format
-    class_identifier = class_mapping.get(class_slug, class_slug)  # Fallback to original if not found
+    
+    class_identifier = class_mapping.get(class_slug, class_slug) 
 
     students = StudentProfile.objects.filter(student_class=class_identifier)
     return render(request, 'app/teacher/class_students_list.html', {
         'students': students,
-        'class_slug': class_identifier  # Use the translated identifier for display
+        'class_slug': class_identifier  
     })
 
+# @login_required
+# def generate_qr_for_student(request, student_id):
+#     student = get_object_or_404(StudentProfile, id=student_id)
+#     exams = ExamSubject.objects.filter(student_class__student_class=student.student_class)
 
+#     qr_codes = []
+#     for exam in exams:
+#         qr = qrcode.QRCode(
+#             version=1,
+#             error_correction=qrcode.constants.ERROR_CORRECT_L,
+#             box_size=10,
+#             border=4,
+#         )
+#         qr_data = f"Student ID: {student.student_id}, Name: {student.user.get_full_name()}, Class: {student.student_class}, Exam: {exam.subject_name}"
+#         qr.add_data(qr_data)
+#         qr.make(fit=True)
+
+#         img = qr.make_image(fill_color="black", back_color="white")
+#         buffered = BytesIO()
+#         img.save(buffered, format="PNG")
+#         img_str = base64.b64encode(buffered.getvalue()).decode()
+#         qr_codes.append((f"data:image/png;base64,{img_str}", exam.subject_name))
+    
+#     return render(request, 'app/student/qr_code.html', {'qr_codes': qr_codes})
+
+@login_required
+def generate_qr_for_student(request, student_id):
+    student = get_object_or_404(StudentProfile, id=student_id)
+    # Example: Set QR token to expire in 1 day. Adjust as necessary.
+    expiry_time = timezone.now() + timedelta(days=1)
+    # Create or update the QR token for the student
+    qr_token, created = QRToken.objects.update_or_create(
+        student=student,
+        defaults={'expiry_time': expiry_time}
+    )
+    
+    # Generate QR code with token
+    qr_data = f"Token: {qr_token.token}"
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffered = BytesIO()
+    img.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+    qr_code = f"data:image/png;base64,{img_str}"
+    
+    return render(request, 'app/student/qr_code.html', {'qr_code': qr_code, 'student': student})
 
 
 
 @login_required
-def generate_qr_code_for_exam(request, exam_subject_id):
-    # ตรวจสอบว่า ExamSubject นั้นๆ มีอยู่จริง
-    exam_subject = get_object_or_404(ExamSubject, id=exam_subject_id)
-
-    # ตรวจสอบว่าผู้ใช้เป็นนักเรียนและอยู่ในชั้นเรียนที่เกี่ยวข้อง
-    if request.user.is_student and request.user.student_profile.student_class == exam_subject.student_class.student_class:
-        # สร้างข้อมูลสำหรับ QR Code
-        data = f"Exam Details: {exam_subject.subject_name}, Room: {exam_subject.exam_room.name}, Date: {exam_subject.start_time.strftime('%Y-%m-%d %H:%M')} to {exam_subject.end_time.strftime('%Y-%m-%d %H:%M')}"
-        
-        # สร้าง QR Code
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(data)
-        qr.make(fit=True)
-
-        img = qr.make_image(fill_color="black", back_color="white")
-        
-        # บันทึก QR Code เป็น BytesIO และส่งกลับเป็น image
-        buffer = BytesIO()
-        img.save(buffer, format="PNG")
-        return HttpResponse(buffer.getvalue(), content_type="image/png")
-    else:
-        return 
-# ตัวอย่างการส่ง exam_subject ไปยัง template
-def qrcode_student(request):
-    user = request.user
-    exam_subjects = ExamSubject.objects.filter(student_class=user.student_profile.student_class) # ตัวอย่างการ filter exam subjects ตาม class ของนักเรียน
-    return render(request, 'app/student/qr_code.html', {'exam_subjects': exam_subjects})
-
-
 def dashboard_student(request):
-    user = request.user
-    return render(request, 'app/student/dashboard_student.html', {'user': user})
+    try:
+        student_profile = request.user.studentprofile
+        student_id = student_profile.id
+    except StudentProfile.DoesNotExist:
+        student_id = None  # หรือจัดการกรณีนี้ตามที่ต้องการ
+    return render(request, 'app/student/dashboard_student.html', {'user': request.user, 'student_id': student_id})
 
 def edit_student(request):
     user = request.user
@@ -198,10 +226,6 @@ def edit_student(request):
 def Examination_history(request):
     user = request.user
     return render(request, 'app/student/Examination_history.html', {'user': user})
-
-def qrcode_student(request):
-    user = request.user
-    return render(request, 'app/student/qr_code.html', {'user': user})
 
 def dashboard_unknown(request):
     user = request.user
