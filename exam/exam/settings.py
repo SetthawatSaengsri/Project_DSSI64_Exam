@@ -1,3 +1,5 @@
+# settings.py
+
 """
 Django settings for exam project.
 
@@ -39,6 +41,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'exam_app',
+    'compressor', 
+    'widget_tweaks',
+   
+
 ]
 
 MIDDLEWARE = [
@@ -107,17 +113,24 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Bangkok'
 
 USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+
+# STATICFILES_DIRS = [BASE_DIR / 'static', ]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+COMPRESS_ROOT = BASE_DIR / 'static'
+ 
+# COMPRESS_ENABLED = True
+ 
+# STATICFILES_FINDERS = ('compressor.finders.CompressorFinder',)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -125,4 +138,5 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'exam_app.User'
+
 # AUTH_USER_MODEL = 'exam_app.Teacher'

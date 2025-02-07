@@ -1,0 +1,79 @@
+{% extends 'app/base.html' %}
+
+{% block content %}
+
+<div class="bg-white p-8 rounded-xl shadow-lg max-w-5xl px-4 mx-auto ">
+    <h2 class="text-3xl font-bold text-indigo-800 mb-6 text-center">📝 เลือกวิชาที่ต้องการเช็คชื่อ</h2>
+
+    <!-- Dropdown เลือกระดับชั้น -->
+    <div class="flex justify-between items-center mb-6">
+        <select id="gradeFilter" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500">
+            <option value="all">📚 ทั้งหมด</option>
+            {% for grade in grades %}
+                <option value="{{ grade }}">{{ grade }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    {% if subjects %}
+    <div class="overflow-x-auto">
+        <table class="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
+            <thead class="bg-indigo-600 text-white">
+                <tr>
+                    <th class="py-3 px-6 text-left">#</th>
+                    <th class="py-3 px-6 text-left">ชื่อวิชา</th>
+                    <th class="py-3 px-6 text-left">รหัสวิชา</th>
+                    <th class="py-3 px-6 text-left">ระดับชั้น</th>
+                    <th class="py-3 px-6 text-center">ดำเนินการ</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for subject in subjects %}
+                <tr class="hover:bg-indigo-100 transition duration-200 subject-row" data-grade="{{ subject.grades|join:', ' }}">
+                    <td class="py-4 px-6">{{ forloop.counter }}</td>
+                    <td class="py-4 px-6">{{ subject.subject_name }}</td>
+                    <td class="py-4 px-6">{{ subject.subject_code }}</td>
+                    <td class="py-4 px-6">
+                        {% for grade in subject.grades %}
+                            <span class="bg-gray-200 text-gray-800 text-sm font-medium px-2 py-1 rounded">{{ grade }}</span>
+                        {% empty %}
+                            <span class="text-gray-500">ไม่ระบุ</span>
+                        {% endfor %}
+                    </td>
+                    <td class="py-4 px-6 text-center">
+                        <a href="{% url 'exam_attendance_status' subject.id %}" 
+                           class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow hover:bg-indigo-700 transition">
+                            ➡️ เช็คชื่อ
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="text-gray-500 text-lg text-center mt-6">⚠️ ไม่มีรายวิชาที่ต้องเช็คชื่อ</p>
+    {% endif %}
+</div>
+
+<!-- JavaScript สำหรับกรองรายวิชา -->
+<script>
+    document.getElementById("gradeFilter").addEventListener("change", function () {
+        let selectedGrade = this.value;
+        let rows = document.querySelectorAll(".subject-row");
+
+        rows.forEach(row => {
+            let gradeText = row.getAttribute("data-grade");
+            let grades = gradeText ? gradeText.split(", ") : [];  // แปลงข้อมูลจาก data-grade เป็น list
+
+            // แสดงแถวทั้งหมดถ้าผู้ใช้เลือก "ทั้งหมด" หรือเลือกตรงกับระดับชั้นที่มีในรายวิชา
+            if (selectedGrade === "all" || grades.includes(selectedGrade)) {
+                row.style.display = "table-row";  
+            } else {
+                row.style.display = "none";  
+            }
+        });
+    });
+</script>
+
+{% endblock %}

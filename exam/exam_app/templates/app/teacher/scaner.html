@@ -1,0 +1,50 @@
+{% extends 'app/base.html' %}
+
+{% block content %}
+<div class="container mx-auto mt-5 max-w-lg">
+    <div class="scanner-container bg-white shadow-lg rounded-lg p-8 text-center">
+        <h2 class="text-2xl font-semibold text-pink-600 mb-4">Scan QR Code</h2>
+        <video id="qr-video" class="mx-auto mb-4" width="100%"></video>
+        <button onclick="startScan()" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
+            Start Scanning
+        </button>
+        <p id="qr-result" class="text-gray-700 mt-4">No result...</p>
+    </div>
+</div>
+
+<script type="text/javascript">
+    const video = document.getElementById('qr-video');
+    const outputData = document.getElementById('qr-result');
+
+    function startScan() {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(function(stream) {
+                video.srcObject = stream;
+                video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
+                video.play();
+                requestAnimationFrame(tick);
+            });
+    }
+
+    function tick() {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            const canvas = document.createElement('canvas');
+            canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "dontInvert",
+            });
+            if (code) {
+                outputData.innerText = code.data;
+                // Stop video stream
+                video.srcObject.getTracks().forEach(track => track.stop());
+            } else {
+                requestAnimationFrame(tick);
+            }
+        }
+    }
+</script>
+{% endblock %}

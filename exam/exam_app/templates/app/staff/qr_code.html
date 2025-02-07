@@ -1,0 +1,78 @@
+{% extends "app/base.html" %}
+
+{% block content %}
+<div class="container mx-auto mt-10 max-w-5xl px-4 md:px-8">
+    <div class="bg-white shadow-lg rounded-xl p-10 text-center">
+        <h2 class="text-4xl font-bold text-indigo-700 mb-8">📌 QR Code สำหรับรายวิชา</h2>
+
+        <!-- ✅ ข้อมูลรายวิชา -->
+        <div class="text-center mb-6">
+            <p class="text-xl text-gray-700 font-medium">📖 วิชา: <span class="font-semibold text-indigo-600">{{ subject.subject_name }}</span></p>
+            <p class="text-lg text-gray-600">🔢 รหัสวิชา: <span class="font-semibold text-indigo-600">{{ subject.subject_code }}</span></p>
+            <p class="text-lg text-gray-600">📅 วันที่สอบ: <span class="font-semibold text-indigo-600">{{ subject.exam_date }}</span></p>
+            <p class="text-lg text-gray-600">⏰ เวลา: <span class="font-semibold text-indigo-600">{{ subject.start_time }} - {{ subject.end_time }}</span></p>
+            <p class="text-lg text-gray-600">🏫 ห้องสอบ: <span class="font-semibold text-indigo-600">{{ subject.room }}</span></p>
+            <p class="text-lg text-gray-600">🎓 ระดับชั้น: 
+                <span class="font-semibold text-indigo-600">
+                    {% for student in subject.students.all %}
+                        {{ student.student_class }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </span>
+            </p>
+            <p class="text-lg text-gray-600">👨‍🏫 ผู้คุมสอบ: 
+                <span class="font-semibold text-indigo-600">
+                    {% if subject.invigilator %}
+                        {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </span>
+            </p>
+        </div>
+
+        <!-- ✅ แสดง QR Code ให้อยู่ตรงกลาง -->
+        <div class="mt-8 flex justify-center">
+            <div class="border-4 border-gray-300 p-6 rounded-lg shadow-md">
+                <img src="data:image/png;base64,{{ img_base64 }}" alt="QR Code" class="max-w-xs">
+            </div>
+        </div>
+
+        <!-- ✅ ปุ่มสำหรับการพิมพ์และกลับไปยังหน้าวิชา -->
+        <div class="text-center mt-8 flex justify-center space-x-4">
+            <button onclick="window.print()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md shadow-md transition">
+                🖨️ พิมพ์ QR Code
+            </button>
+            <a href="{% url 'exam_subjects_staff' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-md shadow-md transition">
+                🔙 กลับไปหน้าวิชา
+            </a>
+        </div>
+
+        <!-- ✅ คำแนะนำ -->
+        <div class="mt-6 text-center">
+            <p class="text-gray-600">📱 สแกน QR Code นี้เพื่อดูรายละเอียดของวิชา</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- ✅ CSS สำหรับการพิมพ์ -->
+{% block extra_css %}
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        .container, .container * {
+            visibility: visible;
+        }
+        .container {
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        .container img {
+            width: 100%; /* ✅ ทำให้ QR Code พอดีกับหน้ากระดาษ */
+        }
+    }
+</style>
+{% endblock %}

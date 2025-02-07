@@ -1,0 +1,53 @@
+<!-- import_csv.html -->
+
+
+{% extends "app/base.html" %}
+
+{% block content %}
+<div class="container mx-auto mt-10 max-w-6xl px-4 md:px-12">
+    <div class="bg-white shadow-lg rounded-xl p-8">
+        <h2 class="text-3xl font-bold text-indigo-700 text-center mb-6">📂 นำเข้าข้อมูลครูและนักเรียน</h2>
+        <p class="text-gray-600 mb-6 text-center">
+            อัปโหลดไฟล์ CSV เพื่อนำเข้าข้อมูลครูและนักเรียนเข้าสู่ระบบ <br> 
+            กรุณาตรวจสอบว่าไฟล์ของคุณมีรูปแบบที่ถูกต้อง<br>
+            <a href="#" class="text-indigo-600 underline font-medium">ดาวน์โหลดตัวอย่างไฟล์ CSV</a>
+        </p>
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            <div>
+                <label for="role" class="block text-lg font-medium text-gray-700">ประเภทข้อมูล:</label>
+                <select name="role" id="role"
+                    class="form-input border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md">
+                    <option value="teacher">ครู</option>
+                    <option value="student">นักเรียน</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="file" class="block text-lg font-medium text-gray-700">เลือกไฟล์ CSV:</label>
+                <input type="file" name="file" id="file"
+                    class="form-input border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md"
+                    required>
+            </div>
+
+            <button type="submit"
+                class="w-full bg-indigo-600 text-white py-4 px-6 text-lg rounded-md shadow-md hover:bg-indigo-700 transition">
+                🚀 อัปโหลด
+            </button>
+        </form>
+
+        {% if messages %}
+        <div class="mt-6">
+            <ul class="space-y-2">
+                {% for message in messages %}
+                <li class="text-lg {% if message.tags == 'error' %}text-red-600{% elif message.tags == 'success' %}text-green-600{% endif %}">
+                    {{ message }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

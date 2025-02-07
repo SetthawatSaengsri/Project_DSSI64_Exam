@@ -1,0 +1,132 @@
+<!-- exam_attendance_status.html -->
+
+{% extends 'app/base.html' %}
+
+{% load custom_filters %}
+
+{% block content %}
+<div class="container mx-auto mt-10 max-w-6xl px-4 md:px-12">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">🎟️ ผังที่นั่งสอบ: {{ subject.subject_name }}</h2>
+
+    <!-- 🔹 คำอธิบายสถานะ -->
+    <div class="flex justify-center space-x-6 mb-6">
+        <div class="flex items-center space-x-2">
+            <div class="w-6 h-6 rounded-full bg-green-500"></div>
+            <span class="text-gray-700">มาตรงเวลา</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <div class="w-6 h-6 rounded-full bg-yellow-500"></div>
+            <span class="text-gray-700">มาสาย</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <div class="w-6 h-6 rounded-full bg-red-500"></div>
+            <span class="text-gray-700">ขาดสอบ</span>
+        </div>
+    </div>
+
+    <!-- 🔹 ผังที่นั่ง (5 ที่นั่งต่อแถว) -->
+    <div class="grid grid-cols-5 gap-6 justify-center">
+        {% for student in students %}
+        {% with attendance_dict|get_item:student.id as record %}
+        <div class="relative text-center">
+            <button class="seat-btn w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold shadow-md transition transform hover:scale-110 hover:shadow-xl
+                {% if record %}
+                    {% if record.status == 'on_time' %} bg-green-500 {% elif record.status == 'late' %} bg-yellow-500 {% else %} bg-red-500 {% endif %}
+                {% else %} bg-gray-300 {% endif %}" 
+                data-student-id="{{ student.id }}" 
+                data-subject-id="{{ subject.id }}" 
+                id="seat-{{ student.id }}">
+                {{ forloop.counter }}
+            </button>
+
+            <div class="text-sm text-gray-700 mt-2 font-medium">
+                {{ student.user.first_name }} {{ student.user.last_name }}
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+
+    <!-- 🔹 Modal สำหรับเลือกสถานะ -->
+    <div id="status-modal" class="hidden opacity-0 pointer-events-none fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center transition-opacity duration-300">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h3 class="text-lg font-semibold mb-4">เลือกสถานะ</h3>
+            <input type="hidden" id="modal-student-id">
+            <input type="hidden" id="modal-subject-id">
+            <select id="attendance-status" class="w-full p-2 border rounded">
+                <option value="on_time">✅ มาตรงเวลา</option>
+                <option value="late">⏳ มาสาย</option>
+                <option value="absent">❌ ขาดสอบ</option>
+            </select>
+            <div class="mt-4 flex justify-end">
+                <button id="save-status" class="px-4 py-2 bg-green-500 text-white rounded">บันทึก</button>
+                <button id="close-modal" class="px-4 py-2 bg-gray-400 text-white rounded ml-2">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let modal = document.getElementById("status-modal");
+            let closeModal = document.getElementById("close-modal");
+            let saveStatus = document.getElementById("save-status");
+            let statusDropdown = document.getElementById("attendance-status");
+
+            document.querySelectorAll(".seat-btn").forEach(button => {
+                button.addEventListener("click", function () {
+                    let studentId = this.getAttribute("data-student-id");
+                    let subjectId = this.getAttribute("data-subject-id");
+
+                    document.getElementById("modal-student-id").value = studentId;
+                    document.getElementById("modal-subject-id").value = subjectId;
+
+                    console.log(`✅ กดที่นั่งของนักเรียน ID: ${studentId}`);  // Debugging
+
+                    modal.classList.remove("hidden", "opacity-0", "pointer-events-none");
+                });
+            });
+
+            closeModal.addEventListener("click", function () {
+                modal.classList.add("opacity-0", "pointer-events-none");
+                setTimeout(() => modal.classList.add("hidden"), 300);
+            });
+
+            saveStatus.addEventListener("click", function () {
+                let studentId = document.getElementById("modal-student-id").value;
+                let subjectId = document.getElementById("modal-subject-id").value;
+                let selectedStatus = statusDropdown.value;
+                let seatDiv = document.getElementById(`seat-${studentId}`);
+
+                fetch("{% url 'manual_checkin' %}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": "{{ csrf_token }}"
+                    },
+                    body: JSON.stringify({ student_id: studentId, subject_id: subjectId, status: selectedStatus })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        seatDiv.classList.remove("bg-gray-300", "bg-green-500", "bg-yellow-500", "bg-red-500");
+
+                        if (selectedStatus === "on_time") {
+                            seatDiv.classList.add("bg-green-500");
+                        } else if (selectedStatus === "late") {
+                            seatDiv.classList.add("bg-yellow-500");
+                        } else {
+                            seatDiv.classList.add("bg-red-500");
+                        }
+
+                        modal.classList.add("opacity-0", "pointer-events-none");
+                        setTimeout(() => modal.classList.add("hidden"), 300);
+                    } else {
+                        alert("❌ เช็คชื่อไม่สำเร็จ");
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+            });
+        });
+    </script>
+
+{% endblock %}

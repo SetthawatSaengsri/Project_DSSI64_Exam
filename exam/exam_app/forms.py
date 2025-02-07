@@ -3,13 +3,14 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import *
-from django.forms.widgets import DateTimeInput
+from django.forms.widgets import DateTimeInput,Select
+from django.forms import ModelForm
 
 
 class StudentRegistrationForm(UserCreationForm):
     student_id = forms.CharField(max_length=10)
     no_student = forms.CharField(max_length=10)
-    student_class = forms.ChoiceField(choices=StudentProfile.CLASS_CHOICES)
+    student_class = forms.CharField(max_length=20)
 
     class Meta:
         model = User
@@ -17,9 +18,16 @@ class StudentRegistrationForm(UserCreationForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
+        user.is_student = True
+        user.school_name = self.cleaned_data.get('school_name')  # ดึง school_name จากแบบฟอร์ม
         if commit:
             user.save()
-            StudentProfile.objects.create(user=user, student_id=self.cleaned_data['student_id'], no_student=self.cleaned_data['no_student'], student_class=self.cleaned_data['student_class'])
+            StudentProfile.objects.create(
+                user=user,
+                student_id=self.cleaned_data['student_id'],
+                no_student=self.cleaned_data['no_student'],
+                student_class=self.cleaned_data['student_class']
+            )
         return user
 
 
@@ -42,71 +50,38 @@ class TeacherRegistrationForm(UserCreationForm):
         return user
 
 
+class StaffRegistrationForm(UserCreationForm):
+    school_name = forms.CharField(max_length=100, required=True, label="โรงเรียน")
 
-class NewsForm(forms.ModelForm):
     class Meta:
-        model = News
-        fields = ['title', 'content', 'student_class']
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2', 'school_name']
 
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.is_staff = True
+        if commit:
+            user.save()
+            # Save additional information, such as school name
+            profile = StaffProfile.objects.create(user=user, school_name=self.cleaned_data['school_name'])
+        return user
 
 class ExamSubjectForm(forms.ModelForm):
-    invigilator = forms.ModelChoiceField(
-        queryset=TeacherProfile.objects.all(),
-        label="Invigilator",
-        widget=forms.Select(attrs={'class': 'form-control'}),
-    )
-    subject_teacher = forms.ModelChoiceField(
-        queryset=TeacherProfile.objects.all(),
-        label="Subject Teacher",
-        widget=forms.Select(attrs={'class': 'form-control'}),
-    )
-    student_class = forms.ModelChoiceField(
-        queryset=StudentProfile.objects.all(),
-        label="Student Class",
-        widget=forms.Select(attrs={'class': 'form-control'}),
-    )
-    students = forms.ModelMultipleChoiceField(
-        queryset=StudentProfile.objects.none(),  # กำหนด queryset เริ่มต้นเป็น none
-        label="Registered Students",
-        widget=forms.SelectMultiple(attrs={'class': 'form-control'}),
-        required=False,
-    )
-    exam_room = forms.ModelChoiceField(
-        queryset=ExamRoom.objects.all(),
-        label="Exam Room",
-        widget=forms.Select(attrs={'class': 'form-control'}),
-    )
-    start_time = forms.DateTimeField(
-        widget=DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-        label='Start Time',
-        input_formats=['%Y-%m-%dT%H:%M'],
-    )
-    end_time = forms.DateTimeField(
-        widget=DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-        label='End Time',
-        input_formats=['%Y-%m-%dT%H:%M'],
-    )
+    student_class = forms.ChoiceField(choices=[], required=True, label="ระดับชั้น")
 
     class Meta:
         model = ExamSubject
-        fields = ['subject_name', 'subject_code', 'academic_year', 'student_class', 'exam_room', 'start_time', 'end_time', 'invigilator', 'subject_teacher', 'students']
+        fields = ['subject_name', 'subject_code', 'academic_year', 'exam_date', 'start_time', 'end_time', 'room', 'rows', 'columns', 'invigilator']
+        widgets = {
+            'exam_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+        }
 
     def __init__(self, *args, **kwargs):
-        super(ExamSubjectForm, self).__init__(*args, **kwargs)
-        if self.instance.pk:
-            self.fields['students'].queryset = StudentProfile.objects.filter(student_class=self.instance.student_class)
-        else:
-            self.fields['students'].queryset = StudentProfile.objects.none()
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
 
-        if 'initial' in kwargs and 'student_class' in kwargs['initial']:
-            student_class_id = kwargs['initial']['student_class']
-            self.fields['students'].queryset = StudentProfile.objects.filter(student_class=student_class_id)
-
-    def save(self, commit=True):
-        instance = super(ExamSubjectForm, self).save(commit=False)
-        if commit:
-            instance.save()
-            if 'students' in self.cleaned_data:
-                instance.students.set(self.cleaned_data['students'])
-            self.save_m2m()
-        return instance
+        if user:
+            self.fields['invigilator'].queryset = TeacherProfile.objects.filter(user__school_name=user.school_name)
+            self.fields['student_class'].choices = [(sc, sc) for sc in StudentProfile.objects.filter(user__school_name=user.school_name).values_list('student_class', flat=True).distinct()]

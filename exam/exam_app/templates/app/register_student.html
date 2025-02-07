@@ -1,20 +1,39 @@
-<!-- register_student.html -->
-
 {% extends 'app/base.html' %}
+  
+{% load static %}
 
 {% block content %}
-  <nav>
-    <a href="{% url 'index_view' %}">หน้าหลัก</a>
-    <a href="{% url 'login_user' %}">เข้าสู่ระบบ</a>
-    <a href="{% url 'register_student' %}">สมัครสมาชิกนักเรียน</a>
-    <a href="{% url 'register_teacher' %}">สมัครสมาชิกคุณครู</a>
-  </nav>
-  
-    <h2 style="text-align: center;">สมัครสมาชิกนักเรียน</h2>
-    <form method="post" action="{% url 'register_student' %}">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit">สมัครสมาชิก</button>
-    </form>
+
+<div class="flex flex-col items-center px-4 py-8 w-full lg:w-1/2 mx-auto">
+  <h2 class="text-2xl font-semibold text-center mb-6 text-pink-600">สมัครสมาชิกนักเรียน</h2>
+  <form method="post" action="{% url 'register_student' %}" class="w-full bg-white shadow-md rounded-lg p-6">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="mb-4">
+        <label for="{{ field.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">
+          {{ field.label }}
+        </label>
+        {% if field.name == "student_class" %}
+          <select name="{{ field.name }}" id="{{ field.id_for_label }}" class="block appearance-none w-full bg-gray-50 border border-gray-300 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-pink-500">
+            {% for key, value in field.field.choices %}
+              <option value="{{ key }}" {% if field.value == key %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        {% else %}
+          <input type="{{ field.field.widget.input_type }}" name="{{ field.name }}" id="{{ field.id_for_label }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-pink-500" value="{{ field.value|default_if_none:'' }}">
+        {% endif %}
+        {% if field.help_text %}
+        <p class="text-sm text-gray-600">{{ field.help_text }}</p>
+        {% endif %}
+        {% for error in field.errors %}
+        <p class="text-red-500 text-xs italic">{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-opacity-50 transition duration-150 ease-in-out">
+      สมัครสมาชิก
+    </button>
+  </form>
+</div>
 
 {% endblock %}

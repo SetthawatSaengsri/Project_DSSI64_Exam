@@ -1,17 +1,299 @@
-<!-- index.html -->
-
-{% extends 'app/base.html' %}
-
 {% load static %}
 
-{% block content %}
-<div class="inner-square">
-    <h2>Welcome to the Examination Management System</h2>
-    <img src="{% static 'images/sc.png' %}" alt="Welcome Image" class="login-image">
-    <div class="login-all a ">
-        <a href="{% url 'login_user' %}" class="login-button">เข้าสู่ระบบ</a>
-        <a href="{% url 'register_student' %}" class="register-button">Student Register</a>
-        <a href="{% url 'register_teacher' %}" class="register-button">Teacher Register</a>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Exam Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="icon" href="https://www.webrongrean.in.th/html/frontend/img/favicon.png">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border: 2px solid #8b5cf6;
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(to right, #6366f1, #8b5cf6);
+            color: white;
+            font-weight: 600;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(to right, #8b5cf6, #6366f1);
+        }
+
+        .alert {
+            background-color: rgba(255, 0, 0, 0.1);
+            color: #ff0000;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }
+
+        .success {
+            background-color: rgba(0, 255, 0, 0.1);
+            color: #008000;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-lg fixed w-full z-10 top-0">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/"
+                class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">Exam
+                Management</a>
+            <div class="hidden md:flex space-x-8">
+                <a href="/" class="text-gray-700 hover:text-indigo-600">หน้าแรก</a>
+                <a href="#" class="text-gray-700 hover:text-indigo-600"
+                    onclick="openModal('contactModal')">ติดต่อเรา</a>
+                <a href="#" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+                    onclick="openModal('loginModal')">เข้าสู่ระบบ</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contact Modal -->
+    <div id="contactModal" class="fixed inset-0 hidden bg-black bg-opacity-50 justify-center items-center">
+        <div class="glass-effect p-8 rounded-lg shadow-2xl w-full max-w-md text-white relative">
+            <button class="absolute top-2 right-4 text-2xl text-gray-200 hover:text-white focus:outline-none"
+                onclick="closeModal('contactModal')">×</button>
+            <div class="mb-6 text-center">
+                <h4 class="text-2xl font-bold text-indigo-400 tracking-wide">ติดต่อเรา</h4>
+            </div>
+
+            <div class="text-center mb-6">
+                <!-- Admin Profile -->
+                <img src="{% static 'src/images/406387349_1438214800094310_7035528363501539782_n.jpg' %}"
+                    alt="Admin Profile" class="w-32 h-32 mx-auto mb-4 rounded-full object-cover">
+                <p class="text-xl text-gray-100 font-semibold">คุณแอดมิน</p>
+                <p class="text-gray-200">ตำแหน่ง: ผู้ดูแลระบบ</p>
+                <div class="mt-4">
+                    <p class="text-gray-300">📧 อีเมล: <a href="mailto:admin@example.com"
+                            class="text-indigo-500">admin@example.com</a></p>
+                    <p class="text-gray-300">📞 เบอร์โทร: +66 123 456 789</p>
+                    <p class="text-gray-300">🌐 ช่องทางอื่นๆ: <a
+                            href="https://www.facebook.com/setthawat01/archive?notif_id=1642193422934260&notif_t=direct_message_story_final_report&ref=notif"
+                            class="text-indigo-500">Line</a>, <a
+                            href="https://www.facebook.com/setthawat01/archive?notif_id=1642193422934260&notif_t=direct_message_story_final_report&ref=notif"
+                            class="text-indigo-500">Facebook</a></p>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
-{% endblock %}
+
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 hidden bg-black bg-opacity-50 justify-center items-center">
+        <div class="glass-effect p-8 rounded-lg shadow-2xl w-full max-w-md text-white relative">
+            <button class="absolute top-2 right-4 text-2xl text-gray-200 hover:text-white focus:outline-none"
+                onclick="closeModal('loginModal')">×</button>
+            <div class="mb-6 text-center">
+                <h4 class="text-2xl font-bold tracking-wide">เข้าสู่ระบบ</h4>
+            </div>
+            <form id="loginForm" method="post" action="{% url 'login_user' %}">
+                {% csrf_token %}
+                <div class="mb-6">
+                    <input class="form-input" placeholder="อีเมล" type="email" name="email" autocomplete="off" required>
+                </div>
+                <div class="mb-6">
+                    <input class="form-input" placeholder="รหัสผ่าน" type="password" name="password" autocomplete="off"
+                        required>
+                </div>
+                <div class="mb-6">
+                    <select
+                        class="form-input text-gray-800 bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                        name="school_name" required>
+                        <option value="">-- เลือกโรงเรียน --</option>
+                        {% for school in schools %}
+                        <option value="{{ school }}" class="text-gray-700">{{ school }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">เข้าสู่ระบบ</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Registration Modal -->
+    <div id="registerModal" class="fixed inset-0 hidden bg-black bg-opacity-50 justify-center items-center">
+        <div class="glass-effect p-8 rounded-lg shadow-2xl w-full max-w-md text-white relative">
+            <button class="absolute top-2 right-4 text-2xl text-gray-200 hover:text-white focus:outline-none"
+                onclick="closeModal('registerModal')">×</button>
+            <div class="mb-6 text-center">
+                <h4 class="text-2xl font-bold tracking-wide">สมัครบัญชีเจ้าหน้าที่</h4>
+            </div>
+
+            {% if messages %}
+            <div>
+                {% for message in messages %}
+                <div class="{% if message.tags == 'success' %}success{% else %}alert{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form id="registerForm" method="post" action="{% url 'register_staff' %}">
+                {% csrf_token %}
+                <div class="mb-6">
+                    <input class="form-input" placeholder="ชื่อผู้ใช้" type="text" name="username" required>
+                </div>
+                <div class="mb-6">
+                    <input class="form-input" placeholder="ชื่อจริง" type="text" name="first_name" required>
+                </div>
+                <div class="mb-6">
+                    <input class="form-input" placeholder="นามสกุล" type="text" name="last_name" required>
+                </div>
+                <div class="mb-6">
+                    <input class="form-input" placeholder="โรงเรียน" type="text" name="school_name" required>
+                </div>
+                <div class="mb-6">
+                    <input class="form-input" placeholder="อีเมล" type="email" name="email" required>
+                </div>
+                <div class="mb-6">
+                    <input class="form-input" placeholder="รหัสผ่าน" type="password" name="password1" required>
+                </div>
+                <div class="mb-6">
+                    <input class="form-input" placeholder="ยืนยันรหัสผ่าน" type="password" name="password2" required>
+                </div>
+                <button type="submit" class="btn-primary">สมัครบัญชีเจ้าหน้าที่</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-36">
+        <div class="container mx-auto text-center">
+            <h1 class="text-6xl font-bold mb-4">Online Exam Management</h1>
+            <p class="text-xl mb-8">ระบบจัดการสอบที่ง่ายและทันสมัยสำหรับโรงเรียนของคุณ</p>
+            <a href="#" class="bg-white text-indigo-600 py-3 px-8 rounded-md font-semibold hover:bg-gray-100 transition"
+                onclick="openModal('registerModal')">สมัครใช้งานฟรี</a>
+        </div>
+    </div>
+    <!-- Section below the hero area -->
+    <section class="bg-gray-50 py-12">
+        <div class="container mx-auto text-center">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">ทำไมถึงเลือกเรา?</h2>
+            <p class="text-lg text-gray-600 mb-8">เรานำเสนอระบบที่ง่ายต่อการใช้งาน ครอบคลุมทุกความต้องการของโรงเรียน</p>
+
+            <!-- Add logo for branding -->
+            <div class="mb-8">
+                <img src="https://www.webrongrean.in.th/html/frontend/img/favicon.png" alt="Logo" class="mx-auto w-32 h-32 mb-4">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Feature 1 -->
+                <div class="bg-white shadow-lg p-6 rounded-lg">
+                    <!-- ใช้อิโมจิหรือไอคอนที่เกี่ยวข้อง -->
+                    <div class="text-4xl mb-4">📝</div>
+                    <h3 class="text-xl font-semibold text-indigo-600">จัดการข้อสอบได้ง่าย</h3>
+                    <p class="text-gray-600 mt-2">ออกแบบและสร้างข้อสอบอย่างรวดเร็วด้วยอินเทอร์เฟซที่ใช้งานง่าย</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="bg-white shadow-lg p-6 rounded-lg">
+                    <!-- ใช้อิโมจิหรือไอคอนที่เกี่ยวข้อง -->
+                    <div class="text-4xl mb-4">🔒</div>
+                    <h3 class="text-xl font-semibold text-indigo-600">การเข้าถึงที่ปลอดภัย</h3>
+                    <p class="text-gray-600 mt-2">ข้อมูลทุกอย่างได้รับการเข้ารหัสเพื่อความปลอดภัย</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="bg-white shadow-lg p-6 rounded-lg">
+                    <!-- ใช้อิโมจิหรือไอคอนที่เกี่ยวข้อง -->
+                    <div class="text-4xl mb-4">📊</div>
+                    <h3 class="text-xl font-semibold text-indigo-600">ติดตามผลการสอบ</h3>
+                    <p class="text-gray-600 mt-2">ระบบวิเคราะห์คะแนนช่วยให้คุณมองเห็นภาพรวมได้ง่ายดาย</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Section for testimonials -->
+    <section class="bg-white py-12">
+        <div class="container mx-auto text-center">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">คำแนะนำจากผู้ใช้จริง</h2>
+            <p class="text-lg text-gray-600 mb-8">เสียงตอบรับจากผู้ใช้จริงที่ไว้วางใจระบบของเรา</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="p-6 bg-gray-50 rounded-lg shadow">
+                    <img src="{% static 'src/images/woman-thai-asian-teacher-uniform-260nw-2542358707.webp' %}"
+                        alt="Feature 3" class="w-32 h-32 mx-auto mb-4 object-cover rounded-full">
+                    <p class="text-gray-600 italic">"ระบบนี้ทำให้การจัดการการสอบเป็นเรื่องง่ายสำหรับโรงเรียนของเรา
+                        ประหยัดเวลาและมีประสิทธิภาพมากขึ้น!"</p>
+                    <div class="mt-4 text-right">
+                        <h3 class="text-gray-800 font-semibold">คุณครูสมชาย</h3>
+                        <p class="text-sm text-gray-500">โรงเรียนวิทยาทาน</p>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="p-6 bg-gray-50 rounded-lg shadow">
+                    <img src="{% static 'src/images/medium__45846626db.png' %}" alt="Feature 3"
+                        class="w-32 h-32 mx-auto mb-4 object-cover rounded-full">
+                    <p class="text-gray-600 italic">"ผู้บริหารสามารถตรวจสอบข้อมูลการสอบได้ทันทีผ่านแดชบอร์ด
+                        ใช้งานง่ายจริงๆ ครับ"</p>
+                    <div class="mt-4 text-right">
+                        <h3 class="text-gray-800 font-semibold">คุณครูวิไล</h3>
+                        <p class="text-sm text-gray-500">โรงเรียนเทคโนโลยีวิชาการ</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <script>
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+    </script>
+
+</body>
+
+</html>

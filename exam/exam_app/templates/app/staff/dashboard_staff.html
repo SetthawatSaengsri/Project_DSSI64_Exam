@@ -1,0 +1,34 @@
+{% extends "app/base.html" %}
+
+{% block content %}
+<div class="container mx-auto mt-10 max-w-6xl px-4 md:px-12">
+    <div class="bg-white shadow-lg rounded-xl p-8">
+        <h2 class="text-3xl font-bold text-indigo-700 text-center mb-6">📊 แดชบอร์ดเจ้าหน้าที่</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-indigo-100 p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-indigo-700">👩‍🏫 จำนวนครู</h3>
+                <p class="text-3xl font-bold text-gray-800 mt-2">{{ teacher_count }}</p>
+            </div>
+            <div class="bg-yellow-100 p-6 rounded-lg shadow">
+                <h3 class="text-xl font-semibold text-yellow-700">🎓 จำนวน นักเรียน</h3>
+                <p class="text-3xl font-bold text-gray-800 mt-2">{{ student_count }}</p>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <h3 class="text-2xl font-semibold text-gray-700">📌 การจัดการ</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <a href="{% url 'import_csv' %}"
+                    class="bg-blue-500 text-white p-4 rounded-lg shadow-md text-center text-lg font-semibold hover:bg-blue-600 transition">
+                    📂 นำเข้าข้อมูล CSV
+                </a>
+                <a href="{% url 'add_exam_subject' %}"
+                    class="bg-green-500 text-white p-4 rounded-lg shadow-md text-center text-lg font-semibold hover:bg-green-600 transition">
+                    📚 เพิ่มรายวิชา
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

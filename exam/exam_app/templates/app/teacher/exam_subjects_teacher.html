@@ -1,0 +1,61 @@
+
+
+{% extends "app/base.html" %}
+
+{% block content %}
+<div class="container mx-auto mt-10 max-w-7xl px-4 md:px-12">
+    <div class="bg-white shadow-lg rounded-xl p-10">
+        <h2 class="text-4xl font-bold text-indigo-700 text-center mb-8">📚 รายวิชาของคุณ</h2>
+        <p class="text-xl text-gray-600 text-center">โรงเรียน: <span class="font-semibold text-indigo-600">{{ school_name }}</span></p>
+
+        <div class="overflow-x-auto shadow-lg rounded-lg mt-8">
+            <table class="w-full max-w-full table-auto bg-white border border-gray-300 rounded-lg">
+                <thead class="bg-indigo-700 text-white text-sm md:text-base">
+                    <tr>
+                        <th class="py-4 px-6 text-left font-semibold min-w-[200px]">ชื่อวิชา</th>
+                        <th class="py-4 px-6 text-left font-semibold min-w-[120px]">รหัสวิชา</th>
+                        <th class="py-4 px-6 text-left font-semibold min-w-[100px]">ปีการศึกษา</th>
+                        <th class="py-4 px-6 text-left font-semibold min-w-[150px]">วันที่สอบ</th>
+                        <th class="py-4 px-6 text-left font-semibold min-w-[180px]">เวลา</th>
+                        <th class="py-4 px-6 text-left font-semibold min-w-[120px]">ห้องสอบ</th>
+                        <th class="py-4 px-6 text-left font-semibold min-w-[180px]">ระดับชั้น</th>
+                        <th class="py-4 px-6 text-left font-semibold min-w-[200px]">ผู้คุมสอบ</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-800 text-sm md:text-base">
+                    {% for subject in subjects %}
+                    <tr class="hover:bg-indigo-50 transition">
+                        <td class="py-4 px-6 border-b min-w-[200px]">{{ subject.subject_name }}</td>
+                        <td class="py-4 px-6 border-b min-w-[120px]">{{ subject.subject_code }}</td>
+                        <td class="py-4 px-6 border-b min-w-[100px]">{{ subject.academic_year }}</td>
+                        <td class="py-4 px-6 border-b min-w-[150px]">{{ subject.exam_date }}</td>
+                        <td class="py-4 px-6 border-b min-w-[180px]">{{ subject.start_time }} - {{ subject.end_time }}</td>
+                        <td class="py-4 px-6 border-b min-w-[120px]">{{ subject.room }}</td>
+                        <td class="py-4 px-6 border-b min-w-[180px]">
+                            {% for student in subject.students.all %}
+                                {{ student.student_class }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td class="py-4 px-6 border-b min-w-[200px]">
+                            {% if subject.invigilator %}
+                                {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="py-4 px-6 border-b min-w-[180px]">
+                            <!-- Disable Edit, Delete, and QR Code buttons for teacher -->
+                            <span class="text-gray-500">ไม่สามารถแก้ไขหรือดูรายละเอียด</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center text-gray-600 py-6 text-xl">คุณยังไม่ได้คุมสอบวิชาใด</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
