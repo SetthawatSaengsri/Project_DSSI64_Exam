@@ -1,28 +1,63 @@
-<!-- templates/dashboard.html -->
-{% extends 'app/base.html' %}
-
-{% load static %}
+{% extends "app/base.html" %}
 
 {% block content %}
-<div class="container mx-auto my-8">
-    <h2 class="text-3xl font-bold mb-6">ข่าวประชาสัมพันธ์</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-            <img class="w-full h-48 object-cover" src="{% static 'images/news1.jpg' %}" alt="ข่าว 1">
-            <div class="p-4">
-                <h5 class="text-xl font-bold mb-2">หัวข้อข่าว 1</h5>
-                <p class="text-gray-700 mb-4">รายละเอียดข่าวประชาสัมพันธ์ 1...</p>
-                <a href="#" class="text-pink-500 hover:underline">อ่านเพิ่มเติม</a>
-            </div>
-        </div>
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-            <img class="w-full h-48 object-cover" src="{% static 'images/news2.jpg' %}" alt="ข่าว 2">
-            <div class="p-4">
-                <h5 class="text-xl font-bold mb-2">หัวข้อข่าว 2</h5>
-                <p class="text-gray-700 mb-4">รายละเอียดข่าวประชาสัมพันธ์ 2...</p>
-                <a href="#" class="text-pink-500 hover:underline">อ่านเพิ่มเติม</a>
-            </div>
-        </div>
+<div class="max-w-4xl mx-auto py-12 px-6 sm:px-8 lg:px-10 text-center">
+    <h2 class="text-3xl font-bold text-indigo-700 mb-6">🎫 สแกน QR Code สำหรับการเข้าสอบ</h2>
+
+    <!-- ปุ่มสำหรับเปิดกล้องและสแกน QR Code -->
+    <button id="scan-btn" class="bg-blue-600 text-white px-6 py-3 text-lg rounded-xl shadow-lg transition-transform transform hover:scale-105">
+        📷 สแกน QR Code
+    </button>
+
+    <!-- พื้นที่สำหรับการแสดงผลกล้องสแกน -->
+    <div id="qr-reader" style="width: 100%; height: 300px;"></div>
+
+    <!-- ข้อความแสดงผลการสแกน -->
+    <div id="scan-result" class="mt-4 text-xl text-blue-600 hidden">
+        <p>ข้อมูลที่สแกนได้:</p>
+        <pre id="result-output"></pre>
     </div>
 </div>
+
+<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+
+<script>
+    // เมื่อคลิกปุ่มสแกน
+    document.getElementById("scan-btn").addEventListener("click", function() {
+        console.log("ปุ่มถูกกดแล้ว");
+        startScanner();  // เรียกฟังก์ชันที่ใช้เริ่มการสแกน
+    });
+
+    function startScanner() {
+        console.log("เริ่มการสแกน QR Code");
+
+        const html5QrCode = new Html5Qrcode("qr-reader");
+
+        // เริ่มสแกนจากกล้อง
+        html5QrCode.start(
+            { facingMode: "environment" },  // ใช้กล้องหลังของอุปกรณ์
+            { fps: 10, qrbox: 250 }, // กำหนด fps และขนาดพื้นที่ที่ใช้สแกน
+            (decodedText) => {
+                // เมื่อสแกน QR Code สำเร็จ
+                console.log("สแกนสำเร็จ: " + decodedText);  // ข้อมูลที่สแกนได้
+                document.getElementById("scan-result").classList.remove("hidden");
+                document.getElementById("result-output").textContent = decodedText; // แสดงผลข้อมูลที่ได้จากการสแกน
+
+                // หยุดการสแกนหลังจากสแกนสำเร็จ
+                html5QrCode.stop().then(() => {
+                    console.log("QR Code Scanning stopped.");
+                }).catch(err => {
+                    console.error("Error stopping scanning:", err);
+                });
+            },
+            (errorMessage) => {
+                // หากเกิดข้อผิดพลาดในการสแกน
+                console.log("Error scanning:", errorMessage);
+            }
+        ).catch((err) => {
+            console.error("Error starting scanner:", err); // หากไม่สามารถเริ่มต้นการสแกนได้
+        });
+    }
+</script>
+
 {% endblock %}

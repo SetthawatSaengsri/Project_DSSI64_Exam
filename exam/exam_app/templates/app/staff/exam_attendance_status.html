@@ -1,5 +1,3 @@
-<!-- exam_attendance_status.html -->
-
 {% extends 'app/base.html' %}
 
 {% load custom_filters %}
@@ -24,7 +22,7 @@
         </div>
     </div>
 
-    <!-- 🔹 ผังที่นั่ง (5 ที่นั่งต่อแถว) -->
+    <!-- 🔹 ผังที่นั่ง -->
     <div class="grid grid-cols-5 gap-6 justify-center">
         {% for student in students %}
         {% with attendance_dict|get_item:student.id as record %}
@@ -48,7 +46,7 @@
     </div>
 
     <!-- 🔹 Modal สำหรับเลือกสถานะ -->
-    <div id="status-modal" class="hidden opacity-0 pointer-events-none fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center transition-opacity duration-300">
+    <div id="status-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
         <div class="bg-white p-6 rounded-lg shadow-lg">
             <h3 class="text-lg font-semibold mb-4">เลือกสถานะ</h3>
             <input type="hidden" id="modal-student-id">
@@ -64,69 +62,65 @@
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            let modal = document.getElementById("status-modal");
-            let closeModal = document.getElementById("close-modal");
-            let saveStatus = document.getElementById("save-status");
-            let statusDropdown = document.getElementById("attendance-status");
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let modal = document.getElementById("status-modal");
+        let closeModal = document.getElementById("close-modal");
+        let saveStatus = document.getElementById("save-status");
+        let statusDropdown = document.getElementById("attendance-status");
 
-            document.querySelectorAll(".seat-btn").forEach(button => {
-                button.addEventListener("click", function () {
-                    let studentId = this.getAttribute("data-student-id");
-                    let subjectId = this.getAttribute("data-subject-id");
+        document.querySelectorAll(".seat-btn").forEach(button => {
+            button.addEventListener("click", function () {
+                let studentId = this.getAttribute("data-student-id");
+                let subjectId = this.getAttribute("data-subject-id");
 
-                    document.getElementById("modal-student-id").value = studentId;
-                    document.getElementById("modal-subject-id").value = subjectId;
+                document.getElementById("modal-student-id").value = studentId;
+                document.getElementById("modal-subject-id").value = subjectId;
 
-                    console.log(`✅ กดที่นั่งของนักเรียน ID: ${studentId}`);  // Debugging
-
-                    modal.classList.remove("hidden", "opacity-0", "pointer-events-none");
-                });
-            });
-
-            closeModal.addEventListener("click", function () {
-                modal.classList.add("opacity-0", "pointer-events-none");
-                setTimeout(() => modal.classList.add("hidden"), 300);
-            });
-
-            saveStatus.addEventListener("click", function () {
-                let studentId = document.getElementById("modal-student-id").value;
-                let subjectId = document.getElementById("modal-subject-id").value;
-                let selectedStatus = statusDropdown.value;
-                let seatDiv = document.getElementById(`seat-${studentId}`);
-
-                fetch("{% url 'manual_checkin' %}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": "{{ csrf_token }}"
-                    },
-                    body: JSON.stringify({ student_id: studentId, subject_id: subjectId, status: selectedStatus })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        seatDiv.classList.remove("bg-gray-300", "bg-green-500", "bg-yellow-500", "bg-red-500");
-
-                        if (selectedStatus === "on_time") {
-                            seatDiv.classList.add("bg-green-500");
-                        } else if (selectedStatus === "late") {
-                            seatDiv.classList.add("bg-yellow-500");
-                        } else {
-                            seatDiv.classList.add("bg-red-500");
-                        }
-
-                        modal.classList.add("opacity-0", "pointer-events-none");
-                        setTimeout(() => modal.classList.add("hidden"), 300);
-                    } else {
-                        alert("❌ เช็คชื่อไม่สำเร็จ");
-                    }
-                })
-                .catch(error => console.error("Error:", error));
+                modal.classList.remove("hidden");
             });
         });
-    </script>
 
+        closeModal.addEventListener("click", function () {
+            modal.classList.add("hidden");
+        });
+
+        saveStatus.addEventListener("click", function () {
+            let studentId = document.getElementById("modal-student-id").value;
+            let subjectId = document.getElementById("modal-subject-id").value;
+            let selectedStatus = statusDropdown.value;
+            let seatDiv = document.getElementById(`seat-${studentId}`);
+
+            fetch("{% url 'manual_checkin' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({ student_id: studentId, subject_id: subjectId, status: selectedStatus })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    seatDiv.classList.remove("bg-gray-300", "bg-green-500", "bg-yellow-500", "bg-red-500");
+
+                    if (selectedStatus === "on_time") {
+                        seatDiv.classList.add("bg-green-500");
+                    } else if (selectedStatus === "late") {
+                        seatDiv.classList.add("bg-yellow-500");
+                    } else {
+                        seatDiv.classList.add("bg-red-500");
+                    }
+
+                    modal.classList.add("hidden");
+                } else {
+                    alert("❌ เช็คชื่อไม่สำเร็จ");
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        });
+    });
+</script>
 {% endblock %}

@@ -1,0 +1,41 @@
+{% extends "app/base.html" %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-12 px-6 text-center">
+    <h2 class="text-4xl font-bold text-indigo-700 mb-6">📝 ยืนยันการเข้าสอบ</h2>
+
+    <div class="bg-white shadow-xl rounded-lg p-6 text-lg text-gray-800">
+        <p><strong>📚 วิชา:</strong> {{ subject.subject_name }}</p>
+        <p><strong>📌 รหัสวิชา:</strong> {{ subject.subject_code }}</p>
+        <p><strong>🗓️ วันที่สอบ:</strong> {{ subject.exam_date }}</p>
+        <p><strong>⏰ เวลา:</strong> {{ subject.start_time }} - {{ subject.end_time }}</p>
+        <p><strong>🏫 ห้องสอบ:</strong> {{ subject.room }}</p>
+    </div>
+
+    <button id="confirm-entry" class="bg-green-600 text-white px-6 py-3 rounded-lg mt-6">✅ ยืนยันเข้าสอบ</button>
+</div>
+
+<script>
+    document.getElementById("confirm-entry").addEventListener("click", function() {
+        fetch("{% url 'scan_qr_checkin' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({
+                student_id: "{{ student.id }}",
+                subject_id: "{{ subject.id }}"
+            })
+        }).then(response => response.json())
+        .then(data => {
+            if (data.status === "success") {
+                alert("✅ คุณได้เช็คชื่อเข้าสอบแล้ว");
+                window.location.href = "{% url 'exam_attendance_status' subject.id %}";
+            } else {
+                alert("❌ " + data.message);
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -67,11 +67,18 @@ class StaffRegistrationForm(UserCreationForm):
         return user
 
 class ExamSubjectForm(forms.ModelForm):
-    student_class = forms.ChoiceField(choices=[], required=True, label="ระดับชั้น")
+    student_class = forms.ChoiceField(
+        choices=[],  # จะถูกตั้งค่าใน `__init__`
+        required=True,
+        label="ระดับชั้น",
+    )
 
     class Meta:
         model = ExamSubject
-        fields = ['subject_name', 'subject_code', 'academic_year', 'exam_date', 'start_time', 'end_time', 'room', 'rows', 'columns', 'invigilator']
+        fields = [
+            'subject_name', 'subject_code', 'academic_year', 'exam_date',
+            'start_time', 'end_time', 'room', 'rows', 'columns', 'invigilator', 'student_class'
+        ]
         widgets = {
             'exam_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
@@ -83,5 +90,16 @@ class ExamSubjectForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if user:
+            # ✅ ดึงรายชื่อครูที่อยู่ในโรงเรียนเดียวกัน
             self.fields['invigilator'].queryset = TeacherProfile.objects.filter(user__school_name=user.school_name)
-            self.fields['student_class'].choices = [(sc, sc) for sc in StudentProfile.objects.filter(user__school_name=user.school_name).values_list('student_class', flat=True).distinct()]
+
+            # ✅ ดึงระดับชั้นจากนักเรียนในโรงเรียนเดียวกัน
+            student_classes = StudentProfile.objects.filter(
+                user__school_name=user.school_name
+            ).values_list('student_class', flat=True).distinct()
+
+            # ✅ ตั้งค่า choices (ต้องมีค่าไม่เป็น `None` หรือว่าง)
+            self.fields['student_class'].choices = [("", "เลือกระดับชั้น")] + [(sc, sc) for sc in student_classes if sc]
+
+            # ✅ Debug เช็คข้อมูลระดับชั้นที่ดึงมา
+            print("✅ ระดับชั้นที่ดึงมา:", list(student_classes))
