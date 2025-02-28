@@ -44,16 +44,17 @@ class StudentProfile(models.Model):
     
 class TeacherProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher_profile')
-    teacher_id = models.CharField(max_length=10)  # ไม่กำหนด unique=True
+    teacher_id = models.CharField(max_length=10)  
     school_name = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['teacher_id', 'school_name'], name='unique_teacher_per_school') # กำหนดให้ teacher_id ซ้ำไม่ได้ในโรงเรียนเดียวกัน
+            models.UniqueConstraint(fields=['teacher_id', 'school_name'], name='unique_teacher_per_school') 
         ]
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
+
 
 class StaffProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -70,8 +71,6 @@ class ExamSubject(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
     room = models.CharField(max_length=20, blank=True, verbose_name="ห้องสอบ")
-    rows = models.PositiveIntegerField(default=5, verbose_name="จำนวนแถว")  # ✅ เพิ่มฟิลด์จำนวนแถว
-    columns = models.PositiveIntegerField(default=5, verbose_name="จำนวนที่นั่งต่อแถว")  # ✅ เพิ่มฟิลด์จำนวนที่นั่งต่อแถว
     invigilator = models.ForeignKey(
         TeacherProfile,
         on_delete=models.SET_NULL,
@@ -86,9 +85,10 @@ class ExamSubject(models.Model):
         related_name='exam_subjects',
         verbose_name="นักเรียน"
     )
+    invigilator_checkin = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.subject_name} ({self.subject_code})"
+        return f"{self.subject_name} ({self.subject_code})" 
 
 class Attendance(models.Model):
     STATUS_CHOICES = [
@@ -104,3 +104,4 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.student.user.first_name} - {self.subject.subject_name} ({self.status})"
+

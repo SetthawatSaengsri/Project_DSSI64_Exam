@@ -24,3 +24,16 @@ def get_color(status):
     elif status == "absent":
         return "#dc2626"  # สีแดง
     return "#d1d5db"  # สีเทา
+
+@register.filter
+def get_item(dictionary, key):
+    """ ฟิลเตอร์เพื่อเข้าถึงค่าใน dictionary โดยใช้ key """
+    try:
+        return dictionary.get(key)
+    except (KeyError, TypeError):
+        return None
+    
+@register.filter
+def dict_key(d, key):
+    """ ดึงค่าจาก dictionary โดยใช้ key """
+    return d.get(key, None) if isinstance(d, dict) else None

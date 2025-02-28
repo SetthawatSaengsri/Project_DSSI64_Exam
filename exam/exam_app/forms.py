@@ -77,7 +77,7 @@ class ExamSubjectForm(forms.ModelForm):
         model = ExamSubject
         fields = [
             'subject_name', 'subject_code', 'academic_year', 'exam_date',
-            'start_time', 'end_time', 'room', 'rows', 'columns', 'invigilator', 'student_class'
+            'start_time', 'end_time', 'room', 'invigilator', 'student_class'
         ]
         widgets = {
             'exam_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -90,16 +90,17 @@ class ExamSubjectForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if user:
-            # ✅ ดึงรายชื่อครูที่อยู่ในโรงเรียนเดียวกัน
+            # ดึงรายชื่อครูที่อยู่ในโรงเรียนเดียวกัน
             self.fields['invigilator'].queryset = TeacherProfile.objects.filter(user__school_name=user.school_name)
 
-            # ✅ ดึงระดับชั้นจากนักเรียนในโรงเรียนเดียวกัน
+            # ดึงระดับชั้นจากนักเรียนในโรงเรียนเดียวกัน
             student_classes = StudentProfile.objects.filter(
                 user__school_name=user.school_name
             ).values_list('student_class', flat=True).distinct()
 
-            # ✅ ตั้งค่า choices (ต้องมีค่าไม่เป็น `None` หรือว่าง)
+            # ตั้งค่า choices
             self.fields['student_class'].choices = [("", "เลือกระดับชั้น")] + [(sc, sc) for sc in student_classes if sc]
 
-            # ✅ Debug เช็คข้อมูลระดับชั้นที่ดึงมา
-            print("✅ ระดับชั้นที่ดึงมา:", list(student_classes))
+            # Debug เช็คข้อมูลระดับชั้นที่ดึงมา
+            print("ระดับชั้นที่ดึงมา:", list(student_classes))
+    

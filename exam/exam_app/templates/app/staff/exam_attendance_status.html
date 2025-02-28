@@ -22,18 +22,38 @@
         </div>
     </div>
 
-    <!-- 🔹 ผังที่นั่ง -->
+    <!-- ผังที่นั่ง (ครู) -->
+    <h3 class="text-2xl font-semibold text-gray-700 text-center mb-4">🧑‍🏫 ครูผู้คุมสอบ</h3>
+    <div class="flex justify-center mb-8">
+        {% if subject.invigilator %}
+        <div class="relative text-center">
+            <button
+                class="seat-btn w-24 h-24 rounded-xl flex items-center justify-center text-white font-bold shadow-md transition transform hover:scale-110 hover:shadow-xl {% if subject.invigilator_checkin %} bg-green-500 {% else %} bg-gray-300 {% endif %}"
+                data-teacher-id="{{ subject.invigilator.id }}" data-subject-id="{{ subject.id }}"
+                data-status="{% if subject.invigilator_checkin %}on_time{% else %}not_checked{% endif %}"
+                id="seat-teacher" onclick="updateTeacherStatus({{ subject.invigilator.id }}, {{ subject.id }})">
+                👨‍🏫 {{ subject.invigilator.user.first_name }}
+            </button>
+            <div class="text-sm text-gray-700 mt-2 font-medium">
+                {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}
+            </div>
+        </div>
+        {% else %}
+        <span class="text-gray-500">ไม่มีครูผู้คุมสอบ</span>
+        {% endif %}
+    </div>
+
+    <!-- 🔹 ผังที่นั่ง (นักเรียน) -->
+    <h3 class="text-2xl font-semibold text-gray-700 text-center mb-4">👨‍🎓 นักเรียน</h3>
     <div class="grid grid-cols-5 gap-6 justify-center">
         {% for student in students %}
         {% with attendance_dict|get_item:student.id as record %}
         <div class="relative text-center">
-            <button class="seat-btn w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold shadow-md transition transform hover:scale-110 hover:shadow-xl
-                {% if record %}
-                    {% if record.status == 'on_time' %} bg-green-500 {% elif record.status == 'late' %} bg-yellow-500 {% else %} bg-red-500 {% endif %}
-                {% else %} bg-gray-300 {% endif %}" 
-                data-student-id="{{ student.id }}" 
-                data-subject-id="{{ subject.id }}" 
-                id="seat-{{ student.id }}">
+            <button
+                class="seat-btn w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold shadow-md transition transform hover:scale-110 hover:shadow-xl"
+                data-student-id="{{ student.id }}" data-subject-id="{{ subject.id }}"
+                data-status="{% if record %}{{ record.status }}{% else %}not_checked{% endif %}"
+                id="seat-{{ student.id }}" onclick="updateAttendanceStatus({{ student.id }}, {{ subject.id }})">
                 {{ forloop.counter }}
             </button>
 
@@ -44,83 +64,103 @@
         {% endwith %}
         {% endfor %}
     </div>
+</div>
 
-    <!-- 🔹 Modal สำหรับเลือกสถานะ -->
-    <div id="status-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h3 class="text-lg font-semibold mb-4">เลือกสถานะ</h3>
-            <input type="hidden" id="modal-student-id">
-            <input type="hidden" id="modal-subject-id">
-            <select id="attendance-status" class="w-full p-2 border rounded">
-                <option value="on_time">✅ มาตรงเวลา</option>
-                <option value="late">⏳ มาสาย</option>
-                <option value="absent">❌ ขาดสอบ</option>
-            </select>
-            <div class="mt-4 flex justify-end">
-                <button id="save-status" class="px-4 py-2 bg-green-500 text-white rounded">บันทึก</button>
-                <button id="close-modal" class="px-4 py-2 bg-gray-400 text-white rounded ml-2">ยกเลิก</button>
-            </div>
+<!-- 🔹 Modal สำหรับเลือกสถานะ -->
+<div id="statusModal" class="hidden fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+    <div class="bg-white p-6 rounded-lg shadow-xl relative">
+        <!-- ❌ ปุ่มปิด Modal -->
+        <button onclick="closeModal()" class="absolute top-2 right-2 text-gray-600 hover:text-gray-900">
+            ❌
+        </button>
+
+        <h2 class="text-lg font-semibold mb-4 text-center">เลือกสถานะ</h2>
+        <input type="hidden" id="selectedStudentId">
+        <input type="hidden" id="selectedSubjectId">
+        <div class="flex justify-center space-x-4">
+            <button class="status-btn bg-green-500 text-white px-4 py-2 rounded-lg" data-status="on_time">✅ มาตรงเวลา</button>
+            <button class="status-btn bg-yellow-500 text-white px-4 py-2 rounded-lg" data-status="late">⏳ มาสาย</button>
+            <button class="status-btn bg-red-500 text-white px-4 py-2 rounded-lg" data-status="absent">🚫 ขาดสอบ</button>
         </div>
+        <button onclick="closeModal()" class="mt-4 w-full bg-gray-300 text-gray-700 py-2 rounded-lg">ปิด</button>
     </div>
 </div>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        let modal = document.getElementById("status-modal");
-        let closeModal = document.getElementById("close-modal");
-        let saveStatus = document.getElementById("save-status");
-        let statusDropdown = document.getElementById("attendance-status");
+        document.querySelectorAll(".seat-btn").forEach(btn => {
+            updateSeatColor(btn);
+        });
 
-        document.querySelectorAll(".seat-btn").forEach(button => {
-            button.addEventListener("click", function () {
-                let studentId = this.getAttribute("data-student-id");
-                let subjectId = this.getAttribute("data-subject-id");
+        document.querySelectorAll(".status-btn").forEach(btn => {
+            btn.addEventListener("click", function () {
+                let studentId = document.getElementById("selectedStudentId").value;
+                let subjectId = document.getElementById("selectedSubjectId").value;
+                let newStatus = this.getAttribute("data-status");
 
-                document.getElementById("modal-student-id").value = studentId;
-                document.getElementById("modal-subject-id").value = subjectId;
-
-                modal.classList.remove("hidden");
+                fetch("{% url 'manual_checkin' %}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": "{{ csrf_token }}"
+                    },
+                    body: JSON.stringify({
+                        student_id: studentId,
+                        subject_id: subjectId,
+                        status: newStatus
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            let seatBtn = document.getElementById("seat-" + studentId);
+                            seatBtn.setAttribute("data-status", newStatus);
+                            updateSeatColor(seatBtn);
+                            closeModal();  // ✅ ปิด Modal ทันทีเมื่ออัปเดตสถานะสำเร็จ
+                        } else {
+                            alert("❌ ไม่สามารถอัปเดตสถานะได้");
+                        }
+                    })
+                    .catch(error => console.error("Error:", error));
             });
         });
 
-        closeModal.addEventListener("click", function () {
-            modal.classList.add("hidden");
-        });
-
-        saveStatus.addEventListener("click", function () {
-            let studentId = document.getElementById("modal-student-id").value;
-            let subjectId = document.getElementById("modal-subject-id").value;
-            let selectedStatus = statusDropdown.value;
-            let seatDiv = document.getElementById(`seat-${studentId}`);
-
-            fetch("{% url 'manual_checkin' %}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"
-                },
-                body: JSON.stringify({ student_id: studentId, subject_id: subjectId, status: selectedStatus })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === "success") {
-                    seatDiv.classList.remove("bg-gray-300", "bg-green-500", "bg-yellow-500", "bg-red-500");
-
-                    if (selectedStatus === "on_time") {
-                        seatDiv.classList.add("bg-green-500");
-                    } else if (selectedStatus === "late") {
-                        seatDiv.classList.add("bg-yellow-500");
-                    } else {
-                        seatDiv.classList.add("bg-red-500");
-                    }
-
-                    modal.classList.add("hidden");
-                } else {
-                    alert("❌ เช็คชื่อไม่สำเร็จ");
-                }
-            })
-            .catch(error => console.error("Error:", error));
+        // ✅ เพิ่ม Event Listener ให้กด ESC ปิด Modal
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                closeModal();
+            }
         });
     });
+
+    function updateAttendanceStatus(studentId, subjectId) {
+        console.log("🔍 เลือกนักเรียน:", studentId, " วิชา:", subjectId);
+        if (!studentId || !subjectId) {
+            console.error("❌ ข้อมูลไม่ถูกต้อง!");
+            return;
+        }
+
+        document.getElementById("selectedStudentId").value = studentId;
+        document.getElementById("selectedSubjectId").value = subjectId;
+
+        let modal = document.getElementById("statusModal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        console.log("✅ Modal เปิดสำเร็จ");
+    }
+
+    function closeModal() {
+        console.log("🚀 ปิด Modal");
+        let modal = document.getElementById("statusModal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+    }
+
+    function updateSeatColor(seatBtn) {
+        let status = seatBtn.getAttribute("data-status");
+        seatBtn.classList.remove("bg-gray-300", "bg-green-500", "bg-yellow-500", "bg-red-500");
+        seatBtn.classList.add(status === "on_time" ? "bg-green-500" : status === "late" ? "bg-yellow-500" : status === "absent" ? "bg-red-500" : "bg-gray-300");
+    }
 </script>
+
 {% endblock %}

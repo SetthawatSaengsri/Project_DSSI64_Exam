@@ -1,3 +1,5 @@
+<!-- index.html -->
+
 {% load static %}
 
 <!DOCTYPE html>
@@ -69,6 +71,17 @@
             padding: 1rem;
             border-radius: 0.375rem;
             margin-bottom: 1rem;
+        }
+
+        /* เพิ่มเอฟเฟกต์ขยายเมื่อโฮเวอร์สำหรับปุ่มและลิงก์ */
+        button,
+        a {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        button:hover,
+        a:hover {
+            transform: scale(1.05);
         }
     </style>
 </head>
@@ -217,7 +230,8 @@
 
             <!-- Add logo for branding -->
             <div class="mb-8">
-                <img src="https://www.webrongrean.in.th/html/frontend/img/favicon.png" alt="Logo" class="mx-auto w-32 h-32 mb-4">
+                <img src="https://www.webrongrean.in.th/html/frontend/img/favicon.png" alt="Logo"
+                    class="mx-auto w-32 h-32 mb-4">
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">

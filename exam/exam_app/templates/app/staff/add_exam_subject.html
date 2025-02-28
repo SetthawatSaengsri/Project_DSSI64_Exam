@@ -3,6 +3,7 @@
 {% extends 'app/base.html' %}
 
 {% block content %}
+
 <h2 class="text-3xl font-bold text-indigo-700 text-center mb-6">📚 เพิ่มรายวิชา</h2>
 
 <form method="POST" class="space-y-6">
@@ -61,22 +62,6 @@
         <div class="md:col-span-2">
             <label class="block text-lg font-medium text-gray-700">🏫 ห้องสอบ</label>
             <input type="text" name="room" value="{{ form.room.value|default_if_none:'' }}"
-                class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-                required>
-        </div>
-
-        <!-- จำนวนแถว -->
-        <div>
-            <label class="block text-lg font-medium text-gray-700">📏 จำนวนแถว</label>
-            <input type="number" name="rows" value="{{ form.rows.value|default_if_none:'' }}" min="1"
-                class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-                required>
-        </div>
-
-        <!-- จำนวนที่นั่งต่อแถว -->
-        <div>
-            <label class="block text-lg font-medium text-gray-700">💺 จำนวนที่นั่งต่อแถว</label>
-            <input type="number" name="columns" value="{{ form.columns.value|default_if_none:'' }}" min="1"
                 class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
                 required>
         </div>

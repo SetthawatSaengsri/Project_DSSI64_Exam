@@ -1,0 +1,126 @@
+<!-- app/staff/statistics.html -->
+
+{% extends "app/base.html" %}
+
+{% block content %}
+<div class="container mx-auto mt-10 max-w-7xl px-6 md:px-12">
+    <h2 class="text-4xl font-bold text-indigo-700 text-center mb-8">📊 สถิติระบบ</h2>
+
+    <!-- 🔹 ตัวเลือกระดับชั้น -->
+    <div class="mb-6 text-center">
+        <label for="classFilter" class="text-lg font-semibold text-gray-700">เลือกระดับชั้น:</label>
+        <select id="classFilter" class="p-2 border border-gray-300 rounded-md">
+            <option value="all">📌 ทุกระดับชั้น</option>
+            {% for class_name in class_list %}
+            <option value="{{ class_name }}">{{ class_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- 🔹 ข้อมูลภาพรวม -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-indigo-100 p-6 rounded-lg shadow-lg flex items-center">
+            <div class="text-indigo-700 text-5xl">👩‍🏫</div>
+            <div class="ml-4">
+                <h3 class="text-xl font-semibold text-indigo-700">จำนวนครู</h3>
+                <p class="text-4xl font-bold text-gray-800 mt-2" id="teacher-count">{{ teacher_count }}</p>
+            </div>
+        </div>
+        <div class="bg-yellow-100 p-6 rounded-lg shadow-lg flex items-center">
+            <div class="text-yellow-700 text-5xl">🎓</div>
+            <div class="ml-4">
+                <h3 class="text-xl font-semibold text-yellow-700">จำนวนนักเรียน</h3>
+                <p class="text-4xl font-bold text-gray-800 mt-2" id="student-count">{{ student_count }}</p>
+            </div>
+        </div>
+        <div class="bg-green-100 p-6 rounded-lg shadow-lg flex items-center">
+            <div class="text-green-700 text-5xl">📖</div>
+            <div class="ml-4">
+                <h3 class="text-xl font-semibold text-green-700">จำนวนรายวิชา</h3>
+                <p class="text-4xl font-bold text-gray-800 mt-2" id="subject-count">{{ subject_count }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔹 สถิติการเข้าสอบ -->
+    <div class="mt-10">
+        <h3 class="text-2xl font-semibold text-gray-700 text-center mb-6">📌 สถิติการเข้าสอบ</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- กราฟแท่ง -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold text-gray-700 text-center mb-4">📊 นักเรียนเข้าสอบ</h3>
+                <canvas id="barChart"></canvas>
+            </div>
+
+            <!-- กราฟวงกลม -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold text-gray-700 text-center mb-4">📈 สัดส่วนการเข้าสอบ</h3>
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 🎨 Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let attendanceData = {{ attendance_data|safe }};
+        let classFilter = document.getElementById("classFilter");
+        let teacherCount = document.getElementById("teacher-count");
+        let studentCount = document.getElementById("student-count");
+        let subjectCount = document.getElementById("subject-count");
+
+        function updateCharts(className) {
+            let data = attendanceData[className] || attendanceData["all"];
+
+            teacherCount.innerText = data.total_teachers;
+            studentCount.innerText = data.total_students;
+            subjectCount.innerText = data.total_subjects;
+
+            // ✅ อัปเดตค่าให้เป็น 0 ถ้าไม่มีข้อมูล
+            let onTime = data.on_time || 0;
+            let late = data.late || 0;
+            let absent = data.absent || 0;
+
+            barChart.data.datasets[0].data = [onTime, late, absent];
+            pieChart.data.datasets[0].data = [onTime, late, absent];
+
+            barChart.update();
+            pieChart.update();
+        }
+
+        let barCtx = document.getElementById("barChart").getContext("2d");
+        let barChart = new Chart(barCtx, {
+            type: "bar",
+            data: {
+                labels: ["มาตรงเวลา", "มาสาย", "ขาดสอบ"],
+                datasets: [{
+                    label: "จำนวนนักเรียน",
+                    data: [attendanceData["all"].on_time || 0, attendanceData["all"].late || 0, attendanceData["all"].absent || 0],
+                    backgroundColor: ["#16a34a", "#facc15", "#dc2626"]
+                }]
+            },
+            options: { responsive: true }
+        });
+
+        let pieCtx = document.getElementById("pieChart").getContext("2d");
+        let pieChart = new Chart(pieCtx, {
+            type: "pie",
+            data: {
+                labels: ["มาตรงเวลา", "มาสาย", "ขาดสอบ"],
+                datasets: [{
+                    data: [attendanceData["all"].on_time || 0, attendanceData["all"].late || 0, attendanceData["all"].absent || 0],
+                    backgroundColor: ["#16a34a", "#facc15", "#dc2626"]
+                }]
+            },
+            options: { responsive: true }
+        });
+
+        classFilter.addEventListener("change", function () {
+            updateCharts(this.value);
+        });
+    });
+</script>
+{% endblock %}

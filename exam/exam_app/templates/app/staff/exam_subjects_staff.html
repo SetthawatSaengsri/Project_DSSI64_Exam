@@ -27,7 +27,7 @@
                     <th class="py-3 px-4 font-semibold">ชื่อวิชา</th>
                     <th class="py-3 px-4 font-semibold">รหัสวิชา</th>
                     <th class="py-3 px-4 font-semibold">ปีการศึกษา</th>
-                    <th class="py-3 px-4 font-semibold">ระดับชั้น</th>  <!-- ✅ เพิ่มระดับชั้น -->
+                    <th class="py-3 px-4 font-semibold">ระดับชั้น</th>  
                     <th class="py-3 px-4 font-semibold">วันที่สอบ</th>
                     <th class="py-3 px-4 font-semibold">เวลา</th>
                     <th class="py-3 px-4 font-semibold">ห้องสอบ</th>
@@ -42,6 +42,7 @@
                     <td class="py-3 px-4 border-b">{{ subject.subject_code }}</td>
                     <td class="py-3 px-4 border-b">{{ subject.academic_year }}</td>
                     <td class="py-3 px-4 border-b">
+                    <span class="bg-indigo-200 text-indigo-700 px-2 py-1 text-xs rounded-md">
                         {% if subject.students.exists %}
                             {% for student in subject.students.all|dictsort:"student_class"|slice:":1" %}
                                 {{ student.student_class }}

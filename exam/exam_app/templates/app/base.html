@@ -1,3 +1,5 @@
+<!-- app/base.html -->
+
 <!doctype html>
 <html lang="en">
 
@@ -11,7 +13,21 @@
     <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* เพิ่มเอฟเฟกต์ขยายเมื่อโฮเวอร์สำหรับปุ่มและลิงก์ */
+        button,
+        a {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        button:hover,
+        a:hover {
+            transform: scale(1.05);
+        }
     </style>
 </head>
 
@@ -28,7 +44,7 @@
             <nav class="px-4 py-4 space-y-2">
                 {% if user.is_authenticated %}
                 {% if user.is_staff %}
-                
+
                 <a href="{% url 'dashboard_staff' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
                     <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
@@ -37,6 +53,16 @@
                         </path>
                     </svg>
                     Dashboard Staff
+                </a>
+
+                <a href="{% url 'statistics_view' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M3 10h11M9 21H3v-5a2 2 0 012-2h2m0-4h4m2-2a2 2 0 11-4 0m0 0V5a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4m0 0v4m-4 4v-4">
+                        </path>
+                    </svg>
+                    สถิติ
                 </a>
 
                 <a href="{% url 'import_csv' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
@@ -89,23 +115,33 @@
                     เช็คชื่อ
                 </a>
 
-                <a href="{% url 'scan_qr_checkin' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
+                {% elif user.is_teacher %}
+
+                <a href="{% url 'dashboard_teacher' %}"
+                    class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
+                    </svg>
+                    Dashboard Teacher
+                </a>
+
+                <a href="{% url 'statistics_view' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
                     <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path
                             d="M3 10h11M9 21H3v-5a2 2 0 012-2h2m0-4h4m2-2a2 2 0 11-4 0m0 0V5a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4m0 0v4m-4 4v-4">
                         </path>
                     </svg>
-                    สแกน
+                    สถิติ
                 </a>
-                {% elif user.is_teacher %}
-
-                <a href="{% url 'dashboard_teacher' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
+                
+                <a href="{% url 'scanner' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
                     <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
-                        <path d="M3 10h18M9 21H3v-5a2 2 0 012-2h12a2 2 0 012 2v5h-6"></path>
+                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
                     </svg>
-                    Dashboard Teacher
+                    สแกน QR Code
                 </a>
 
                 <a href="{% url 'exam_subjects_teacher' %}"
@@ -117,6 +153,15 @@
                     ดูวิชาที่คุมสอบ
                 </a>
 
+                <a href="{% url 'teacher_check_student' %}"
+                    class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 10h18M9 21H3v-5a2 2 0 012-2h12a2 2 0 012 2v5h-6"></path>
+                    </svg>
+                    เช็คชื่อนักเรียน
+                </a>
+
                 {% elif user.is_student %}
                 <a href="{% url 'dashboard_student' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
                     <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
@@ -124,6 +169,14 @@
                         <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
                     </svg>
                     Dashboard นักเรียน
+                </a>
+
+                <a href="{% url 'scanner' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
+                    </svg>
+                    สแกน QR Code
                 </a>
 
                 {% endif %}
@@ -201,7 +254,7 @@
                     {% block content %}
                     {% endblock %}
                 </div>
-            </main>            
+            </main>
         </div>
     </div>
 </body>

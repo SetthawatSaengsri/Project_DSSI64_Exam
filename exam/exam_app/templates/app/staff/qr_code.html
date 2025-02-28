@@ -4,39 +4,49 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto py-12 px-6 sm:px-8 lg:px-10 text-center">
-    <!-- ✅ หัวข้อ QR Code แบบไม่ขึ้นบรรทัดใหม่ -->
     <h2 class="text-5xl font-extrabold text-indigo-700 mb-4 flex items-center justify-center gap-1 whitespace-nowrap">
         📌 <span>QR Code สำหรับรายวิชา:</span><span class="text-indigo-800">{{ subject.subject_name }}</span>
     </h2>
 
-    <!-- ✅ แสดงเวลาปัจจุบันแบบเรียลไทม์ พร้อมไอคอน -->
+    <!-- ✅ แสดงเวลาปัจจุบันแบบเรียลไทม์ -->
     <div class="flex justify-center items-center text-4xl font-extrabold text-red-500 mb-6">
         <span class="mr-2">⏰</span> <span id="current-time">กำลังโหลด...</span>
     </div>
 
-    <!-- ✅ แสดง QR Code ให้อยู่ตรงกลาง -->
+    <!-- ✅ แสดง QR Code ที่สร้างใหม่ -->
     <div class="bg-white shadow-xl rounded-2xl p-10 inline-block transition transform hover:scale-105">
-        <img src="data:image/png;base64,{{ img_base64 }}" alt="QR Code" class="mx-auto max-w-md border-4 border-gray-300 rounded-lg shadow-md">
+        <img src="data:image/png;base64,{{ img_base64 }}" alt="QR Code"
+            class="mx-auto max-w-md border-4 border-gray-300 rounded-lg shadow-md">
         <p class="text-xl text-gray-700 mt-4 font-semibold">📱 สแกน QR Code เพื่อเช็คชื่อเข้าเรียน</p>
     </div>
 
-    <!-- ✅ ปุ่มสำหรับการพิมพ์และกลับไปยังหน้าวิชา -->
-    <div class="flex justify-center mt-10 space-x-6">
-        <button onclick="window.print()" class="bg-green-600 hover:bg-green-700 text-white px-10 py-4 text-lg rounded-xl shadow-lg transition-transform transform hover:scale-105">
+    <!-- ✅ ปุ่มคัดลอกลิงก์ไปยังหน้าคอนเฟิร์มการสอบ -->
+    <div class="flex justify-center mt-10">
+        <button onclick="copyQRCodeURL()"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 text-lg rounded-xl shadow-lg transition-transform transform hover:scale-105">
+            📋 คัดลอกลิงก์ยืนยันเข้าสอบ
+        </button>
+    </div>
+
+    <!-- ✅ ปุ่มพิมพ์ QR Code และกลับไปหน้าวิชา -->
+    <div class="flex justify-center mt-6 space-x-6">
+        <button onclick="window.print()"
+            class="bg-green-600 hover:bg-green-700 text-white px-10 py-4 text-lg rounded-xl shadow-lg transition-transform transform hover:scale-105">
             🖨️ พิมพ์ QR Code
         </button>
-        <a href="{% url 'exam_subjects_staff' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 text-lg rounded-xl shadow-lg transition-transform transform hover:scale-105">
+        <a href="{% url 'exam_subjects_staff' %}"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 text-lg rounded-xl shadow-lg transition-transform transform hover:scale-105">
             🔙 กลับไปหน้าวิชา
         </a>
     </div>
 </div>
 
-<!-- ✅ JavaScript สำหรับแสดงเวลาจริง -->
+<!-- ✅ JavaScript แสดงเวลาปัจจุบัน และคัดลอกลิงก์ -->
 <script>
     function updateTime() {
         const now = new Date();
         now.setHours(now.getHours() + 7); // ปรับเวลาให้เป็นไทย (UTC+7)
-        
+
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const seconds = String(now.getSeconds()).padStart(2, '0');
@@ -44,8 +54,18 @@
         document.getElementById("current-time").textContent = `${hours}:${minutes}:${seconds}`;
     }
 
-    setInterval(updateTime, 1000); // อัปเดตทุกวินาที
-    updateTime(); // เรียกทันทีตอนโหลดหน้าเว็บ
+    function copyQRCodeURL() {
+        const qrUrl = "{{ qr_url }}"; // ✅ ดึง URL จาก Django
+        navigator.clipboard.writeText(qrUrl).then(() => {
+            alert("✅ ลิงก์ถูกคัดลอกแล้ว! คุณสามารถแชร์ลิงก์นี้ได้");
+        }).catch(err => {
+            console.error("❌ ไม่สามารถคัดลอกลิงก์:", err);
+            alert("❌ มีข้อผิดพลาดในการคัดลอกลิงก์");
+        });
+    }
+
+    setInterval(updateTime, 1000);
+    updateTime();
 </script>
 
 {% endblock %}
@@ -57,16 +77,21 @@
         body * {
             visibility: hidden;
         }
-        .container, .container * {
+
+        .container,
+        .container * {
             visibility: visible;
         }
+
         .container {
             position: absolute;
             left: 0;
             top: 0;
         }
+
         .container img {
-            width: 100%; /* ✅ ทำให้ QR Code พอดีกับหน้ากระดาษ */
+            width: 100%;
+            /* ✅ ทำให้ QR Code พอดีกับหน้ากระดาษ */
         }
     }
 </style>

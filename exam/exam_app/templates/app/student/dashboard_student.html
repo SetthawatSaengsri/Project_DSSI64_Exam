@@ -1,63 +1,49 @@
+<!-- app/student/dashboard_student.html -->
+
 {% extends "app/base.html" %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto py-12 px-6 sm:px-8 lg:px-10 text-center">
-    <h2 class="text-3xl font-bold text-indigo-700 mb-6">🎫 สแกน QR Code สำหรับการเข้าสอบ</h2>
+<div class="container mx-auto mt-10 max-w-7xl px-6 md:px-12">
+    <h2 class="text-4xl font-bold text-indigo-700 text-center mb-8">📊 แดชบอร์ดนักเรียน</h2>
 
-    <!-- ปุ่มสำหรับเปิดกล้องและสแกน QR Code -->
-    <button id="scan-btn" class="bg-blue-600 text-white px-6 py-3 text-lg rounded-xl shadow-lg transition-transform transform hover:scale-105">
-        📷 สแกน QR Code
-    </button>
+    <!-- 🔹 ส่วนข้อมูลภาพรวม -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-indigo-100 p-6 rounded-lg shadow-lg flex items-center">
+            <div class="text-indigo-700 text-5xl">👩‍🏫</div>
+            <div class="ml-4">
+                <h3 class="text-xl font-semibold text-indigo-700">จำนวนครู</h3>
+                <p class="text-4xl font-bold text-gray-800 mt-2">{{ teacher_count }}</p>
+            </div>
+        </div>
+        <div class="bg-yellow-100 p-6 rounded-lg shadow-lg flex items-center">
+            <div class="text-yellow-700 text-5xl">🎓</div>
+            <div class="ml-4">
+                <h3 class="text-xl font-semibold text-yellow-700">จำนวนนักเรียน</h3>
+                <p class="text-4xl font-bold text-gray-800 mt-2">{{ student_count }}</p>
+            </div>
+        </div>
+        <div class="bg-green-100 p-6 rounded-lg shadow-lg flex items-center">
+            <div class="text-green-700 text-5xl">📖</div>
+            <div class="ml-4">
+                <h3 class="text-xl font-semibold text-green-700">จำนวนรายวิชา</h3>
+                <p class="text-4xl font-bold text-gray-800 mt-2">{{ subject_count }}</p>
+            </div>
+        </div>
+    </div>
 
-    <!-- พื้นที่สำหรับการแสดงผลกล้องสแกน -->
-    <div id="qr-reader" style="width: 100%; height: 300px;"></div>
-
-    <!-- ข้อความแสดงผลการสแกน -->
-    <div id="scan-result" class="mt-4 text-xl text-blue-600 hidden">
-        <p>ข้อมูลที่สแกนได้:</p>
-        <pre id="result-output"></pre>
+    <!-- 🔹 ส่วนการจัดการข้อมูลส่วนตัว -->
+    <div class="mt-10">
+        <h3 class="text-2xl font-semibold text-gray-700 mb-4">⚙️ ข้อมูลส่วนตัว</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <a href="#"
+                class="bg-blue-600 text-white p-5 rounded-lg shadow-md text-center text-lg font-semibold hover:bg-blue-700 transition">
+                ✏️ แก้ไขข้อมูลส่วนตัว
+            </a>
+            <a href="#"
+                class="bg-purple-600 text-white p-5 rounded-lg shadow-md text-center text-lg font-semibold hover:bg-purple-700 transition">
+                🔒 เปลี่ยนรหัสผ่าน
+            </a>
+        </div>
     </div>
 </div>
-
-<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
-
-<script>
-    // เมื่อคลิกปุ่มสแกน
-    document.getElementById("scan-btn").addEventListener("click", function() {
-        console.log("ปุ่มถูกกดแล้ว");
-        startScanner();  // เรียกฟังก์ชันที่ใช้เริ่มการสแกน
-    });
-
-    function startScanner() {
-        console.log("เริ่มการสแกน QR Code");
-
-        const html5QrCode = new Html5Qrcode("qr-reader");
-
-        // เริ่มสแกนจากกล้อง
-        html5QrCode.start(
-            { facingMode: "environment" },  // ใช้กล้องหลังของอุปกรณ์
-            { fps: 10, qrbox: 250 }, // กำหนด fps และขนาดพื้นที่ที่ใช้สแกน
-            (decodedText) => {
-                // เมื่อสแกน QR Code สำเร็จ
-                console.log("สแกนสำเร็จ: " + decodedText);  // ข้อมูลที่สแกนได้
-                document.getElementById("scan-result").classList.remove("hidden");
-                document.getElementById("result-output").textContent = decodedText; // แสดงผลข้อมูลที่ได้จากการสแกน
-
-                // หยุดการสแกนหลังจากสแกนสำเร็จ
-                html5QrCode.stop().then(() => {
-                    console.log("QR Code Scanning stopped.");
-                }).catch(err => {
-                    console.error("Error stopping scanning:", err);
-                });
-            },
-            (errorMessage) => {
-                // หากเกิดข้อผิดพลาดในการสแกน
-                console.log("Error scanning:", errorMessage);
-            }
-        ).catch((err) => {
-            console.error("Error starting scanner:", err); // หากไม่สามารถเริ่มต้นการสแกนได้
-        });
-    }
-</script>
-
 {% endblock %}
