@@ -1,132 +1,153 @@
-<!-- add_exam_subject -->
-
 {% extends 'app/base.html' %}
 
 {% block content %}
+<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+  <h2 class="text-3xl font-bold text-indigo-700 text-center mb-6">📚 เพิ่มรายวิชา</h2>
 
-<h2 class="text-3xl font-bold text-indigo-700 text-center mb-6">📚 เพิ่มรายวิชา</h2>
+  {% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} p-4 mb-4 rounded-md shadow-md">
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 
-<form method="POST" class="space-y-6">
+  <form method="POST" class="space-y-6">
     {% csrf_token %}
-
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- ชื่อวิชา -->
-        <div>
-            <label class="block text-lg font-medium text-gray-700">📖 ชื่อวิชา</label>
-            <input type="text" name="subject_name" value="{{ form.subject_name.value|default_if_none:'' }}"
-                class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-                required>
-        </div>
+      <!-- ชื่อวิชา -->
+      <div>
+        <label class="block text-lg font-medium text-gray-700">📖 ชื่อวิชา</label>
+        <input type="text" name="subject_name" value="{{ form.subject_name.value|default_if_none:'' }}"
+          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
+          required>
+      </div>
 
-        <!-- รหัสวิชา -->
-        <div>
-            <label class="block text-lg font-medium text-gray-700">🔢 รหัสวิชา</label>
-            <input type="text" name="subject_code" value="{{ form.subject_code.value|default_if_none:'' }}"
-                class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-                required>
-        </div>
+      <!-- รหัสวิชา -->
+      <div>
+        <label class="block text-lg font-medium text-gray-700">🔢 รหัสวิชา</label>
+        <input type="text" name="subject_code" value="{{ form.subject_code.value|default_if_none:'' }}"
+          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
+          required>
+      </div>
 
-        <!-- ปีการศึกษา -->
-        <div>
-            <label class="block text-lg font-medium text-gray-700">📅 ปีการศึกษา</label>
-            <input type="text" name="academic_year" value="{{ form.academic_year.value|default_if_none:'' }}"
-                class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-                required>
-        </div>
+      <!-- ปีการศึกษา -->
+      <div>
+        <label class="block text-lg font-medium text-gray-700">📅 ปีการศึกษา</label>
+        <input type="text" name="academic_year" value="{{ form.academic_year.value|default_if_none:'' }}"
+          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
+          required>
+      </div>
 
-        <!-- วันที่สอบ -->
-        <div>
-            <label class="block text-lg font-medium text-gray-700">📆 วันที่สอบ</label>
-            <input type="date" name="exam_date" value="{{ form.exam_date.value|date:'Y-m-d' }}"
-                class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-                required>
-        </div>
+      <!-- วันที่สอบ -->
+      <div>
+        <label class="block text-lg font-medium text-gray-700">📆 วันที่สอบ</label>
+        <input type="date" name="exam_date" value="{{ form.exam_date.value|date:'Y-m-d' }}"
+          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
+          required>
+      </div>
 
-        <!-- เวลาเริ่ม -->
-        <div>
-            <label class="block text-lg font-medium text-gray-700">⏰ เวลาเริ่ม</label>
-            <input type="time" id="start_time" name="start_time"
-                class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-                required>
-        </div>
+      <!-- เวลาเริ่ม -->
+      <div>
+        <label class="block text-lg font-medium text-gray-700">⏰ เวลาเริ่ม</label>
+        <input type="time" id="start_time" name="start_time"
+          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
+          required>
+      </div>
 
-        <!-- เวลาสิ้นสุด -->
-        <div>
-            <label class="block text-lg font-medium text-gray-700">⏳ เวลาสิ้นสุด</label>
-            <input type="time" id="end_time" name="end_time"
-                class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-                required>
-        </div>
+      <!-- เวลาสิ้นสุด -->
+      <div>
+        <label class="block text-lg font-medium text-gray-700">⏳ เวลาสิ้นสุด</label>
+        <input type="time" id="end_time" name="end_time"
+          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
+          required>
+      </div>
 
-        <!-- ห้องสอบ -->
-        <div class="md:col-span-2">
-            <label class="block text-lg font-medium text-gray-700">🏫 ห้องสอบ</label>
-            <input type="text" name="room" value="{{ form.room.value|default_if_none:'' }}"
-                class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-                required>
-        </div>
+      <!-- (ลบ input สำหรับ qr_expiration ออกไป) -->
 
-        <!-- ผู้คุมสอบ -->
-        <div class="md:col-span-2">
-            <label class="block text-lg font-medium text-gray-700">👨‍🏫 ผู้คุมสอบ</label>
-            <select name="invigilator"
-                class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-                required>
-                <option value="">เลือกผู้คุมสอบ</option>
-                {% for teacher in form.fields.invigilator.queryset %}
-                <option value="{{ teacher.id }}">{{ teacher.user.get_full_name }}</option>
-                {% endfor %}
-            </select>
-        </div>
+      <!-- ห้องสอบ -->
+      <div class="md:col-span-2">
+        <label class="block text-lg font-medium text-gray-700">🏫 ห้องสอบ</label>
+        <input type="text" name="room" value="{{ form.room.value|default_if_none:'' }}"
+          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
+          required>
+      </div>
 
-        <!-- เลือกระดับชั้น -->
-        <div class="md:col-span-2">
-            <label class="block text-lg font-medium text-gray-700">🎓 ระดับชั้น</label>
-            <select name="student_class" id="student_class"
-                class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-                required>
-                <option value="">เลือกระดับชั้น</option>
-                {% for class_value, class_label in form.fields.student_class.choices %}
-                <option value="{{ class_value }}" {% if form.student_class.value == class_value %}selected{% endif %}>
-                    {{ class_label }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>        
+      <!-- ผู้คุมสอบหลัก -->
+      <div class="md:col-span-2">
+        <label class="block text-lg font-medium text-gray-700">👨‍🏫 ผู้คุมสอบหลัก</label>
+        <select name="invigilator"
+          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
+          required>
+          <option value="">เลือกผู้คุมสอบหลัก</option>
+          {% for teacher in form.fields.invigilator.queryset %}
+          <option value="{{ teacher.id }}">{{ teacher.user.get_full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- ผู้คุมสอบสำรอง -->
+      <div class="md:col-span-2">
+        <label class="block text-lg font-medium text-gray-700">👨‍🏫 ผู้คุมสอบสำรอง (ถ้ามี)</label>
+        <select name="secondary_invigilator"
+          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md">
+          <option value="">ไม่เลือก</option>
+          {% for teacher in form.fields.secondary_invigilator.queryset %}
+          <option value="{{ teacher.id }}">{{ teacher.user.get_full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- เลือกระดับชั้น -->
+      <div class="md:col-span-2">
+        <label class="block text-lg font-medium text-gray-700">🎓 ระดับชั้น</label>
+        <select name="student_class" id="student_class"
+          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
+          required>
+          <option value="">เลือกระดับชั้น</option>
+          {% for class_value, class_label in form.fields.student_class.choices %}
+          <option value="{{ class_value }}" {% if form.student_class.value == class_value %}selected{% endif %}>
+            {{ class_label }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
     </div>
 
     <!-- ปุ่มบันทึก -->
     <div class="flex justify-between mt-6">
-        <a href="{% url 'exam_subjects_staff' %}"
-            class="bg-red-500 hover:bg-red-700 text-white px-8 py-4 text-lg rounded-md shadow-md transition">
-            ❌ ยกเลิก
-        </a>
-        <button type="submit"
-            class="bg-indigo-600 text-white px-10 py-4 text-lg rounded-md shadow-md hover:bg-indigo-700 transition">
-            💾 บันทึก
-        </button>
+      <a href="{% url 'exam_subjects_staff' %}"
+        class="bg-red-500 hover:bg-red-700 text-white px-8 py-4 text-lg rounded-md shadow-md transition">
+        ❌ ยกเลิก
+      </a>
+      <button type="submit"
+        class="bg-indigo-600 text-white px-10 py-4 text-lg rounded-md shadow-md hover:bg-indigo-700 transition">
+        💾 บันทึก
+      </button>
     </div>
-</form>
+  </form>
+</div>
 
 <!-- ✅ JavaScript ตั้งค่าเวลาให้เป็นเวลาประเทศไทย -->
 <script>
-    function convertToThaiTime(datetimeStr) {
-        if (!datetimeStr) return "";
-        let dateObj = new Date(datetimeStr);
-        dateObj.setHours(dateObj.getHours() + 7); // ✅ แปลงเวลาเป็นโซนไทย (UTC+7)
-        return dateObj.toISOString().slice(11, 16); // ✅ คืนค่าในรูปแบบ HH:MM
-    }
+  function convertToThaiTime(datetimeStr) {
+    if (!datetimeStr) return "";
+    let dateObj = new Date(datetimeStr);
+    dateObj.setHours(dateObj.getHours() + 7); // แปลงเวลาเป็นโซนไทย (UTC+7)
+    return dateObj.toISOString().slice(11, 16); // คืนค่าในรูปแบบ HH:MM
+  }
 
-    document.addEventListener("DOMContentLoaded", function () {
-        let start_time_input = document.getElementById("start_time");
-        let end_time_input = document.getElementById("end_time");
+  document.addEventListener("DOMContentLoaded", function () {
+    let start_time_input = document.getElementById("start_time");
+    let end_time_input = document.getElementById("end_time");
 
-        let startTime = "{{ form.start_time.value|default_if_none:'' }}";
-        let endTime = "{{ form.end_time.value|default_if_none:'' }}";
+    let startTime = "{{ form.start_time.value|default_if_none:'' }}";
+    let endTime = "{{ form.end_time.value|default_if_none:'' }}";
 
-        if (startTime) start_time_input.value = convertToThaiTime(startTime);
-        if (endTime) end_time_input.value = convertToThaiTime(endTime);
-    });
+    if (startTime) start_time_input.value = convertToThaiTime(startTime);
+    if (endTime) end_time_input.value = convertToThaiTime(endTime);
+  });
 </script>
-
 {% endblock %}

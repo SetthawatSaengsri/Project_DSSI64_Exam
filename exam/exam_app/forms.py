@@ -6,7 +6,26 @@ from .models import *
 from django.forms.widgets import DateTimeInput,Select
 from django.forms import ModelForm
 
+class UserEditForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = [
+            'username', 'first_name', 'last_name', 'email',
+            'school_name', 'is_active', 'is_student', 'is_teacher', 'is_staff'
+        ]
 
+# ฟอร์มสำหรับแก้ไขข้อมูล User (นักเรียน)
+class UserProfileEditForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
+
+# ฟอร์มสำหรับแก้ไขข้อมูล StudentProfile
+class StudentProfileEditForm(forms.ModelForm):
+    class Meta:
+        model = StudentProfile
+        fields = ['student_id', 'no_student', 'student_class']
+                
 class StudentRegistrationForm(UserCreationForm):
     student_id = forms.CharField(max_length=10)
     no_student = forms.CharField(max_length=10)
@@ -52,32 +71,47 @@ class TeacherRegistrationForm(UserCreationForm):
 
 class StaffRegistrationForm(UserCreationForm):
     school_name = forms.CharField(max_length=100, required=True, label="โรงเรียน")
+    id_card = forms.FileField(required=True, label="ไฟล์หลักฐานบัตรประจำตัว")
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2', 'school_name']
+        fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2', 'school_name', 'id_card']
 
     def save(self, commit=True):
+        # Create the user object but do not save it yet
         user = super().save(commit=False)
         user.is_staff = True
+        user.is_active = False  # ตั้งค่าให้ไม่ได้รับการอนุมัติจนกว่าจะได้รับการอนุมัติจากแอดมิน
+
         if commit:
+            # Save the user first
             user.save()
-            # Save additional information, such as school name
+
+            # Save the school name to the StaffProfile model
             profile = StaffProfile.objects.create(user=user, school_name=self.cleaned_data['school_name'])
+
+            # Save the uploaded ID card
+            uploaded_file = self.cleaned_data['id_card']
+            profile.id_card = uploaded_file
+            profile.save()
+
         return user
 
+
 class ExamSubjectForm(forms.ModelForm):
+    
     student_class = forms.ChoiceField(
-        choices=[],  # จะถูกตั้งค่าใน `__init__`
+        choices=[],  
         required=True,
-        label="ระดับชั้น",
+        label="ระดับชั้น"
     )
 
     class Meta:
         model = ExamSubject
         fields = [
             'subject_name', 'subject_code', 'academic_year', 'exam_date',
-            'start_time', 'end_time', 'room', 'invigilator', 'student_class'
+            'start_time', 'end_time', 'room', 'invigilator', 'secondary_invigilator',
+            'student_class'
         ]
         widgets = {
             'exam_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -91,16 +125,30 @@ class ExamSubjectForm(forms.ModelForm):
 
         if user:
             # ดึงรายชื่อครูที่อยู่ในโรงเรียนเดียวกัน
-            self.fields['invigilator'].queryset = TeacherProfile.objects.filter(user__school_name=user.school_name)
+            teacher_qs = TeacherProfile.objects.filter(user__school_name=user.school_name)
+            self.fields['invigilator'].queryset = teacher_qs
+            self.fields['secondary_invigilator'].queryset = teacher_qs
+            self.fields['secondary_invigilator'].required = False
 
             # ดึงระดับชั้นจากนักเรียนในโรงเรียนเดียวกัน
             student_classes = StudentProfile.objects.filter(
                 user__school_name=user.school_name
             ).values_list('student_class', flat=True).distinct()
 
-            # ตั้งค่า choices
+            # ตั้งค่า choices สำหรับระดับชั้น
             self.fields['student_class'].choices = [("", "เลือกระดับชั้น")] + [(sc, sc) for sc in student_classes if sc]
 
-            # Debug เช็คข้อมูลระดับชั้นที่ดึงมา
+            # Debug: แสดงระดับชั้นที่ดึงมา
             print("ระดับชั้นที่ดึงมา:", list(student_classes))
+
+    def save(self, commit=True):
+        subject = super().save(commit=False)
+        # กำหนดค่า qr_expiration โดยอัตโนมัติจาก end_time
+        subject.qr_expiration = subject.end_time
+        if commit:
+            subject.save()
+            self.save_m2m()
+        return subject
+
+
     

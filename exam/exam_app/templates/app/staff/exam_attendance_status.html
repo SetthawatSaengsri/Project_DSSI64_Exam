@@ -1,166 +1,286 @@
-{% extends 'app/base.html' %}
+<!-- exam_attendance_status.html -->
 
+{% extends 'app/base.html' %}
 {% load custom_filters %}
 
 {% block content %}
-<div class="container mx-auto mt-10 max-w-6xl px-4 md:px-12">
-    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">🎟️ ผังที่นั่งสอบ: {{ subject.subject_name }}</h2>
+<div class="container mx-auto my-12 max-w-6xl px-4 md:px-12">
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-blue-700 to-indigo-700 rounded-lg py-10 shadow-2xl mb-12">
+    <h2 class="text-5xl font-extrabold text-white text-center">
+      🎟️ ผังที่นั่งสอบ: {{ subject.subject_name }}
+    </h2>
+  </div>
 
-    <!-- 🔹 คำอธิบายสถานะ -->
-    <div class="flex justify-center space-x-6 mb-6">
-        <div class="flex items-center space-x-2">
-            <div class="w-6 h-6 rounded-full bg-green-500"></div>
-            <span class="text-gray-700">มาตรงเวลา</span>
-        </div>
-        <div class="flex items-center space-x-2">
-            <div class="w-6 h-6 rounded-full bg-yellow-500"></div>
-            <span class="text-gray-700">มาสาย</span>
-        </div>
-        <div class="flex items-center space-x-2">
-            <div class="w-6 h-6 rounded-full bg-red-500"></div>
-            <span class="text-gray-700">ขาดสอบ</span>
-        </div>
+  <!-- Exam Details Card -->
+  <div class="bg-white rounded-lg shadow-xl p-8 mb-12 border border-gray-200">
+    <h3 class="text-3xl font-semibold text-gray-800 mb-6 text-center">รายละเอียดการสอบ</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="flex items-center space-x-3">
+        <span class="font-medium text-gray-700">รหัสวิชา:</span>
+        <span class="text-lg text-gray-900">{{ subject.subject_code }}</span>
+      </div>
+      <div class="flex items-center space-x-3">
+        <span class="font-medium text-gray-700">ปีการศึกษา:</span>
+        <span class="text-lg text-gray-900">{{ subject.academic_year }}</span>
+      </div>
+      <div class="flex items-center space-x-3">
+        <span class="font-medium text-gray-700">วันที่สอบ:</span>
+        <span class="text-lg text-gray-900">{{ subject.exam_date|date:"d F Y" }}</span>
+      </div>
+      <div class="flex items-center space-x-3">
+        <span class="font-medium text-gray-700">เวลา:</span>
+        <span class="text-lg text-gray-900">{{ subject.start_time|time:"H:i" }} - {{ subject.end_time|time:"H:i" }}</span>
+      </div>
+      <div class="flex items-center space-x-3">
+        <span class="font-medium text-gray-700">ห้องสอบ:</span>
+        <span class="text-lg text-gray-900">{{ subject.room }}</span>
+      </div>
+      {% if subject.qr_expiration %}
+      <div class="flex items-center space-x-3">
+        <span class="font-medium text-gray-700">QR Expiration:</span>
+        <span class="text-lg text-gray-900">{{ subject.qr_expiration|time:"H:i" }}</span>
+      </div>
+      {% endif %}
     </div>
+  </div>
 
-    <!-- ผังที่นั่ง (ครู) -->
-    <h3 class="text-2xl font-semibold text-gray-700 text-center mb-4">🧑‍🏫 ครูผู้คุมสอบ</h3>
-    <div class="flex justify-center mb-8">
-        {% if subject.invigilator %}
-        <div class="relative text-center">
-            <button
-                class="seat-btn w-24 h-24 rounded-xl flex items-center justify-center text-white font-bold shadow-md transition transform hover:scale-110 hover:shadow-xl {% if subject.invigilator_checkin %} bg-green-500 {% else %} bg-gray-300 {% endif %}"
-                data-teacher-id="{{ subject.invigilator.id }}" data-subject-id="{{ subject.id }}"
-                data-status="{% if subject.invigilator_checkin %}on_time{% else %}not_checked{% endif %}"
-                id="seat-teacher" onclick="updateTeacherStatus({{ subject.invigilator.id }}, {{ subject.id }})">
-                👨‍🏫 {{ subject.invigilator.user.first_name }}
-            </button>
-            <div class="text-sm text-gray-700 mt-2 font-medium">
-                {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}
-            </div>
-        </div>
-        {% else %}
-        <span class="text-gray-500">ไม่มีครูผู้คุมสอบ</span>
-        {% endif %}
+  <!-- Status Legend -->
+  <div class="flex justify-center space-x-10 mb-12">
+    <div class="flex items-center space-x-2">
+      <div class="w-6 h-6 rounded-full bg-green-500"></div>
+      <span class="text-xl text-gray-700">มาตรงเวลา</span>
     </div>
-
-    <!-- 🔹 ผังที่นั่ง (นักเรียน) -->
-    <h3 class="text-2xl font-semibold text-gray-700 text-center mb-4">👨‍🎓 นักเรียน</h3>
-    <div class="grid grid-cols-5 gap-6 justify-center">
-        {% for student in students %}
-        {% with attendance_dict|get_item:student.id as record %}
-        <div class="relative text-center">
-            <button
-                class="seat-btn w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold shadow-md transition transform hover:scale-110 hover:shadow-xl"
-                data-student-id="{{ student.id }}" data-subject-id="{{ subject.id }}"
-                data-status="{% if record %}{{ record.status }}{% else %}not_checked{% endif %}"
-                id="seat-{{ student.id }}" onclick="updateAttendanceStatus({{ student.id }}, {{ subject.id }})">
-                {{ forloop.counter }}
-            </button>
-
-            <div class="text-sm text-gray-700 mt-2 font-medium">
-                {{ student.user.first_name }} {{ student.user.last_name }}
-            </div>
-        </div>
-        {% endwith %}
-        {% endfor %}
+    <div class="flex items-center space-x-2">
+      <div class="w-6 h-6 rounded-full bg-yellow-500"></div>
+      <span class="text-xl text-gray-700">มาสาย</span>
     </div>
+    <div class="flex items-center space-x-2">
+      <div class="w-6 h-6 rounded-full bg-red-500"></div>
+      <span class="text-xl text-gray-700">ขาดสอบ</span>
+    </div>
+  </div>
+
+  <!-- Teachers Information Section -->
+  <h3 class="text-3xl font-semibold text-gray-800 text-center mb-10">ข้อมูลครูผู้คุมสอบ</h3>
+  <div class="flex flex-col md:flex-row justify-center gap-12 mb-16">
+    <!-- Main Invigilator Card -->
+    <div class="bg-white rounded-lg shadow-2xl p-6 border border-gray-200 flex-1 text-center">
+      <div class="mb-4 text-2xl font-semibold text-gray-700">ครูผู้คุมสอบหลัก</div>
+      {% if subject.invigilator %}
+      <button
+        class="seat-btn w-32 h-32 rounded-full flex items-center justify-center text-white font-bold shadow-xl transition-transform transform hover:scale-110 hover:shadow-2xl {% if subject.invigilator_checkin %} bg-green-500 {% else %} bg-gray-400 {% endif %}"
+        data-teacher-id="{{ subject.invigilator.id }}" data-subject-id="{{ subject.id }}"
+        data-status="{% if subject.invigilator_checkin %}on_time{% else %}not_checked{% endif %}"
+        id="seat-teacher-main"
+        onclick="updateTeacherStatus({{ subject.invigilator.id }}, {{ subject.id }}, 'main')">
+        👨‍🏫
+      </button>
+      <div class="mt-4 text-xl text-gray-800 font-medium">
+        {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}
+      </div>
+      {% else %}
+      <span class="text-gray-500 text-xl">ไม่มีข้อมูล</span>
+      {% endif %}
+    </div>
+    <!-- Secondary Invigilator Card -->
+    <div class="bg-white rounded-lg shadow-2xl p-6 border border-gray-200 flex-1 text-center">
+      <div class="mb-4 text-2xl font-semibold text-gray-700">ครูผู้คุมสอบสำรอง</div>
+      {% if subject.secondary_invigilator %}
+      <button
+        class="seat-btn w-32 h-32 rounded-full flex items-center justify-center text-white font-bold shadow-xl transition-transform transform hover:scale-110 hover:shadow-2xl {% if subject.secondary_invigilator_checkin %} bg-green-500 {% else %} bg-gray-400 {% endif %}"
+        data-teacher-id="{{ subject.secondary_invigilator.id }}" data-subject-id="{{ subject.id }}"
+        data-status="{% if subject.secondary_invigilator_checkin %}on_time{% else %}not_checked{% endif %}"
+        id="seat-teacher-secondary"
+        onclick="updateTeacherStatus({{ subject.secondary_invigilator.id }}, {{ subject.id }}, 'secondary')">
+        👩‍🏫
+      </button>
+      <div class="mt-4 text-xl text-gray-800 font-medium">
+        {{ subject.secondary_invigilator.user.first_name }} {{ subject.secondary_invigilator.user.last_name }}
+      </div>
+      {% else %}
+      <span class="text-gray-500 text-xl">ไม่มีข้อมูล</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Student Seating Chart -->
+  <h3 class="text-3xl font-semibold text-gray-800 text-center mb-8">ผังที่นั่งนักเรียน</h3>
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 justify-center">
+    {% for student in students %}
+    {% with attendance_dict|get_item:student.id as record %}
+    <div class="bg-white rounded-lg shadow-lg p-4 border border-gray-200 flex flex-col items-center">
+      <button
+        class="seat-btn w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold shadow-lg transition-transform transform hover:scale-110 hover:shadow-2xl"
+        data-student-id="{{ student.id }}" data-subject-id="{{ subject.id }}"
+        data-status="{% if record %}{{ record.status }}{% else %}not_checked{% endif %}"
+        id="seat-{{ student.id }}"
+        onclick="updateAttendanceStatus({{ student.id }}, {{ subject.id }})">
+        {{ forloop.counter }}
+      </button>
+      <div class="mt-2 text-sm text-gray-700 font-medium text-center">
+        {{ student.user.first_name }} {{ student.user.last_name }}
+      </div>
+    </div>
+    {% endwith %}
+    {% endfor %}
+  </div>
 </div>
 
-<!-- 🔹 Modal สำหรับเลือกสถานะ -->
-<div id="statusModal" class="hidden fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-    <div class="bg-white p-6 rounded-lg shadow-xl relative">
-        <!-- ❌ ปุ่มปิด Modal -->
-        <button onclick="closeModal()" class="absolute top-2 right-2 text-gray-600 hover:text-gray-900">
-            ❌
-        </button>
-
-        <h2 class="text-lg font-semibold mb-4 text-center">เลือกสถานะ</h2>
-        <input type="hidden" id="selectedStudentId">
-        <input type="hidden" id="selectedSubjectId">
-        <div class="flex justify-center space-x-4">
-            <button class="status-btn bg-green-500 text-white px-4 py-2 rounded-lg" data-status="on_time">✅ มาตรงเวลา</button>
-            <button class="status-btn bg-yellow-500 text-white px-4 py-2 rounded-lg" data-status="late">⏳ มาสาย</button>
-            <button class="status-btn bg-red-500 text-white px-4 py-2 rounded-lg" data-status="absent">🚫 ขาดสอบ</button>
-        </div>
-        <button onclick="closeModal()" class="mt-4 w-full bg-gray-300 text-gray-700 py-2 rounded-lg">ปิด</button>
+<!-- Modal สำหรับอัปเดตสถานะนักเรียน -->
+<div id="statusModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+  <div class="bg-white p-6 rounded-lg shadow-2xl w-80 relative">
+    <button onclick="closeModal('statusModal')" class="absolute top-2 right-2 text-gray-600 hover:text-gray-900">
+      ❌
+    </button>
+    <h2 class="text-xl font-semibold mb-4 text-center">เลือกสถานะนักเรียน</h2>
+    <input type="hidden" id="selectedStudentId">
+    <input type="hidden" id="selectedSubjectId">
+    <div class="flex justify-center space-x-4 mb-4">
+      <button class="status-btn bg-green-500 text-white px-4 py-2 rounded-lg" data-status="on_time">✅</button>
+      <button class="status-btn bg-yellow-500 text-white px-4 py-2 rounded-lg" data-status="late">⏳</button>
+      <button class="status-btn bg-red-500 text-white px-4 py-2 rounded-lg" data-status="absent">🚫</button>
     </div>
+    <button onclick="closeModal('statusModal')" class="w-full bg-gray-300 text-gray-700 py-2 rounded-lg">ปิด</button>
+  </div>
+</div>
+
+<!-- Modal สำหรับอัปเดตสถานะครู (สำหรับเจ้าหน้าที่) -->
+<div id="teacherStatusModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+  <div class="bg-white p-6 rounded-lg shadow-2xl w-80 relative">
+    <button onclick="closeModal('teacherStatusModal')" class="absolute top-2 right-2 text-gray-600 hover:text-gray-900">
+      ❌
+    </button>
+    <h2 class="text-xl font-semibold mb-4 text-center">เลือกสถานะครู</h2>
+    <input type="hidden" id="selectedTeacherId">
+    <input type="hidden" id="selectedTeacherSubjectId">
+    <div class="flex justify-center space-x-4 mb-4">
+      <button class="teacher-status-btn bg-green-500 text-white px-4 py-2 rounded-lg" data-status="on_time">✅</button>
+      <button class="teacher-status-btn bg-red-500 text-white px-4 py-2 rounded-lg" data-status="absent">🚫</button>
+    </div>
+    <button onclick="closeModal('teacherStatusModal')" class="w-full bg-gray-300 text-gray-700 py-2 rounded-lg">ปิด</button>
+  </div>
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll(".seat-btn").forEach(btn => {
-            updateSeatColor(btn);
-        });
-
-        document.querySelectorAll(".status-btn").forEach(btn => {
-            btn.addEventListener("click", function () {
-                let studentId = document.getElementById("selectedStudentId").value;
-                let subjectId = document.getElementById("selectedSubjectId").value;
-                let newStatus = this.getAttribute("data-status");
-
-                fetch("{% url 'manual_checkin' %}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": "{{ csrf_token }}"
-                    },
-                    body: JSON.stringify({
-                        student_id: studentId,
-                        subject_id: subjectId,
-                        status: newStatus
-                    })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === "success") {
-                            let seatBtn = document.getElementById("seat-" + studentId);
-                            seatBtn.setAttribute("data-status", newStatus);
-                            updateSeatColor(seatBtn);
-                            closeModal();  // ✅ ปิด Modal ทันทีเมื่ออัปเดตสถานะสำเร็จ
-                        } else {
-                            alert("❌ ไม่สามารถอัปเดตสถานะได้");
-                        }
-                    })
-                    .catch(error => console.error("Error:", error));
-            });
-        });
-
-        // ✅ เพิ่ม Event Listener ให้กด ESC ปิด Modal
-        document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape") {
-                closeModal();
-            }
-        });
+  document.addEventListener("DOMContentLoaded", function () {
+    // อัปเดตสีของทุกปุ่ม seat เมื่อโหลดหน้า
+    document.querySelectorAll(".seat-btn").forEach(btn => {
+      updateSeatColor(btn);
     });
 
-    function updateAttendanceStatus(studentId, subjectId) {
-        console.log("🔍 เลือกนักเรียน:", studentId, " วิชา:", subjectId);
-        if (!studentId || !subjectId) {
-            console.error("❌ ข้อมูลไม่ถูกต้อง!");
-            return;
-        }
+    // Event Listener สำหรับปุ่มใน Modal นักเรียน
+    document.querySelectorAll(".status-btn").forEach(btn => {
+      btn.addEventListener("click", function () {
+        let studentId = document.getElementById("selectedStudentId").value;
+        let subjectId = document.getElementById("selectedSubjectId").value;
+        let newStatus = this.getAttribute("data-status");
 
-        document.getElementById("selectedStudentId").value = studentId;
-        document.getElementById("selectedSubjectId").value = subjectId;
+        fetch("{% url 'manual_checkin' %}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+          },
+          body: JSON.stringify({
+            student_id: studentId,
+            subject_id: subjectId,
+            status: newStatus
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === "success") {
+            let seatBtn = document.getElementById("seat-" + studentId);
+            seatBtn.setAttribute("data-status", newStatus);
+            updateSeatColor(seatBtn);
+            closeModal('statusModal');
+          } else {
+            alert("❌ ไม่สามารถอัปเดตสถานะได้");
+          }
+        })
+        .catch(error => console.error("Error:", error));
+      });
+    });
 
-        let modal = document.getElementById("statusModal");
-        modal.classList.remove("hidden");
-        modal.classList.add("flex");
-        console.log("✅ Modal เปิดสำเร็จ");
+    // Event Listener สำหรับปุ่มใน Modal ครู (สำหรับเจ้าหน้าที่)
+    document.querySelectorAll(".teacher-status-btn").forEach(btn => {
+      btn.addEventListener("click", function () {
+        let teacherId = document.getElementById("selectedTeacherId").value;
+        let subjectId = document.getElementById("selectedTeacherSubjectId").value;
+        let newStatus = this.getAttribute("data-status");
+
+        fetch("{% url 'manual_teacher_checkin' %}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+          },
+          body: JSON.stringify({
+            teacher_id: teacherId,
+            subject_id: subjectId,
+            status: newStatus
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === "success") {
+            // หลังจากอัปเดตสถานะครูสำเร็จ ให้รีเฟรชหน้าเพื่อดึงข้อมูลล่าสุด
+            window.location.reload();
+          } else {
+            alert("❌ ไม่สามารถอัปเดตสถานะครูได้");
+          }
+        })
+        .catch(error => console.error("Error:", error));
+      });
+    });
+
+    // เพิ่ม Event Listener สำหรับกด ESC เพื่อปิด Modal
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        closeModal('statusModal');
+        closeModal('teacherStatusModal');
+      }
+    });
+  });
+
+  // ฟังก์ชันสำหรับเปิด Modal นักเรียน
+  function updateAttendanceStatus(studentId, subjectId) {
+    document.getElementById("selectedStudentId").value = studentId;
+    document.getElementById("selectedSubjectId").value = subjectId;
+    let modal = document.getElementById("statusModal");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  }
+
+  // ฟังก์ชันสำหรับเปิด Modal ครู (สำหรับเจ้าหน้าที่)
+  function updateTeacherStatus(teacherId, subjectId, position) {
+    document.getElementById("selectedTeacherId").value = teacherId;
+    document.getElementById("selectedTeacherSubjectId").value = subjectId;
+    let modal = document.getElementById("teacherStatusModal");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  }
+
+  function closeModal(modalId) {
+    let modal = document.getElementById(modalId);
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+
+  // ฟังก์ชันอัปเดตสีของปุ่ม seat ตามสถานะ
+  function updateSeatColor(seatBtn) {
+    let status = seatBtn.getAttribute("data-status");
+    seatBtn.classList.remove("bg-gray-300", "bg-green-500", "bg-yellow-500", "bg-red-500");
+    if (status === "on_time") {
+      seatBtn.classList.add("bg-green-500");
+    } else if (status === "late") {
+      seatBtn.classList.add("bg-yellow-500");
+    } else if (status === "absent") {
+      seatBtn.classList.add("bg-red-500");
+    } else {
+      seatBtn.classList.add("bg-gray-300");
     }
-
-    function closeModal() {
-        console.log("🚀 ปิด Modal");
-        let modal = document.getElementById("statusModal");
-        modal.classList.add("hidden");
-        modal.classList.remove("flex");
-    }
-
-    function updateSeatColor(seatBtn) {
-        let status = seatBtn.getAttribute("data-status");
-        seatBtn.classList.remove("bg-gray-300", "bg-green-500", "bg-yellow-500", "bg-red-500");
-        seatBtn.classList.add(status === "on_time" ? "bg-green-500" : status === "late" ? "bg-yellow-500" : status === "absent" ? "bg-red-500" : "bg-gray-300");
-    }
+  }
 </script>
-
 {% endblock %}

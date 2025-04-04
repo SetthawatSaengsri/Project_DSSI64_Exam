@@ -140,3 +140,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'exam_app.User'
 
 # AUTH_USER_MODEL = 'exam_app.Teacher'
+
+MEDIA_URL = '/media/'  # การเข้าถึงไฟล์มีเดียผ่าน URL
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # ที่เก็บไฟล์มีเดียในระบบ

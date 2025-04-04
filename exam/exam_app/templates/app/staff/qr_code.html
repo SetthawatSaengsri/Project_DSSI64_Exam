@@ -1,4 +1,4 @@
-<!-- qr_code.html -->
+<!-- qrcode.html -->
 
 {% extends "app/base.html" %}
 
@@ -8,19 +8,24 @@
         📌 <span>QR Code สำหรับรายวิชา:</span><span class="text-indigo-800">{{ subject.subject_name }}</span>
     </h2>
 
-    <!-- ✅ แสดงเวลาปัจจุบันแบบเรียลไทม์ -->
+    <!-- เวลาปัจจุบัน -->
     <div class="flex justify-center items-center text-4xl font-extrabold text-red-500 mb-6">
         <span class="mr-2">⏰</span> <span id="current-time">กำลังโหลด...</span>
     </div>
 
-    <!-- ✅ แสดง QR Code ที่สร้างใหม่ -->
-    <div class="bg-white shadow-xl rounded-2xl p-10 inline-block transition transform hover:scale-105">
-        <img src="data:image/png;base64,{{ img_base64 }}" alt="QR Code"
-            class="mx-auto max-w-md border-4 border-gray-300 rounded-lg shadow-md">
-        <p class="text-xl text-gray-700 mt-4 font-semibold">📱 สแกน QR Code เพื่อเช็คชื่อเข้าเรียน</p>
-    </div>
+    <!-- QR Code -->
+    <div id="qr-container" class="bg-white shadow-xl rounded-2xl p-10 inline-block transition transform hover:scale-105">
+        <img id="qr-img" src="data:image/png;base64,{{ img_base64 }}" alt="QR Code"
+             class="mx-auto max-w-md border-4 border-gray-300 rounded-lg shadow-md">
+        <p id="qr-text" class="text-xl text-gray-700 mt-4 font-semibold">
+            📱 สแกน QR Code เพื่อเช็คชื่อเข้าสอบ
+        </p>
+        <p id="qr-expired" class="text-xl text-red-500 mt-4 font-semibold hidden">
+            ⛔ หมดเวลาการใช้งาน QR Code แล้ว
+        </p>
+    </div>  
 
-    <!-- ✅ ปุ่มคัดลอกลิงก์ไปยังหน้าคอนเฟิร์มการสอบ -->
+    <!-- ปุ่มคัดลอกลิงก์ -->
     <div class="flex justify-center mt-10">
         <button onclick="copyQRCodeURL()"
             class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 text-lg rounded-xl shadow-lg transition-transform transform hover:scale-105">
@@ -28,7 +33,7 @@
         </button>
     </div>
 
-    <!-- ✅ ปุ่มพิมพ์ QR Code และกลับไปหน้าวิชา -->
+    <!-- ปุ่มพิมพ์และกลับ -->
     <div class="flex justify-center mt-6 space-x-6">
         <button onclick="window.print()"
             class="bg-green-600 hover:bg-green-700 text-white px-10 py-4 text-lg rounded-xl shadow-lg transition-transform transform hover:scale-105">
@@ -41,57 +46,68 @@
     </div>
 </div>
 
-<!-- ✅ JavaScript แสดงเวลาปัจจุบัน และคัดลอกลิงก์ -->
 <script>
+    // ใช้ exam_date และ qr_expiration ที่กรอกในฟอร์ม
+    const examEndTime = new Date("{{ subject.exam_date }}T{{ subject.qr_expiration }}");
+    examEndTime.setHours(examEndTime.getHours() + 7); // +7 สำหรับเวลาในไทย
+
+    // ฟังก์ชันอัปเดตเวลาปัจจุบัน
     function updateTime() {
         const now = new Date();
-        now.setHours(now.getHours() + 7); // ปรับเวลาให้เป็นไทย (UTC+7)
-
+        now.setHours(now.getHours() + 7); // ปรับให้ตรงกับเวลาไทย
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const seconds = String(now.getSeconds()).padStart(2, '0');
-
         document.getElementById("current-time").textContent = `${hours}:${minutes}:${seconds}`;
     }
 
+    // ฟังก์ชันตรวจสอบว่า QR Code หมดอายุหรือยัง
+    function checkQRExpiration() {
+        const now = new Date();
+        now.setHours(now.getHours() + 7);
+        if (now >= examEndTime) {
+            document.getElementById("qr-img").classList.add("opacity-30");
+            document.getElementById("qr-text").classList.add("hidden");
+            document.getElementById("qr-expired").classList.remove("hidden");
+        }
+    }
+
+    // ฟังก์ชันคัดลอก URL ของ QR Code ไปยังคลิปบอร์ด
     function copyQRCodeURL() {
-        const qrUrl = "{{ qr_url }}"; // ✅ ดึง URL จาก Django
+        const qrUrl = "{{ qr_url }}";
         navigator.clipboard.writeText(qrUrl).then(() => {
-            alert("✅ ลิงก์ถูกคัดลอกแล้ว! คุณสามารถแชร์ลิงก์นี้ได้");
+            alert("✅ คัดลอกลิงก์แล้ว! พร้อมแชร์ให้นักเรียน");
         }).catch(err => {
-            console.error("❌ ไม่สามารถคัดลอกลิงก์:", err);
-            alert("❌ มีข้อผิดพลาดในการคัดลอกลิงก์");
+            alert("❌ คัดลอกลิงก์ไม่สำเร็จ");
+            console.error(err);
         });
     }
 
     setInterval(updateTime, 1000);
+    setInterval(checkQRExpiration, 10000);
     updateTime();
+    checkQRExpiration();
 </script>
 
 {% endblock %}
 
-<!-- ✅ CSS สำหรับการพิมพ์ -->
 {% block extra_css %}
 <style>
     @media print {
         body * {
             visibility: hidden;
         }
-
         .container,
         .container * {
             visibility: visible;
         }
-
         .container {
             position: absolute;
             left: 0;
             top: 0;
         }
-
         .container img {
             width: 100%;
-            /* ✅ ทำให้ QR Code พอดีกับหน้ากระดาษ */
         }
     }
 </style>

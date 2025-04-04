@@ -7,26 +7,61 @@
     <div class="bg-white shadow-lg rounded-2xl p-10 max-w-lg text-center animate-fade-in border border-gray-300">
         <h2 class="text-3xl font-bold text-indigo-700 mb-4">📌 ยืนยันการเข้าสอบ</h2>
 
+        <!-- ข้อมูลห้องสอบ -->
         <div class="border-t border-gray-300 pt-4">
             <h3 class="text-lg font-semibold text-gray-600">📖 ข้อมูลห้องสอบ</h3>
-            <p class="text-lg text-gray-700">วิชา: <span class="font-semibold">{{ subject.subject_name }}</span></p>
-            <p class="text-lg text-gray-700">รหัสวิชา: <span class="font-semibold">{{ subject.subject_code }}</span></p>
-            <p class="text-lg text-gray-700">ห้องสอบ: <span class="font-semibold">{{ subject.room }}</span></p>
-            <p class="text-lg text-gray-700">วันที่สอบ: <span class="font-semibold">{{ subject.exam_date|date:"d F Y" }}</span></p>
-            <p class="text-lg text-gray-700">เวลา: <span class="font-semibold">{{ subject.start_time|time:"H:i" }} - {{ subject.end_time|time:"H:i" }}</span></p>
+            <p class="text-lg text-gray-700">
+                วิชา: <span class="font-semibold">{{ subject.subject_name }}</span>
+            </p>
+            <p class="text-lg text-gray-700">
+                รหัสวิชา: <span class="font-semibold">{{ subject.subject_code }}</span>
+            </p>
+            <p class="text-lg text-gray-700">
+                ห้องสอบ: <span class="font-semibold">{{ subject.room }}</span>
+            </p>
+            <p class="text-lg text-gray-700">
+                วันที่สอบ: <span class="font-semibold">{{ subject.exam_date|date:"d F Y" }}</span>
+            </p>
+            <p class="text-lg text-gray-700">
+                เวลา: <span class="font-semibold">{{ subject.start_time|time:"H:i" }} - {{ subject.end_time|time:"H:i" }}</span>
+            </p>
+            <p class="text-lg text-gray-700">
+                ครูผู้คุมสอบหลัก: <span class="font-semibold">
+                    {% if subject.invigilator %}
+                        {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </span>
+            </p>
+            <p class="text-lg text-gray-700">
+                ครูผู้คุมสอบสำรอง: <span class="font-semibold">
+                    {% if subject.secondary_invigilator %}
+                        {{ subject.secondary_invigilator.user.first_name }} {{ subject.secondary_invigilator.user.last_name }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </span>
+            </p>
         </div>
 
         {% if student %}
-        <!-- ✅ ข้อมูลนักศึกษา -->
+        <!-- ข้อมูลนักศึกษา -->
         <div class="border-t border-gray-300 pt-4">
             <h3 class="text-lg font-semibold text-gray-600">👨‍🎓 ข้อมูลนักศึกษา</h3>
             <p class="text-3xl font-bold text-blue-600">{{ student.student_id }}</p>
-            <p class="text-lg text-gray-700 font-semibold">{{ student.user.first_name }} {{ student.user.last_name }}</p>
-            <p class="text-lg text-gray-700">ระดับชั้น: <span class="font-semibold text-indigo-700">{{ student.student_class|default:"-" }}</span></p>
-            <p class="text-lg text-gray-700">เลขที่นั่งสอบ: <span class="font-semibold text-indigo-700">{{ seat_number|default:"-" }}</span></p>
+            <p class="text-lg text-gray-700 font-semibold">
+                {{ student.user.first_name }} {{ student.user.last_name }}
+            </p>
+            <p class="text-lg text-gray-700">
+                ระดับชั้น: <span class="font-semibold text-indigo-700">{{ student.student_class|default:"-" }}</span>
+            </p>
+            <p class="text-lg text-gray-700">
+                เลขที่นั่งสอบ: <span class="font-semibold text-indigo-700">{{ seat_number|default:"-" }}</span>
+            </p>
         </div>
 
-        <!-- ✅ ปุ่มยืนยัน -->
+        <!-- ปุ่มยืนยันสำหรับนักศึกษา -->
         <div id="confirmation-box" class="mt-6">
             <p class="text-lg text-gray-600">กดยืนยันเพื่อเข้าสอบ</p>
             <button onclick="confirmExam()" id="confirm-button" class="bg-indigo-600 text-white px-6 py-2 rounded mt-4 hover:bg-indigo-700 shadow-md transition-all">
@@ -34,11 +69,12 @@
             </button>
         </div>
 
-        <!-- ✅ แสดงเวลาหลังจากกดยืนยัน -->
+        <!-- แสดงเวลาหลังจากกดยืนยัน (นักศึกษา) -->
         <div id="confirmed-box" class="hidden border-t border-gray-300 pt-4 mt-6">
             <h3 class="text-lg font-semibold text-green-600">📌 คุณได้เช็คชื่อแล้ว</h3>
-            <p class="text-lg text-gray-700">ลงชื่อเข้าห้องสอบเมื่อเวลา: <span id="checkin-time" class="font-bold text-indigo-700"></span> น.</p>
-
+            <p class="text-lg text-gray-700">
+                ลงชื่อเข้าห้องสอบเมื่อเวลา: <span id="checkin-time" class="font-bold text-indigo-700"></span> น.
+            </p>
             <div class="mt-6">
                 <a href="{% url 'dashboard_student' %}" class="bg-indigo-600 text-white px-8 py-3 rounded-lg text-lg shadow-md hover:bg-indigo-700 transition-all">
                     🔙 กลับไปที่หน้าหลัก
@@ -47,15 +83,37 @@
         </div>
 
         {% elif teacher %}
-        <!-- ✅ ข้อมูลครูคุมสอบ -->
+        <!-- ข้อมูลครูคุมสอบ -->
         <div class="border-t border-gray-300 pt-4">
             <h3 class="text-lg font-semibold text-gray-600">👨‍🏫 ข้อมูลครูคุมสอบ</h3>
             <p class="text-3xl font-bold text-yellow-600">{{ teacher.user.first_name }} {{ teacher.user.last_name }}</p>
-            <p class="text-lg text-gray-700">🏫 โรงเรียน: <span class="font-semibold">{{ teacher.user.school_name }}</span></p>
-            <p class="text-lg text-gray-700">📌 คุณเป็นอาจารย์คุมสอบของห้องนี้</p>
+            <p class="text-lg text-gray-700">
+                โรงเรียน: <span class="font-semibold">{{ teacher.user.school_name }}</span>
+            </p>
+            <p class="text-lg text-gray-700">
+                คุณเป็นครูคุมสอบของห้องนี้
+            </p>
+            <p class="text-lg text-gray-700">
+                ครูผู้คุมสอบหลัก: <span class="font-semibold">
+                    {% if subject.invigilator %}
+                        {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </span>
+            </p>
+            <p class="text-lg text-gray-700">
+                ครูผู้คุมสอบสำรอง: <span class="font-semibold">
+                    {% if subject.secondary_invigilator %}
+                        {{ subject.secondary_invigilator.user.first_name }} {{ subject.secondary_invigilator.user.last_name }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </span>
+            </p>
         </div>
 
-        <!-- ✅ ปุ่มยืนยันของครู -->
+        <!-- ปุ่มยืนยันสำหรับครู -->
         <div id="confirmation-box" class="mt-6">
             <p class="text-lg text-gray-600">กดยืนยันว่าคุณเป็นครูคุมสอบ</p>
             <button onclick="confirmTeacherExam()" id="confirm-button" class="bg-indigo-600 text-white px-6 py-2 rounded mt-4 hover:bg-indigo-700 shadow-md transition-all">
@@ -63,11 +121,12 @@
             </button>
         </div>
 
-        <!-- ✅ แสดงเวลาหลังจากกดยืนยัน -->
+        <!-- แสดงเวลาหลังจากกดยืนยัน (สำหรับครู) -->
         <div id="confirmed-box" class="hidden border-t border-gray-300 pt-4 mt-6">
             <h3 class="text-lg font-semibold text-green-600">📌 คุณได้เช็คชื่อแล้ว</h3>
-            <p class="text-lg text-gray-700">ลงชื่อเข้าห้องสอบเมื่อเวลา: <span id="teacher-checkin-time" class="font-bold text-indigo-700"></span> น.</p>
-
+            <p class="text-lg text-gray-700">
+                ลงชื่อเข้าห้องสอบเมื่อเวลา: <span id="teacher-checkin-time" class="font-bold text-indigo-700"></span> น.
+            </p>
             <div class="mt-6">
                 <a href="{% url 'dashboard_teacher' %}" class="bg-indigo-600 text-white px-8 py-3 rounded-lg text-lg shadow-md hover:bg-indigo-700 transition-all">
                     🔙 กลับไปที่หน้าหลัก
@@ -82,7 +141,6 @@
     function confirmExam() {
         let subjectId = "{{ subject.id }}";
         let checkinTime = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-
         fetch("/exam/confirm_exam_entry/", {
             method: "POST",
             headers: {
@@ -110,7 +168,6 @@
     function confirmTeacherExam() {
         let subjectId = "{{ subject.id }}";
         let checkinTime = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-
         fetch("/exam/confirm_exam_entry_teacher/", {
             method: "POST",
             headers: {
@@ -159,3 +216,4 @@
     }
 </style>
 {% endblock %}
+

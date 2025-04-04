@@ -1,19 +1,90 @@
-<!-- import_csv.html -->
+<!-- app/staff/import_csv.html -->
 
 
 {% extends "app/base.html" %}
 
 {% block content %}
+<h2 class="text-3xl font-bold text-indigo-700 text-center mb-6">📂 นำเข้าข้อมูล CSV</h2>
 
-<h2 class="text-3xl font-bold text-indigo-700 text-center mb-6">📂 นำเข้าข้อมูลครูและนักเรียน</h2>
-<p class="text-gray-600 mb-6 text-center">
-    อัปโหลดไฟล์ CSV เพื่อนำเข้าข้อมูลครูและนักเรียนเข้าสู่ระบบ <br>
-    กรุณาตรวจสอบว่าไฟล์ของคุณมีรูปแบบที่ถูกต้อง<br>
-    <a href="#" class="text-indigo-600 underline font-medium">ดาวน์โหลดตัวอย่างไฟล์ CSV</a>
-</p>
+<!-- ตารางตัวอย่างข้อมูลสำหรับครูและนักเรียน -->
+<div class="mb-6">
+    <p class="text-gray-600 text-center mb-4">
+        อัปโหลดไฟล์ CSV เพื่อเพิ่มข้อมูลเข้าสู่ระบบ<br>
+        กรุณาตรวจสอบว่าไฟล์ของคุณมีรูปแบบที่ถูกต้อง<br>
+    </p>
+    
+    <!-- ตัวอย่างไฟล์ CSV สำหรับครู -->
+    <h3 class="text-xl font-semibold text-center mb-2 text-indigo-700">ตัวอย่างไฟล์ CSV สำหรับครู</h3>
+    <div class="overflow-x-auto mb-6">
+        <table class="min-w-full border border-gray-300">
+            <thead>
+                <tr class="bg-indigo-700 text-white">
+                    <th class="border px-4 py-2">Username</th>
+                    <th class="border px-4 py-2">Email</th>
+                    <th class="border px-4 py-2">Teacher ID</th>
+                    <th class="border px-4 py-2">First Name</th>
+                    <th class="border px-4 py-2">Last Name</th>
+                    <th class="border px-4 py-2">Password</th>
+                    <th class="border px-4 py-2">Role</th>
+                    <th class="border px-4 py-2">School Name</th>
+                    
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="border px-4 py-2">teacher1</td>
+                    <td class="border px-4 py-2">teacher1@example.com</td>
+                    <td class="border px-4 py-2">TCH001</td>
+                    <td class="border px-4 py-2">สมชาย</td>
+                    <td class="border px-4 py-2">ใจดี</td>
+                    <td class="border px-4 py-2">secret123</td>
+                    <th class="border px-4 py-2">teacher</th>
+                    <td class="border px-4 py-2">กุดชุม</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- ตัวอย่างไฟล์ CSV สำหรับนักเรียน -->
+    <h3 class="text-xl font-semibold text-center mb-2 text-indigo-700">ตัวอย่างไฟล์ CSV สำหรับนักเรียน</h3>
+    <div class="overflow-x-auto">
+        <table class="min-w-full border border-gray-300">
+            <thead>
+                <tr class="bg-indigo-700 text-white">
+                    <th class="border px-4 py-2">Username</th>
+                    <th class="border px-4 py-2">Email</th>
+                    <th class="border px-4 py-2">First Name</th>
+                    <th class="border px-4 py-2">Last Name</th>
+                    <th class="border px-4 py-2">Password</th>
+                    <th class="border px-4 py-2">Student ID</th>
+                    <th class="border px-4 py-2">No Student</th>
+                    <th class="border px-4 py-2">Student Class</th>
+                    <th class="border px-4 py-2">Role</th>
+                    <th class="border px-4 py-2">School Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="border px-4 py-2">student1</td>
+                    <td class="border px-4 py-2">student1@example.com</td>
+                    <td class="border px-4 py-2">สมศักดิ์</td>
+                    <td class="border px-4 py-2">ใจดี</td>
+                    <td class="border px-4 py-2">secret123</td>
+                    <td class="border px-4 py-2">STD001</td>
+                    <td class="border px-4 py-2">001</td>
+                    <td class="border px-4 py-2">6/2</td>
+                    <td class="border px-4 py-2">student</td>
+                    <td class="border px-4 py-2">กุดชุม</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
+<!-- แบบฟอร์มอัปโหลดไฟล์ CSV -->
 <form method="POST" enctype="multipart/form-data" class="space-y-6">
     {% csrf_token %}
+    
     <div>
         <label for="role" class="block text-lg font-medium text-gray-700">ประเภทข้อมูล:</label>
         <select name="role" id="role"
@@ -22,14 +93,14 @@
             <option value="student">นักเรียน</option>
         </select>
     </div>
-
+    
     <div>
         <label for="file" class="block text-lg font-medium text-gray-700">เลือกไฟล์ CSV:</label>
-        <input type="file" name="file" id="file"
+        <input type="file" name="file" id="file" accept=".csv"
             class="form-input border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md"
             required>
     </div>
-
+    
     <button type="submit"
         class="w-full bg-indigo-600 text-white py-4 px-6 text-lg rounded-md shadow-md hover:bg-indigo-700 transition">
         🚀 อัปโหลด
@@ -40,13 +111,11 @@
 <div class="mt-6">
     <ul class="space-y-2">
         {% for message in messages %}
-        <li
-            class="text-lg {% if message.tags == 'error' %}text-red-600{% elif message.tags == 'success' %}text-green-600{% endif %}">
+        <li class="text-lg {% if message.tags == 'error' %}text-red-600{% elif message.tags == 'success' %}text-green-600{% elif message.tags == 'warning' %}text-yellow-600{% endif %}">
             {{ message }}
         </li>
         {% endfor %}
     </ul>
 </div>
 {% endif %}
-
 {% endblock %}

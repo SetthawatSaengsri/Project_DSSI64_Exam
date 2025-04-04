@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib import messages
-from .models import User, StudentProfile, TeacherProfile, StaffProfile
+from .models import *
+
 
 # Custom UserAdmin for managing all user types
 class CustomUserAdmin(UserAdmin):
@@ -58,3 +59,27 @@ class StaffProfileAdmin(admin.ModelAdmin):
     def get_user_email(self, obj):
         return obj.user.email
     get_user_email.short_description = 'Email'
+
+# เพิ่มการจัดการ ExamSubject ในหน้า Admin
+@admin.register(ExamSubject)
+class ExamSubjectAdmin(admin.ModelAdmin):
+    list_display = ['subject_name', 'subject_code', 'academic_year', 'exam_date', 'start_time', 'end_time', 'room', 'invigilator']
+    search_fields = ['subject_name', 'subject_code', 'academic_year', 'room', 'invigilator__user__username']
+    list_filter = ['academic_year', 'exam_date', 'invigilator']
+    filter_horizontal = ['students']  # ให้มีตัวเลือกหลายคนในฟิลด์นักเรียน
+
+    def get_invigilator(self, obj):
+        return obj.invigilator.user.username if obj.invigilator else "ไม่มีผู้คุมสอบ"
+    get_invigilator.short_description = 'ผู้คุมสอบ'
+
+# เพิ่มการจัดการ Attendance ในหน้า Admin
+@admin.register(Attendance)
+class AttendanceAdmin(admin.ModelAdmin):
+    list_display = ['student', 'subject', 'status', 'checkin_time']
+    list_filter = ['status', 'subject']
+    search_fields = ['student__user__username', 'subject__subject_name']
+    list_select_related = ['student', 'subject']
+
+    def get_checkin_time(self, obj):
+        return obj.checkin_time.strftime("%Y-%m-%d %H:%M") if obj.checkin_time else "ยังไม่ได้เช็คชื่อ"
+    get_checkin_time.short_description = 'เวลาเช็คชื่อ'

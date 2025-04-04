@@ -1,49 +1,119 @@
 <!-- app/student/dashboard_student.html -->
 
 {% extends "app/base.html" %}
+{% load static %} 
 
 {% block content %}
-<div class="container mx-auto mt-10 max-w-7xl px-6 md:px-12">
-    <h2 class="text-4xl font-bold text-indigo-700 text-center mb-8">📊 แดชบอร์ดนักเรียน</h2>
+<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
 
-    <!-- 🔹 ส่วนข้อมูลภาพรวม -->
+  <!-- ชื่อหัวข้อ -->
+  <h2 class="text-4xl font-extrabold text-indigo-700 text-center mb-8">
+    📊 แดชบอร์ดเจ้าหน้าที่
+  </h2>
+
+  <!-- Dropdown เลือกปีการศึกษา -->
+  <form method="GET" class="flex items-center justify-center space-x-4 mb-8">
+    <label for="year" class="text-lg font-semibold text-gray-700">เลือกปีการศึกษา:</label>
+    <select name="year" id="year"
+            class="border border-gray-300 p-2 rounded-md shadow-md"
+            onchange="this.form.submit()">
+      <option value="all" {% if selected_year == 'all' %}selected{% endif %}>-- ทั้งหมด --</option>
+      {% for y in year_list %}
+        <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <!-- 🔹 ส่วนข้อมูลภาพรวม (Cards) -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <!-- Card: จำนวนครู -->
+    <div class="bg-indigo-100 p-6 rounded-lg shadow-lg flex items-center">
+      <div class="text-indigo-700 text-5xl">👩‍🏫</div>
+      <div class="ml-4">
+        <h3 class="text-xl font-semibold text-indigo-700">จำนวนครู</h3>
+        <p class="text-4xl font-bold text-gray-800 mt-2">{{ teacher_count }}</p>
+      </div>
+    </div>
+    <!-- Card: จำนวนนักเรียน -->
+    <div class="bg-yellow-100 p-6 rounded-lg shadow-lg flex items-center">
+      <div class="text-yellow-700 text-5xl">🎓</div>
+      <div class="ml-4">
+        <h3 class="text-xl font-semibold text-yellow-700">จำนวนนักเรียน</h3>
+        <p class="text-4xl font-bold text-gray-800 mt-2">{{ student_count }}</p>
+      </div>
+    </div>
+    <!-- Card: จำนวนรายวิชา -->
+    <div class="bg-green-100 p-6 rounded-lg shadow-lg flex items-center">
+      <div class="text-green-700 text-5xl">📖</div>
+      <div class="ml-4">
+        <h3 class="text-xl font-semibold text-green-700">จำนวนรายวิชา</h3>
+        <p class="text-4xl font-bold text-gray-800 mt-2">{{ subject_count }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔹 กราฟสถิติ (Pie/Donut Chart) -->
+  <div class="bg-white rounded-lg shadow p-6 mb-10">
+    <h3 class="text-2xl font-bold text-gray-800 mb-4">สถิติสถานะการเข้าสอบ</h3>
+    <canvas id="statusChart" width="400" height="200"></canvas>
+  </div>
+
+  <!-- 🔹 ส่วนการจัดการ -->
+  <div class="mt-10">
+    <h3 class="text-2xl font-semibold text-gray-700 mb-4">📌 การจัดการ</h3>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-indigo-100 p-6 rounded-lg shadow-lg flex items-center">
-            <div class="text-indigo-700 text-5xl">👩‍🏫</div>
-            <div class="ml-4">
-                <h3 class="text-xl font-semibold text-indigo-700">จำนวนครู</h3>
-                <p class="text-4xl font-bold text-gray-800 mt-2">{{ teacher_count }}</p>
-            </div>
-        </div>
-        <div class="bg-yellow-100 p-6 rounded-lg shadow-lg flex items-center">
-            <div class="text-yellow-700 text-5xl">🎓</div>
-            <div class="ml-4">
-                <h3 class="text-xl font-semibold text-yellow-700">จำนวนนักเรียน</h3>
-                <p class="text-4xl font-bold text-gray-800 mt-2">{{ student_count }}</p>
-            </div>
-        </div>
-        <div class="bg-green-100 p-6 rounded-lg shadow-lg flex items-center">
-            <div class="text-green-700 text-5xl">📖</div>
-            <div class="ml-4">
-                <h3 class="text-xl font-semibold text-green-700">จำนวนรายวิชา</h3>
-                <p class="text-4xl font-bold text-gray-800 mt-2">{{ subject_count }}</p>
-            </div>
-        </div>
+      <a href="{% url 'import_csv' %}"
+         class="bg-blue-500 text-white p-5 rounded-lg shadow-md text-center text-lg font-semibold hover:bg-blue-600 transition">
+         📂 นำเข้าข้อมูล CSV
+      </a>
+      <a href="{% url 'add_exam_subject' %}"
+         class="bg-green-500 text-white p-5 rounded-lg shadow-md text-center text-lg font-semibold hover:bg-green-600 transition">
+         📚 เพิ่มรายวิชา
+      </a>
+      <a href="{% url 'exam_subjects_staff' %}"
+         class="bg-purple-500 text-white p-5 rounded-lg shadow-md text-center text-lg font-semibold hover:bg-purple-600 transition">
+         📝 รายการวิชา
+      </a>
     </div>
+  </div>
 
-    <!-- 🔹 ส่วนการจัดการข้อมูลส่วนตัว -->
-    <div class="mt-10">
-        <h3 class="text-2xl font-semibold text-gray-700 mb-4">⚙️ ข้อมูลส่วนตัว</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <a href="#"
-                class="bg-blue-600 text-white p-5 rounded-lg shadow-md text-center text-lg font-semibold hover:bg-blue-700 transition">
-                ✏️ แก้ไขข้อมูลส่วนตัว
-            </a>
-            <a href="#"
-                class="bg-purple-600 text-white p-5 rounded-lg shadow-md text-center text-lg font-semibold hover:bg-purple-700 transition">
-                🔒 เปลี่ยนรหัสผ่าน
-            </a>
-        </div>
-    </div>
-</div>
+
+
+<!-- ติดตั้ง Chart.js (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const ctx = document.getElementById('statusChart').getContext('2d');
+
+  // รับ labels กับ values จาก view
+  const statusLabels = {{ status_labels|safe }};   // ex: ["มาตรงเวลา","มาสาย","ขาดสอบ"]
+  const statusValues = {{ status_values|safe }};   // ex: [10,3,5]
+
+  // สีสำหรับสถานะแต่ละประเภท (เรียงตามลำดับ)
+  const backgroundColors = [
+    "#16a34a",  // มาตรงเวลา (on_time)
+    "#facc15",  // มาสาย (late)
+    "#dc2626",  // ขาดสอบ (absent)
+  ];
+
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: statusLabels,
+      datasets: [{
+        data: statusValues,
+        backgroundColor: backgroundColors
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }
+  });
+});
+</script>
 {% endblock %}

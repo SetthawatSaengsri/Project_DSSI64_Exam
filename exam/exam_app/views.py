@@ -9,7 +9,9 @@ from django.contrib import messages
 from .forms import *
 from .models import * 
 import json
+import chardet
 import qrcode
+from datetime import time
 from io import BytesIO
 import base64
 from django.contrib.auth.decorators import user_passes_test
@@ -23,28 +25,48 @@ from django.views.decorators.csrf import csrf_exempt
 from datetime import timedelta 
 import qrcode.image.pil
 from django.db.models import Count
-
+from django.contrib.admin.views.decorators import staff_member_required
 
 def index_view(request):
-    schools = StaffProfile.objects.values_list('school_name', flat=True).distinct()
-    return render(request, 'app/index.html', {'schools': schools})
+    if request.method == 'POST':
+        form = StaffRegistrationForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Staff registration successful.')
+            return redirect('index_view')  # After successful registration, stay on the index page
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = StaffRegistrationForm()
+
+        schools = StaffProfile.objects.values_list('school_name', flat=True).distinct()
+    return render(request, 'app/index.html', {'form': form, 'schools': schools})
+
 
 def login_user(request):
-    schools = StaffProfile.objects.values_list('school_name', flat=True).distinct()
-
     if request.method == 'POST':
         email = request.POST['email']
         password = request.POST['password']
         school_name = request.POST.get('school_name')
 
         try:
-            user = User.objects.get(email=email, school_name=school_name)
+            if User.objects.filter(email=email, is_superuser=True).exists():
+                user = User.objects.get(email=email)
+            else:
+                user = User.objects.get(email=email, school_name=school_name)
         except User.DoesNotExist:
             user = None
 
         if user and user.check_password(password):
+            # Check if user is active (approved by admin)
+            if not user.is_active:
+                messages.error(request, 'บัญชีของคุณยังไม่ได้รับการอนุมัติจากแอดมิน')
+                return redirect('index_view')
+
             login(request, user)
-            if user.is_student:
+            if user.is_superuser:
+                return redirect('dashboard_admin')  # Redirect to admin dashboard
+            elif user.is_student:
                 return redirect('dashboard_student')
             elif user.is_teacher:
                 return redirect('dashboard_teacher')
@@ -55,7 +77,9 @@ def login_user(request):
         else:
             messages.error(request, 'ข้อมูลการเข้าสู่ระบบไม่ถูกต้อง')
 
+    schools = StaffProfile.objects.values_list('school_name', flat=True).distinct()
     return render(request, 'app/index.html', {'schools': schools})
+
 
 @login_required
 def scanner(request):
@@ -65,6 +89,7 @@ def scanner(request):
 def logout_user(request):
     logout(request)
     return redirect('index_view')
+
 
 def is_staff_user(user):
     return user.is_staff
@@ -80,26 +105,118 @@ def register_staff(request):
         form = StaffRegistrationForm()
     return render(request, 'app/register_staff.html', {'form': form})
 
-@login_required
-def dashboard_staff(request):
-    school_name = request.user.school_name
-    subjects = ExamSubject.objects.filter(invigilator__school_name=school_name).order_by('exam_date')
+##################################################################################################################################################################
+@staff_member_required
+def dashboard_admin(request):
+    teacher_count = TeacherProfile.objects.count()
+    student_count = StudentProfile.objects.count()
+    subject_count = ExamSubject.objects.count()
 
-    teacher_count = TeacherProfile.objects.filter(user__school_name=school_name).count()
-    student_count = StudentProfile.objects.filter(user__school_name=school_name).count()
-    subject_count = ExamSubject.objects.filter(invigilator__school_name=school_name).count()
-
-    return render(request, 'app/staff/dashboard_staff.html', {
-        'subjects': subjects,
+    return render(request, 'app/admin/dashboard_admin.html', {
         'teacher_count': teacher_count,
         'student_count': student_count,
-        'subject_count': subject_count
+        'subject_count': subject_count,
     })
 
-def statistics_view(request):
+@staff_member_required
+def verify_staff_registration(request):
+    # ดึงข้อมูลเจ้าหน้าที่ทั้งหมดที่ยังไม่ได้รับการยืนยัน
+    unverified_staff = User.objects.filter(is_staff=True, is_active=False)  # กรองเจ้าหน้าที่ที่ยังไม่ได้รับการอนุมัติ
+
+    return render(request, 'app/admin/verify_staff_registration.html', {
+        'unverified_staff': unverified_staff
+    })
+
+@staff_member_required
+def verify_staff_registration_action(request, staff_id):
+    staff_user = get_object_or_404(User, id=staff_id)
+
+    # อนุมัติการสมัครโดยการตั้งค่า is_active เป็น True
+    if staff_user.is_staff and not staff_user.is_active:
+        staff_user.is_active = True  # ทำให้เจ้าหน้าที่สามารถล็อกอินได้หลังจากได้รับการอนุมัติ
+        staff_user.save()
+
+        messages.success(request, 'เจ้าหน้าที่ได้รับการยืนยันการสมัครแล้ว!')
+    else:
+        messages.error(request, 'ไม่สามารถยืนยันการสมัครได้')
+
+    return redirect('verify_staff_registration')
+
+# ฟังก์ชันยกเลิกการสมัคร
+def cancel_staff_registration(request, staff_id):
+    staff_user = get_object_or_404(User, id=staff_id)
+
+    # ลบผู้ใช้หรือทำการยกเลิกการสมัคร
+    if staff_user.is_staff and not staff_user.is_active:
+        staff_user.delete()
+        messages.success(request, 'การสมัครเจ้าหน้าที่ถูกยกเลิกเรียบร้อยแล้ว!')
+    else:
+        messages.error(request, 'ไม่สามารถยกเลิกการสมัครได้')
+
+    return redirect('verify_staff_registration')
+
+@staff_member_required
+def manage_users(request):
+    school_filter = request.GET.get('school')
+    if school_filter:
+        users = User.objects.filter(school_name=school_filter).order_by('id')
+    else:
+        users = User.objects.all().order_by('id')
+    
+    # ดึงรายชื่อโรงเรียนที่มีอยู่ (ไม่ใช่ค่าว่าง)
+    schools = User.objects.exclude(school_name__isnull=True).exclude(school_name="").values_list('school_name', flat=True).distinct()
+    
+    # จัดกลุ่มผู้ใช้ตามบทบาท
+    teachers = users.filter(is_teacher=True)
+    students = users.filter(is_student=True)
+    # สมมุติว่า "เจ้าหน้าที่" คือผู้ใช้ที่มี is_staff=True แต่ไม่ใช่ superuser
+    staff = users.filter(is_staff=True, is_superuser=False)
+    
+    context = {
+        'schools': schools,
+        'school_filter': school_filter,
+        'teachers': teachers,
+        'students': students,
+        'staff': staff,
+    }
+    return render(request, 'app/admin/manage_users.html', context)
+
+@staff_member_required
+def edit_user(request, user_id):
+    """ แก้ไขข้อมูลยูสเซอร์ """
+    user_instance = get_object_or_404(User, id=user_id)
+    if request.method == 'POST':
+        form = UserEditForm(request.POST, instance=user_instance)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "อัปเดตข้อมูลยูสเซอร์เรียบร้อยแล้ว")
+            return redirect('manage_users')
+        else:
+            messages.error(request, "กรุณาตรวจสอบข้อมูลที่กรอกอีกครั้ง")
+    else:
+        form = UserEditForm(instance=user_instance)
+    return render(request, 'app/admin/edit_user.html', {'form': form, 'user_instance': user_instance})
+
+@staff_member_required
+def delete_user(request, user_id):
+    """ ลบยูสเซอร์ออกจากระบบ """
+    user_instance = get_object_or_404(User, id=user_id)
+    if request.method == 'POST':
+        user_instance.delete()
+        messages.success(request, "ลบยูสเซอร์เรียบร้อยแล้ว")
+        return redirect('manage_users')
+    return render(request, 'app/admin/delete_user.html', {'user_instance': user_instance})
+
+##################################################################################################################################################################
+@login_required
+@staff_member_required
+def dashboard_staff(request):
     school_name = request.user.school_name
 
-    # ✅ นับจำนวนครู, นักเรียน และรายวิชาในโรงเรียน
+    # ดึงปีการศึกษาทั้งหมด (ถ้าจะใช้ในอนาคต)
+    year_list = ExamSubject.objects.filter(invigilator__school_name=school_name).values_list('academic_year', flat=True).distinct()
+
+    # ✅ ดึงข้อมูลครู/นักเรียน/รายวิชา
     teacher_count = TeacherProfile.objects.filter(user__school_name=school_name).count()
     student_count = StudentProfile.objects.filter(user__school_name=school_name).count()
     subject_count = ExamSubject.objects.filter(invigilator__school_name=school_name).count()
@@ -124,7 +241,6 @@ def statistics_view(request):
         students = StudentProfile.objects.filter(student_class=class_name, user__school_name=school_name)
         student_ids = students.values_list('id', flat=True)
 
-        # ✅ ถ้าไม่มีนักเรียนในระดับชั้นนี้ ให้ตั้งค่าเป็น 0
         attendance_data[class_name] = {
             "on_time": 0,
             "late": 0,
@@ -134,46 +250,35 @@ def statistics_view(request):
             "total_teachers": teacher_count
         }
 
-        # ✅ นับจำนวนสถานะการเข้าสอบ
         records = Attendance.objects.filter(student_id__in=student_ids).values("status").annotate(count=Count("id"))
 
         for record in records:
             status_key = record["status"]
-
-            # ตรวจสอบว่า status_key เป็น tuple หรือไม่ และแยกค่าที่ถูกต้อง
             if isinstance(status_key, tuple):
-                status_key = status_key[0]  # ใช้แค่สถานะหลัก เช่น 'late' หรือ 'on_time'
+                status_key = status_key[0]
 
-            # เพิ่มข้อมูลการนับสถานะ
             if status_key in attendance_data[class_name]:
                 attendance_data[class_name][status_key] += record["count"]
-            else:
-                attendance_data[class_name][status_key] = record["count"]
 
-            # นับข้อมูลรวม
             if status_key in attendance_data["all"]:
                 attendance_data["all"][status_key] += record["count"]
-            else:
-                attendance_data["all"][status_key] = record["count"]
 
-    # ✅ ถ้าไม่มีข้อมูล ให้ตั้งค่าเริ่มต้นเป็น 0 เพื่อป้องกันกราฟว่าง
+    # ✅ ถ้าไม่มีข้อมูล ให้ตั้งค่าเริ่มต้นเป็น 0
     for key in attendance_data:
-        if "on_time" not in attendance_data[key]:
-            attendance_data[key]["on_time"] = 0
-        if "late" not in attendance_data[key]:
-            attendance_data[key]["late"] = 0
-        if "absent" not in attendance_data[key]:
-            attendance_data[key]["absent"] = 0
+        attendance_data[key].setdefault("on_time", 0)
+        attendance_data[key].setdefault("late", 0)
+        attendance_data[key].setdefault("absent", 0)
 
-    # ✅ ส่งข้อมูลไปยังเทมเพลต
-    return render(request, "app/staff/statistics.html", {
-        "teacher_count": teacher_count,
-        "student_count": student_count,
-        "subject_count": subject_count,
-        "class_list": class_list,
-        "attendance_data": attendance_data
-    })
+    context = {
+        'school_name': school_name,
+        'teacher_count': teacher_count,
+        'student_count': student_count,
+        'subject_count': subject_count,
+        'class_list': class_list,
+        'attendance_data': attendance_data
+    }
 
+    return render(request, 'app/staff/dashboard_staff.html', context)
     
 def import_csv(request):
     if request.method == 'POST':
@@ -239,6 +344,124 @@ def import_csv(request):
 
     return render(request, 'app/staff/import_csv.html')
 
+@login_required
+def import_exam_subjects_csv(request):
+    if request.method == 'POST':
+        file = request.FILES.get('file')
+        if not file:
+            messages.error(request, 'กรุณาเลือกไฟล์เพื่ออัปโหลด')
+            return redirect('import_exam_subjects_csv')
+
+        imported_count = 0
+        try:
+            # ✅ ดึงชื่อโรงเรียนของ staff ที่กำลังล็อกอิน
+            school_name = request.user.school_name
+
+            # อ่านไฟล์ CSV หรือ Excel
+            if file.name.endswith('.csv'):
+                raw_data = file.read()
+                detected = chardet.detect(raw_data)
+                encoding = detected.get("encoding", "utf-8")
+                from io import StringIO
+                decoded_data = raw_data.decode(encoding)
+                df = pd.read_csv(StringIO(decoded_data))
+            elif file.name.endswith(('.xls', '.xlsx')):
+                df = pd.read_excel(file)
+            else:
+                messages.error(request, 'รองรับเฉพาะไฟล์ CSV หรือ Excel เท่านั้น')
+                return redirect('import_exam_subjects_csv')
+
+            for _, row in df.iterrows():
+                required_fields = [
+                    'Subject_Name', 'Subject_Code', 'Academic_Year',
+                    'Exam_Date', 'Start_Time', 'End_Time',
+                    'Room', 'Invigilator', 'Student_Class'
+                ]
+                if not all(str(row.get(field)).strip() for field in required_fields):
+                    messages.warning(request, f"ข้อมูลไม่ครบถ้วนสำหรับ: {row.get('Subject_Name', 'ไม่ระบุชื่อวิชา')}")
+                    continue
+
+                # แปลงวันสอบ
+                exam_date = pd.to_datetime(row['Exam_Date'], errors='coerce').date()
+
+                # แปลงเวลาเริ่มสอบและสิ้นสุดสอบ
+                def get_time(value):
+                    if isinstance(value, datetime):
+                        return value.time()
+                    elif isinstance(value, time):
+                        return value
+                    else:
+                        return pd.to_datetime(value, errors='coerce').time()
+
+                start_time = get_time(row['Start_Time'])
+                end_time = get_time(row['End_Time'])
+
+                start_datetime = timezone.make_aware(datetime.combine(exam_date, start_time), timezone=thai_tz)
+                end_datetime = timezone.make_aware(datetime.combine(exam_date, end_time), timezone=thai_tz)
+
+                room = row['Room']
+
+                # ✅ ตรวจสอบ "ห้องซ้ำเวลา" ในโรงเรียนเดียวกันเท่านั้น
+                if ExamSubject.objects.filter(
+                    room=room, exam_date=exam_date, school_name=school_name
+                ).filter(start_time__lt=end_datetime, end_time__gt=start_datetime).exists():
+                    messages.error(request, f"❌ ห้อง {room} ซ้ำเวลาสอบ")
+                    continue
+
+                # ✅ สร้างรายวิชา (ใส่ school_name)
+                subject = ExamSubject(
+                    subject_name=row['Subject_Name'],
+                    subject_code=row['Subject_Code'],
+                    academic_year=row['Academic_Year'],
+                    exam_date=exam_date,
+                    start_time=start_datetime,
+                    end_time=end_datetime,
+                    room=room,
+                    school_name=school_name  # ✅ กำหนดโรงเรียน
+                )
+
+                # ✅ ตรวจสอบครูคุมสอบหลัก (เฉพาะในโรงเรียนเดียวกัน)
+                try:
+                    invigilator = TeacherProfile.objects.get(teacher_id=str(row['Invigilator']).strip(), school_name=school_name)
+                    busy = ExamSubject.objects.filter(
+                        invigilator=invigilator, exam_date=exam_date, school_name=school_name
+                    ).filter(start_time__lt=end_datetime, end_time__gt=start_datetime).exists()
+                    if busy:
+                        messages.error(request, f"❌ ครู {invigilator.user.get_full_name()} ซ้ำเวลา")
+                        continue
+                    subject.invigilator = invigilator
+                except TeacherProfile.DoesNotExist:
+                    messages.warning(request, f"ไม่พบครูคุมสอบ: {row['Invigilator']}")
+                    continue
+
+                # ✅ ตรวจสอบครูสำรอง (เฉพาะในโรงเรียนเดียวกัน)
+                sec_id = str(row.get('Secondary_Invigilator', '')).strip()
+                if sec_id:
+                    try:
+                        sec_teacher = TeacherProfile.objects.get(teacher_id=sec_id, school_name=school_name)
+                        subject.secondary_invigilator = sec_teacher
+                    except TeacherProfile.DoesNotExist:
+                        messages.warning(request, f"ไม่พบครูผู้คุมสอบสำรอง")
+
+                # ✅ ดึงนักเรียนเฉพาะโรงเรียนปัจจุบัน
+                students = StudentProfile.objects.filter(
+                    student_class=row['Student_Class'],
+                    user__school_name=school_name
+                )
+
+                subject.save()
+                subject.students.set(students)
+                imported_count += 1
+
+            messages.success(request, f"✅ นำเข้าวิชาเรียบร้อยแล้ว: {imported_count} วิชา")
+
+        except Exception as e:
+            messages.error(request, f"❌ เกิดข้อผิดพลาด: {e}")
+
+        return redirect('import_exam_subjects_csv')
+
+    return render(request, 'app/staff/import_exam_subjects_csv.html')
+
 
 @login_required
 def school_members(request):
@@ -277,6 +500,40 @@ def add_exam_subject(request):
             subject.start_time = timezone.make_aware(form.cleaned_data['start_time'], timezone=thai_tz)
             subject.end_time = timezone.make_aware(form.cleaned_data['end_time'], timezone=thai_tz)
 
+            room = form.cleaned_data['room']
+            exam_date = form.cleaned_data['exam_date']
+
+            # ตรวจสอบว่าห้องสอบถูกใช้งานอยู่หรือไม่
+            existing_exam_room = ExamSubject.objects.filter(
+                room=room,
+                exam_date=exam_date
+            ).filter(
+                start_time__lt=subject.end_time,
+                end_time__gt=subject.start_time
+            ).exists()
+            if existing_exam_room:
+                messages.error(
+                    request, 
+                    f"❌ ห้อง {room} ถูกใช้งานแล้วในช่วงเวลานี้ {subject.start_time.strftime('%H:%M')} - {subject.end_time.strftime('%H:%M')} ({exam_date})"
+                )
+                return render(request, 'app/staff/add_exam_subject.html', {'form': form})
+
+            # **ตรวจสอบว่าครูถูกใช้งานในช่วงเวลาที่เลือกหรือไม่**
+            invigilator = form.cleaned_data['invigilator']
+            teacher_busy = ExamSubject.objects.filter(
+                invigilator=invigilator,
+                exam_date=exam_date
+            ).filter(
+                start_time__lt=subject.end_time,
+                end_time__gt=subject.start_time
+            ).exists()
+            if teacher_busy:
+                messages.error(
+                    request,
+                    f"❌ ครู {invigilator.user.get_full_name()} ถูกใช้งานแล้วในช่วงเวลานี้ {subject.start_time.strftime('%H:%M')} - {subject.end_time.strftime('%H:%M')} ({exam_date})"
+                )
+                return render(request, 'app/staff/add_exam_subject.html', {'form': form})
+
             # ดึงนักเรียนที่อยู่ในระดับชั้นที่เลือก
             selected_class = form.cleaned_data['student_class']
             students = StudentProfile.objects.filter(
@@ -284,15 +541,15 @@ def add_exam_subject(request):
                 user__school_name=request.user.school_name
             )
 
-            # บันทึกข้อมูล
+            # บันทึกข้อมูลรายวิชา
             subject.save()
-            subject.students.set(students)  # เพิ่มนักเรียนที่มีระดับชั้นนี้เข้าไป
+            subject.students.set(students)
             subject.save()
 
-            messages.success(request, f"เพิ่มรายวิชา {subject.subject_name} สำเร็จ!")
+            messages.success(request, f"✅ เพิ่มรายวิชา '{subject.subject_name}' สำเร็จ!")
             return redirect('exam_subjects_staff')
         else:
-            messages.error(request, "ข้อมูลไม่ถูกต้อง กรุณากรอกข้อมูลให้ครบถ้วน")
+            messages.error(request, "⚠️ ข้อมูลไม่ถูกต้อง กรุณากรอกข้อมูลให้ครบถ้วน")
             print("ฟอร์มมีข้อผิดพลาด:", form.errors)
     else:
         form = ExamSubjectForm(user=request.user)
@@ -311,26 +568,36 @@ def exam_subjects_staff(request):
     # ✅ ดึงระดับชั้นทั้งหมด
     classes = StudentProfile.objects.filter(user__school_name=school_name).values_list('student_class', flat=True).distinct()
 
+    # ✅ ดึงปีการศึกษาทั้งหมด
+    academic_years = subjects.values_list('academic_year', flat=True).distinct().order_by('-academic_year')
+
+    # รับค่าที่เลือกจาก dropdown
     selected_class = request.GET.get('student_class', 'all')
+    selected_year = request.GET.get('academic_year', 'all')
 
+    # ✅ กรองตามระดับชั้น
     if selected_class != 'all' and selected_class:
-        subjects = subjects.filter(students__student_class=selected_class).distinct()
+        subjects = subjects.filter(students__student_class=selected_class)
 
-    # ✅ เพิ่มระดับชั้นให้แต่ละรายวิชา
+    # ✅ กรองตามปีการศึกษา
+    if selected_year != 'all' and selected_year:
+        subjects = subjects.filter(academic_year=selected_year)
+
+    subjects = subjects.distinct()
+
+    # เพิ่มระดับชั้นให้แต่ละรายวิชา
     for subject in subjects:
         subject.grades = list(subject.students.values_list('student_class', flat=True).distinct())
-
-    # ✅ Debug log ตรวจสอบข้อมูล
-    print("📚 วิชาในระบบ:")
-    for sub in subjects:
-        print(f"📌 {sub.subject_name}, ระดับชั้นที่เกี่ยวข้อง: {sub.grades}")
 
     return render(request, 'app/staff/exam_subjects_staff.html', {
         'school_name': school_name,
         'subjects': subjects,
         'classes': classes,
         'selected_class': selected_class,
+        'academic_years': academic_years,
+        'selected_year': selected_year,
     })
+
 
 @login_required
 def select_exam_subject(request):
@@ -395,9 +662,12 @@ def exam_detail(request, subject_id):
 
 @login_required
 def delete_exam_subject(request, subject_id):
-    subject = get_object_or_404(ExamSubject, id=subject_id)
-    subject.delete()
-    messages.success(request, f"ลบรายวิชา {subject.subject_name} สำเร็จ!")
+    if request.method == 'POST':
+        subject = get_object_or_404(ExamSubject, id=subject_id)
+        subject.delete()
+        messages.success(request, f"ลบรายวิชา {subject.subject_name} สำเร็จ!")
+    else:
+        messages.error(request, "การลบต้องใช้วิธี POST เท่านั้น")
     return redirect('exam_subjects_staff')
 
 @login_required
@@ -471,33 +741,28 @@ def generate_qr_code(request, subject_id):
         "img_base64": img_base64,
         "qr_url": qr_url
     })
- 
-@csrf_exempt  
+
+@csrf_exempt
 @login_required
 def confirm_exam_entry(request):
     if request.method == "GET":
-        # รับรหัสวิชาจาก query parameter
+        # รับ subject_id จาก query string
         subject_id = request.GET.get("subject_id")
         if not subject_id:
             return JsonResponse({"status": "error", "message": "❌ ไม่พบรหัสวิชา"}, status=400)
 
-        # ดึงข้อมูลของวิชาจากฐานข้อมูล
         subject = get_object_or_404(ExamSubject, id=subject_id)
+        student, teacher, seat_number = None, None, None
 
-        student, teacher = None, None
-        seat_number = None
-
-        # หากผู้ใช้เป็นนักเรียน ให้ดึงข้อมูลของนักเรียน
+        # หากผู้ใช้เป็นนักศึกษา ดึงข้อมูลนักศึกษาและเลขที่นั่งสอบ
         if request.user.is_student:
             student = get_object_or_404(StudentProfile, user=request.user)
-            seating = SeatingPlan.objects.filter(student=student, subject=subject).first()
-            seat_number = seating.seat_number if seating else "-"
+            seat_number = student.no_student if student.no_student else "-"
 
-        # หากผู้ใช้เป็นครู ให้ดึงข้อมูลของครู
+        # หากผู้ใช้เป็นครู ดึงข้อมูลครู
         elif request.user.is_teacher:
             teacher = get_object_or_404(TeacherProfile, user=request.user)
 
-        # ส่งข้อมูลไปยังหน้า confirm_exam.html
         return render(request, "app/confirm_exam.html", {
             "subject": subject,
             "student": student,
@@ -507,52 +772,41 @@ def confirm_exam_entry(request):
 
     elif request.method == "POST":
         try:
-            # รับข้อมูลจาก body ของ request
             data = json.loads(request.body)
             subject_id = data.get("subject_id")
-
             if not subject_id:
                 return JsonResponse({"status": "error", "message": "❌ ไม่มี subject_id"}, status=400)
 
-            # ดึงข้อมูลของวิชาจากฐานข้อมูล
             subject = get_object_or_404(ExamSubject, id=subject_id)
 
-            # หากผู้ใช้เป็นนักเรียน
+            # สำหรับนักศึกษา: สร้างหรืออัปเดต Attendance ให้เป็น "on_time"
             if request.user.is_student:
                 student = get_object_or_404(StudentProfile, user=request.user)
-
-                # ตรวจสอบว่านักเรียนได้เช็คชื่อหรือยัง
                 attendance, created = Attendance.objects.get_or_create(student=student, subject=subject)
                 if not created:
                     return JsonResponse({"status": "error", "message": "❌ คุณได้เช็คชื่อไปแล้ว!"}, status=400)
-
-                # บันทึกสถานะเช็คชื่อ
                 attendance.status = "on_time"
                 attendance.checkin_time = now()
                 attendance.save()
 
-            # หากผู้ใช้เป็นครู
+            # สำหรับครู: ตรวจสอบว่าเป็นครูคุมสอบหลักหรือครูคุมสอบสำรองโดยเปรียบเทียบจาก ID
             elif request.user.is_teacher:
                 teacher = get_object_or_404(TeacherProfile, user=request.user)
-
-                # ตรวจสอบว่าเป็นครูคุมสอบของวิชานี้หรือไม่
-                if subject.invigilator != teacher:
-                    return JsonResponse({"status": "error", "message": "❌ คุณไม่ใช่ครูคุมสอบวิชานี้"}, status=403)
-
-                # อัปเดตสถานะการเช็คชื่อของครู
-                subject.invigilator_checkin = True
+                if teacher.id != subject.invigilator_id and teacher.id != subject.secondary_invigilator_id:
+                    return JsonResponse({"status": "error", "message": "❌ คุณไม่ใช่ครูคุมสอบของวิชานี้"}, status=403)
+                if teacher.id == subject.invigilator_id:
+                    subject.invigilator_checkin = True
+                elif teacher.id == subject.secondary_invigilator_id:
+                    subject.secondary_invigilator_checkin = True
                 subject.save()
 
             return JsonResponse({"status": "success", "message": "✅ เช็คชื่อสำเร็จ!"})
-
         except json.JSONDecodeError:
             return JsonResponse({"status": "error", "message": "❌ ข้อมูล JSON ไม่ถูกต้อง"}, status=400)
         except Exception as e:
-            # จัดการกรณีอื่น ๆ ที่อาจเกิดข้อผิดพลาด
             return JsonResponse({"status": "error", "message": f"❌ เกิดข้อผิดพลาด: {str(e)}"}, status=500)
 
     return JsonResponse({"status": "error", "message": "❌ Method Not Allowed"}, status=405)
-
 
 @login_required
 def exam_completed(request):
@@ -668,6 +922,7 @@ def manual_checkin(request):
 
     return JsonResponse({"status": "error"}, status=400)
 
+##################################################################################################################################################################
 @login_required
 def dashboard_teacher(request):
     user = request.user
@@ -723,31 +978,44 @@ def teacher_checkin(request):
 @csrf_exempt
 @login_required
 def confirm_exam_entry_teacher(request):
-    """ ฟังก์ชันยืนยันการเข้าสอบของครู """
     if request.method == "POST":
         try:
-            data = json.loads(request.body)
-            subject_id = data.get("subject_id")
-
+            # ดึงข้อมูลจาก request (รองรับทั้ง JSON และ form POST)
+            if request.content_type == "application/json":
+                data = json.loads(request.body)
+                subject_id = data.get("subject_id")
+                new_status = data.get("status")
+            else:
+                subject_id = request.POST.get("subject_id")
+                new_status = request.POST.get("status")
+            
             if not subject_id:
                 return JsonResponse({"status": "error", "message": "❌ ไม่มี subject_id"}, status=400)
-
+            
             subject = get_object_or_404(ExamSubject, id=subject_id)
-
-            # ตรวจสอบว่าใช่ครูคุมสอบหรือไม่
-            if request.user.teacher_profile != subject.invigilator:
+            
+            # ใช้ filter แทน get_object_or_404 เพื่อจัดการกรณีที่ไม่มี TeacherProfile
+            teacher = TeacherProfile.objects.filter(user=request.user).first()
+            if not teacher:
+                return JsonResponse({"status": "error", "message": "❌ ไม่พบข้อมูลโปรไฟล์ครู กรุณาติดต่อแอดมิน"}, status=404)
+            
+            # ตรวจสอบสิทธิ์ของครูที่เกี่ยวข้องกับวิชา
+            if teacher.id != subject.invigilator_id and teacher.id != subject.secondary_invigilator_id:
                 return JsonResponse({"status": "error", "message": "❌ คุณไม่ใช่ครูคุมสอบของวิชานี้"}, status=403)
-
-            # อัปเดตสถานะการคุมสอบของครู
-            subject.invigilator_checkin = True
+            
+            # อัปเดตสถานะตามค่าที่ส่งเข้ามา (เฉพาะ "on_time" หรือ "absent")
+            if teacher.id == subject.invigilator_id:
+                subject.invigilator_checkin = (new_status == "on_time")
+            elif teacher.id == subject.secondary_invigilator_id:
+                subject.secondary_invigilator_checkin = (new_status == "on_time")
             subject.save()
-
+            
             return JsonResponse({"status": "success", "message": "✅ คุณได้เช็คชื่อการคุมสอบแล้ว!"})
-
-        except json.JSONDecodeError:
-            return JsonResponse({"status": "error", "message": "❌ ข้อมูล JSON ไม่ถูกต้อง"}, status=400)
-
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": f"❌ เกิดข้อผิดพลาด: {str(e)}"}, status=500)
+    
     return JsonResponse({"status": "error", "message": "❌ Method Not Allowed"}, status=405)
+
 
 @login_required
 def exam_subjects_teacher(request):
@@ -819,14 +1087,104 @@ def teacher_check_student(request):
         'subject_data': subject_data
     })
 
+@csrf_exempt
+@login_required
+def manual_teacher_checkin(request):
+    """
+    View สำหรับให้เจ้าหน้าที่อัปเดตสถานะการเช็คชื่อของครูผู้คุมสอบหลักหรือครูผู้คุมสอบสำรอง
+    """
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            teacher_id = data.get("teacher_id")
+            subject_id = data.get("subject_id")
+            status = data.get("status")  # คาดว่าจะเป็น "on_time" หรือ "absent"
+            
+            teacher = get_object_or_404(TeacherProfile, id=teacher_id)
+            subject = get_object_or_404(ExamSubject, id=subject_id)
+
+            # ตรวจสอบว่า teacher นี้เป็นครูคุมสอบหลักหรือสำรองของวิชานี้
+            if teacher.id != subject.invigilator_id and teacher.id != subject.secondary_invigilator_id:
+                return JsonResponse({"status": "error", "message": "❌ ครูนี้ไม่ใช่ครูคุมสอบของวิชานี้"}, status=403)
+
+            # อัปเดตสถานะตามตำแหน่ง
+            if teacher.id == subject.invigilator_id:
+                subject.invigilator_checkin = True if status == "on_time" else False
+                position = "main"
+            else:
+                subject.secondary_invigilator_checkin = True if status == "on_time" else False
+                position = "secondary"
+            subject.save()
+
+            return JsonResponse({"status": "success", "position": position})
+        except json.JSONDecodeError:
+            return JsonResponse({"status": "error", "message": "❌ ข้อมูล JSON ไม่ถูกต้อง"}, status=400)
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": f"❌ เกิดข้อผิดพลาด: {str(e)}"}, status=500)
+
+    return JsonResponse({"status": "error", "message": "❌ Method Not Allowed"}, status=405)
+
+##################################################################################################################################################################
 @login_required
 def dashboard_student(request):
-    try:
-        student_profile = request.user.studentprofile
-        student_id = student_profile.id
-    except StudentProfile.DoesNotExist:
-        student_id = None  # Or handle this case as needed
-    return render(request, 'app/student/dashboard_student.html', {'user': request.user, 'student_id': student_id})
+    if not request.user.is_student:
+        return HttpResponseForbidden("เฉพาะนักเรียนเท่านั้น")
+    student_profile = get_object_or_404(StudentProfile, user=request.user)
+    
+    # ดึงตารางสอบสำหรับนักเรียนที่กำลังจะมาถึง (exam_date >= วันนี้)
+    today = now().date()
+    upcoming_exams = ExamSubject.objects.filter(students=student_profile, exam_date__gte=today).order_by('exam_date')
+    
+    # ดึงประวัติการสอบทั้งหมดสำหรับนักเรียนนี้
+    exam_history = Attendance.objects.filter(student=student_profile).order_by('-checkin_time')
+    
+    context = {
+        'upcoming_exams': upcoming_exams,
+        'exam_history': exam_history,
+    }
+    return render(request, 'app/student/dashboard_student.html', context)
 
+# 1. ดูตารางสอบและการลงทะเบียน
+@login_required
+def exam_schedule(request):
+    if not request.user.is_student:
+        return HttpResponseForbidden("เฉพาะนักเรียนเท่านั้น")
+    student_profile = get_object_or_404(StudentProfile, user=request.user)
+    # Query รายวิชาที่นักเรียนลงทะเบียนสอบไว้
+    subjects = ExamSubject.objects.filter(students=student_profile).order_by('exam_date')
+    return render(request, 'app/student/exam_schedule.html', {'subjects': subjects})
 
+# 2. ประวัติการสอบ
+@login_required
+def exam_history(request):
+    if not request.user.is_student:
+        return HttpResponseForbidden("เฉพาะนักเรียนเท่านั้น")
+    student_profile = get_object_or_404(StudentProfile, user=request.user)
+    attendance_records = Attendance.objects.filter(student=student_profile).order_by('-checkin_time')
+    return render(request, 'app/student/exam_history.html', {'attendance_records': attendance_records})
+
+# 3. ปรับปรุงโปรไฟล์ (นักเรียน)
+@login_required
+def update_profile(request):
+    if not request.user.is_student:
+        return HttpResponseForbidden("เฉพาะนักเรียนเท่านั้น")
+    user_instance = request.user
+    student_profile = get_object_or_404(StudentProfile, user=user_instance)
+    if request.method == 'POST':
+        user_form = UserProfileEditForm(request.POST, instance=user_instance)
+        profile_form = StudentProfileEditForm(request.POST, instance=student_profile)
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            messages.success(request, "อัปเดตโปรไฟล์เรียบร้อยแล้ว")
+            return redirect('dashboard_student')
+        else:
+            messages.error(request, "กรุณาตรวจสอบข้อมูลที่กรอก")
+    else:
+        user_form = UserProfileEditForm(instance=user_instance)
+        profile_form = StudentProfileEditForm(instance=student_profile)
+    return render(request, 'app/student/update_profile.html', {
+        'user_form': user_form,
+        'profile_form': profile_form
+    })
 

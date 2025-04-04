@@ -4,77 +4,134 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-    <h2 class="text-4xl font-extrabold text-indigo-700 text-center mb-8">📚 รายวิชาทั้งหมด</h2>
-    <p class="text-xl text-gray-600 text-center">โรงเรียน: <span class="font-semibold text-indigo-600">{{ school_name }}</span></p>
+  <h2 class="text-4xl font-extrabold text-indigo-700 text-center mb-8">📚 รายวิชาทั้งหมด</h2>
+  <p class="text-xl text-gray-600 text-center mb-8">
+    โรงเรียน: <span class="font-semibold text-indigo-600">{{ school_name }}</span>
+  </p>
 
-    <!-- ✅ Dropdown สำหรับเลือกระดับชั้น -->
-    <div class="flex justify-center mb-8">
-        <form method="GET" class="flex items-center space-x-4" id="classForm">
-            <label for="student_class" class="text-lg text-gray-600">เลือกระดับชั้น</label>
-            <select name="student_class" id="student_class" class="border border-gray-300 p-2 rounded-md w-56 shadow-md" onchange="document.getElementById('classForm').submit();">
-                <option value="all" {% if selected_class == 'all' %}selected{% endif %}>-- ทั้งหมด --</option>
-                {% for class in classes %}
-                <option value="{{ class }}" {% if class == selected_class %}selected{% endif %}>{{ class }}</option>
-                {% endfor %}
-            </select>
-        </form>
-    </div>
+  <!-- ฟอร์มกรองระดับชั้น + ปีการศึกษา -->
+  <div class="mb-10 flex flex-col md:flex-row md:items-center md:justify-center gap-4">
+    <form method="GET" id="classForm" class="flex flex-wrap items-center justify-center gap-4">
+      <!-- ระดับชั้น -->
+      <div class="flex items-center space-x-2">
+        <label for="student_class" class="text-lg font-medium text-gray-700">ระดับชั้น:</label>
+        <select name="student_class" id="student_class"
+                class="border border-gray-300 bg-white p-2 rounded-md shadow-sm">
+          <option value="all" {% if selected_class == 'all' %}selected{% endif %}>-- ทั้งหมด --</option>
+          {% for class in classes %}
+            <option value="{{ class }}" {% if class == selected_class %}selected{% endif %}>{{ class }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-    <div class="overflow-x-auto shadow-lg rounded-lg">
-        <table class="w-full table-auto bg-white border border-gray-300 rounded-lg text-sm md:text-base">
-            <thead class="bg-indigo-700 text-white text-sm md:text-base text-center">
-                <tr>
-                    <th class="py-3 px-4 font-semibold">ชื่อวิชา</th>
-                    <th class="py-3 px-4 font-semibold">รหัสวิชา</th>
-                    <th class="py-3 px-4 font-semibold">ปีการศึกษา</th>
-                    <th class="py-3 px-4 font-semibold">ระดับชั้น</th>  
-                    <th class="py-3 px-4 font-semibold">วันที่สอบ</th>
-                    <th class="py-3 px-4 font-semibold">เวลา</th>
-                    <th class="py-3 px-4 font-semibold">ห้องสอบ</th>
-                    <th class="py-3 px-4 font-semibold">ผู้คุมสอบ</th>
-                    <th class="py-3 px-4 font-semibold">การจัดการ</th>
-                </tr>
-            </thead>
-            <tbody class="text-gray-800 text-sm md:text-base text-center">
-                {% for subject in subjects %}
-                <tr class="hover:bg-indigo-50 transition">
-                    <td class="py-3 px-4 border-b">{{ subject.subject_name }}</td>
-                    <td class="py-3 px-4 border-b">{{ subject.subject_code }}</td>
-                    <td class="py-3 px-4 border-b">{{ subject.academic_year }}</td>
-                    <td class="py-3 px-4 border-b">
-                    <span class="bg-indigo-200 text-indigo-700 px-2 py-1 text-xs rounded-md">
-                        {% if subject.students.exists %}
-                            {% for student in subject.students.all|dictsort:"student_class"|slice:":1" %}
-                                {{ student.student_class }}
-                            {% endfor %}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>                   
-                    <td class="py-3 px-4 border-b">{{ subject.exam_date }}</td>
-                    <td class="py-3 px-4 border-b">{{ subject.start_time }} - {{ subject.end_time }}</td>
-                    <td class="py-3 px-4 border-b">{{ subject.room }}</td>
-                    <td class="py-3 px-4 border-b">
-                        {% if subject.invigilator %}
-                            {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td class="py-3 px-4 border-b flex justify-center gap-2">
-                        <a href="{% url 'edit_exam_subject' subject.id %}" class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded-md transition">✏️ แก้ไข</a>
-                        <a href="{% url 'delete_exam_subject' subject.id %}" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md transition" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายวิชานี้?')">🗑️ ลบ</a>
-                        <a href="{% url 'generate_qr_code' subject.id %}" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md transition">📱 สร้าง QR Code</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="9" class="text-center text-gray-600 py-6 text-sm md:text-base">ไม่มีรายวิชาในระดับชั้นที่เลือก</td>
-                </tr>
-                {% endfor %}
-            </tbody>            
-                                
-        </table>
-    </div>
+      <!-- ปีการศึกษา -->
+      <div class="flex items-center space-x-2">
+        <label for="academic_year" class="text-lg font-medium text-gray-700">ปีการศึกษา:</label>
+        <select name="academic_year" id="academic_year"
+                class="border border-gray-300 bg-white p-2 rounded-md shadow-sm"
+                onchange="document.getElementById('classForm').submit();">
+          <option value="all" {% if selected_year == 'all' %}selected{% endif %}>-- ทั้งหมด --</option>
+          {% for year in academic_years %}
+            <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- ปุ่มส่งแบบฟอร์มแบบ hidden (รองรับ onchange dropdown) -->
+      <button type="submit" class="hidden">กรอง</button>
+    </form>
+  </div>
+
+  <!-- ตารางรายวิชา -->
+  <div class="overflow-x-auto shadow-lg rounded-lg">
+    <table class="table-auto w-full bg-white border border-gray-300 rounded-lg text-sm md:text-base whitespace-normal break-words">
+      <thead class="bg-indigo-700 text-white">
+        <tr>
+          <th class="py-3 px-4 font-semibold text-left">ชื่อวิชา</th>
+          <th class="py-3 px-4 font-semibold text-left">รหัสวิชา</th>
+          <th class="py-3 px-4 font-semibold text-left">ปีการศึกษา</th>
+          <th class="py-3 px-4 font-semibold text-left">ระดับชั้น</th>
+          <th class="py-3 px-4 font-semibold text-left">วันที่สอบ</th>
+          <th class="py-3 px-4 font-semibold text-left">เวลา</th>
+          <th class="py-3 px-4 font-semibold text-left">ห้องสอบ</th>
+          <th class="py-3 px-4 font-semibold text-left">ผู้คุมสอบ</th>
+          <th class="py-3 px-4 font-semibold text-center">การจัดการ</th>
+        </tr>
+      </thead>
+      <tbody class="text-gray-700">
+        {% for subject in subjects %}
+        <tr class="hover:bg-indigo-50 transition">
+          <td class="border-b py-3 px-4">{{ subject.subject_name }}</td>
+          <td class="border-b py-3 px-4">{{ subject.subject_code }}</td>
+          <td class="border-b py-3 px-4">{{ subject.academic_year }}</td>
+          <td class="border-b py-3 px-4">
+            {% if subject.students.exists %}
+              {% for student in subject.students.all|dictsort:"student_class"|slice:":1" %}
+                <span class="bg-indigo-200 text-indigo-700 px-2 py-1 text-xs rounded-md font-medium">
+                  {{ student.student_class }}
+                </span>
+              {% endfor %}
+            {% else %}
+              <span class="text-gray-500">-</span>
+            {% endif %}
+          </td>
+          <td class="border-b py-3 px-4">{{ subject.exam_date }}</td>
+          <td class="border-b py-3 px-4">{{ subject.start_time }} - {{ subject.end_time }}</td>
+          <td class="border-b py-3 px-4">{{ subject.room }}</td>
+          <td class="border-b py-3 px-4">
+            {% if subject.invigilator %}
+              <span class="font-medium">
+                {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}
+              </span>
+            {% else %}
+              <span class="text-gray-500">-</span>
+            {% endif %}
+            <br>
+            {% if subject.secondary_invigilator %}
+              <span class="font-medium">
+                {{ subject.secondary_invigilator.user.first_name }} {{ subject.secondary_invigilator.user.last_name }}
+              </span>
+            {% else %}
+              <span class="text-gray-500">-</span>
+            {% endif %}
+          </td>
+          <td class="border-b py-3 px-4 text-center">
+            <div class="flex flex-col space-y-2 sm:flex-row sm:justify-center sm:items-center sm:space-y-0 sm:space-x-2">
+              
+              <!-- ปุ่มแก้ไข -->
+              <a href="{% url 'edit_exam_subject' subject.id %}"
+                 class="bg-yellow-500 hover:bg-yellow-600 text-white font-medium px-3 py-1 rounded-md transition shadow">
+                ✏️ แก้ไข
+              </a>
+          
+              <!-- ปุ่มลบ -->
+              <form action="{% url 'delete_exam_subject' subject.id %}" method="post"
+                    onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบวิชานี้?');">
+                {% csrf_token %}
+                <button type="submit"
+                        class="bg-red-500 hover:bg-red-600 text-white font-medium px-3 py-1 rounded-md transition shadow">
+                  🗑️ ลบ
+                </button>
+              </form>
+          
+              <!-- ปุ่ม QR Code -->
+              <a href="{% url 'generate_qr_code' subject.id %}"
+                 class="bg-blue-500 hover:bg-blue-600 text-white font-medium px-3 py-1 rounded-md transition shadow">
+                📱 QR Code
+              </a>
+            </div>
+          </td>
+          
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" class="text-center text-gray-600 py-6">
+            ไม่มีรายวิชาในระดับชั้นหรือปีการศึกษาที่เลือก
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endblock %}

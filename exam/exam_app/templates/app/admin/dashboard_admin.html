@@ -1,0 +1,27 @@
+<!-- app/admin/dashboard_admin.html -->
+
+{% extends "app/base.html" %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">แดชบอร์ดแอดมิน</h1>
+
+<div class="grid grid-cols-3 gap-4">
+    <div class="bg-blue-500 text-white p-4 rounded-lg shadow">
+        <h2 class="text-xl font-semibold">จำนวนครู</h2>
+        <p class="text-3xl">{{ teacher_count }}</p>
+    </div>
+    <div class="bg-green-500 text-white p-4 rounded-lg shadow">
+        <h2 class="text-xl font-semibold">จำนวนนักเรียน</h2>
+        <p class="text-3xl">{{ student_count }}</p>
+    </div>
+    <div class="bg-red-500 text-white p-4 rounded-lg shadow">
+        <h2 class="text-xl font-semibold">จำนวนวิชา</h2>
+        <p class="text-3xl">{{ subject_count }}</p>
+    </div>
+</div>
+
+<form method="POST" action="#">
+    {% csrf_token %}
+    <button type="submit" class="btn-primary">ยืนยันการสมัคร</button>
+</form>
+{% endblock %}

@@ -1,0 +1,22 @@
+<!-- app/admin/delete_user.html -->
+{% extends "app/base.html" %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+  <h1 class="text-4xl font-extrabold text-red-600 text-center mb-10">❌ ยืนยันการลบยูสเซอร์: {{ user_instance.username }}</h1>
+  <div class="bg-white shadow-xl rounded-lg p-8 text-center">
+    <p class="text-xl text-gray-700 mb-8">คุณแน่ใจหรือไม่ว่าต้องการลบยูสเซอร์นี้?</p>
+    <form method="POST" class="flex justify-center space-x-8">
+      {% csrf_token %}
+      <button type="submit" class="inline-block bg-red-600 hover:bg-red-700 text-white font-semibold px-10 py-3 rounded-lg transition duration-300">
+        ลบยูสเซอร์
+      </button>
+      <a href="{% url 'manage_users' %}" class="inline-block bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold px-10 py-3 rounded-lg transition duration-300">
+        ยกเลิก
+      </a>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
