@@ -1,33 +1,39 @@
-{% extends "app/base.html" %}
+<!-- dashboard_staff.html -->
 
+{% extends "app/base.html" %}
 {% block content %}
 <div class="container mx-auto mt-10 max-w-7xl px-6 md:px-12">
     <h2 class="text-4xl font-bold text-indigo-700 text-center mb-12">📊 แดชบอร์ดเจ้าหน้าที่</h2>
 
-    <!-- 🔹 ข้อมูลภาพรวม -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <!-- ✅ ภาพรวมข้อมูล -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         {% for card in overview_cards %}
-        <div class="bg-{{ card.color }}-100 p-6 rounded-2xl shadow-md flex items-center">
-            <div class="text-{{ card.color }}-700 text-5xl">{{ card.icon }}</div>
-            <div class="ml-5">
-                <h3 class="text-xl font-semibold text-{{ card.color }}-700">{{ card.label }}</h3>
-                <p class="text-4xl font-bold text-gray-800 mt-2" id="{{ card.label|slugify }}">{{ card.count }}</p>
+        <div class="bg-white border-l-4 border-{{ card.color }}-500 p-6 rounded-xl shadow-md transition hover:scale-105">
+            <div class="flex items-center">
+                <div class="text-{{ card.color }}-500 text-4xl">{{ card.icon }}</div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-600">{{ card.label }}</h3>
+                    <p class="text-3xl font-bold text-gray-800" id="{{ card.label|slugify }}">{{ card.count }}</p>
+                </div>
             </div>
         </div>
         {% endfor %}
     </div>
 
-    <!-- 🔹 ลิงก์จัดการ -->
+    <!-- ✅ เมนูการจัดการ -->
     <div class="mt-14">
-        <h3 class="text-2xl font-semibold text-gray-800 mb-6">🛠 การจัดการ</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <h3 class="text-2xl font-semibold text-gray-800 mb-6">🛠 เมนูการจัดการ</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             <a href="{% url 'import_csv' %}" class="bg-blue-500 hover:bg-blue-600 text-white py-5 px-4 rounded-xl text-center font-medium shadow-md transition">📂 นำเข้าข้อมูล CSV</a>
+            <a href="{% url 'import_exam_subjects_csv' %}" class="bg-cyan-500 hover:bg-cyan-600 text-white py-5 px-4 rounded-xl text-center font-medium shadow-md transition">🧾 นำเข้าวิชาสอบ CSV</a>
             <a href="{% url 'add_exam_subject' %}" class="bg-green-500 hover:bg-green-600 text-white py-5 px-4 rounded-xl text-center font-medium shadow-md transition">📚 เพิ่มรายวิชา</a>
             <a href="{% url 'exam_subjects_staff' %}" class="bg-purple-500 hover:bg-purple-600 text-white py-5 px-4 rounded-xl text-center font-medium shadow-md transition">📝 รายการวิชา</a>
+            <a href="{% url 'school_members' %}" class="bg-indigo-500 hover:bg-indigo-600 text-white py-5 px-4 rounded-xl text-center font-medium shadow-md transition">🏫 สมาชิกในโรงเรียน</a>
+            <a href="{% url 'select_exam_subject' %}" class="bg-amber-500 hover:bg-amber-600 text-white py-5 px-4 rounded-xl text-center font-medium shadow-md transition">🔍 ค้นหาวิชา</a>
         </div>
     </div>
 
-    <!-- 🔹 สถิติการเข้าสอบ -->
+    <!-- ✅ กราฟสถิติการเข้าสอบ -->
     <div class="mt-16">
         <h3 class="text-2xl font-semibold text-gray-800 mb-4">📈 สถิติการเข้าสอบ</h3>
 
@@ -76,14 +82,23 @@
         const studentCount = document.getElementById("จำนวนนักเรียน");
         const subjectCount = document.getElementById("จำนวนรายวิชา");
 
-        function updateCharts(className) {
-            let data = attendanceData[className] || attendanceData["all"];
+        function updateCharts() {
+            const className = classFilter.value;
+            const year = yearFilter.value;
+            let key = className;
+            if (year !== "all") {
+                key += `-${year}`;
+            }
+            const data = attendanceData[key] || attendanceData["all"];
+
             teacherCount.innerText = data.total_teachers;
             studentCount.innerText = data.total_students;
             subjectCount.innerText = data.total_subjects;
-            let onTime = data.on_time || 0;
-            let late = data.late || 0;
-            let absent = data.absent || 0;
+
+            const onTime = data.on_time || 0;
+            const late = data.late || 0;
+            const absent = data.absent || 0;
+
             barChart.data.datasets[0].data = [onTime, late, absent];
             pieChart.data.datasets[0].data = [onTime, late, absent];
             barChart.update();
@@ -96,11 +111,23 @@
                 labels: ["มาตรงเวลา", "มาสาย", "ขาดสอบ"],
                 datasets: [{
                     label: "จำนวนนักเรียน",
-                    data: [attendanceData["all"].on_time || 0, attendanceData["all"].late || 0, attendanceData["all"].absent || 0],
+                    data: [attendanceData["all"].on_time, attendanceData["all"].late, attendanceData["all"].absent],
                     backgroundColor: ["#16a34a", "#facc15", "#dc2626"]
                 }]
             },
-            options: { responsive: true }
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: "การเข้าสอบของนักเรียน",
+                        font: { size: 18 }
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
         });
 
         const pieChart = new Chart(document.getElementById("pieChart"), {
@@ -108,14 +135,27 @@
             data: {
                 labels: ["มาตรงเวลา", "มาสาย", "ขาดสอบ"],
                 datasets: [{
-                    data: [attendanceData["all"].on_time || 0, attendanceData["all"].late || 0, attendanceData["all"].absent || 0],
+                    data: [attendanceData["all"].on_time, attendanceData["all"].late, attendanceData["all"].absent],
                     backgroundColor: ["#16a34a", "#facc15", "#dc2626"]
                 }]
             },
-            options: { responsive: true }
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: "สัดส่วนการเข้าสอบ",
+                        font: { size: 18 }
+                    },
+                    legend: {
+                        position: "bottom"
+                    }
+                }
+            }
         });
 
-        classFilter.addEventListener("change", () => updateCharts(classFilter.value));
-        });
+        classFilter.addEventListener("change", updateCharts);
+        yearFilter.addEventListener("change", updateCharts);
+    });
 </script>
 {% endblock %}

@@ -11,7 +11,7 @@
         โรงเรียน: <span class="font-semibold text-indigo-600">{{ school_name }}</span>
     </p>
 
-    <!-- ✅ Dropdown เลือกระดับชั้น -->
+    <!-- Dropdown เลือกระดับชั้น -->
     <div class="mb-6 text-center">
         <label class="text-lg font-semibold text-gray-700">เลือกระดับชั้น:</label>
         <select id="classFilter" class="px-4 py-2 border rounded-md bg-white text-gray-700">
@@ -56,12 +56,18 @@
                         </div>
                     </td>
                     <td class="py-4 px-6 border-b">
-                        {% if subject.invigilator %}
+                        {% if subject.invigilator and subject.secondary_invigilator %}
+                            {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}<br>
+                            {{ subject.secondary_invigilator.user.first_name }} {{ subject.secondary_invigilator.user.last_name }}
+                        {% elif subject.invigilator %}
                             {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}
+                        {% elif subject.secondary_invigilator %}
+                            {{ subject.secondary_invigilator.user.first_name }} {{ subject.secondary_invigilator.user.last_name }}
                         {% else %}
                             <span class="text-gray-500">-</span>
                         {% endif %}
                     </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -73,7 +79,7 @@
     {% endif %}
 </div>
 
-<!-- ✅ JavaScript สำหรับเปลี่ยนระดับชั้น -->
+<!-- JavaScript สำหรับเปลี่ยนระดับชั้น -->
 <script>
     document.getElementById("classFilter").addEventListener("change", function() {
         let selectedClass = this.value;

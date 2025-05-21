@@ -81,14 +81,6 @@
                     </svg>
                     Dashboard Staff
                 </a>
-               
-                <a href="{% url 'import_csv' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16 13v-3m-4 6V7m-4 9V4m12 4v2m-4 6v2"></path>
-                    </svg>
-                    import ครูและนักเรียน 
-                </a>
 
                 <a href="{% url 'import_exam_subjects_csv' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
                     <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
@@ -138,6 +130,17 @@
                         </path>
                     </svg>
                     เช็คชื่อ
+                </a>
+
+                <a href="{% url 'list_exam_rooms' %}"
+                    class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M3 10h11M9 21H3v-5a2 2 0 012-2h2m0-4h4m2-2a2 2 0 11-4 0m0 0V5a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4m0 0v4m-4 4v-4">
+                        </path>
+                    </svg>
+                    รายชื่อห้องสอบ
                 </a>
 
                 {% elif user.is_teacher %}

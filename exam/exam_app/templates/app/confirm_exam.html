@@ -1,219 +1,192 @@
 <!-- app/confirm_exam.html -->
 
 {% extends "app/base.html" %}
-
+{% load tz %}
+{% load static %}
 {% block content %}
-<div class="flex items-center justify-center min-h-screen bg-white-100 px-6">
-    <div class="bg-white shadow-lg rounded-2xl p-10 max-w-lg text-center animate-fade-in border border-gray-300">
-        <h2 class="text-3xl font-bold text-indigo-700 mb-4">📌 ยืนยันการเข้าสอบ</h2>
-
-        <!-- ข้อมูลห้องสอบ -->
-        <div class="border-t border-gray-300 pt-4">
-            <h3 class="text-lg font-semibold text-gray-600">📖 ข้อมูลห้องสอบ</h3>
-            <p class="text-lg text-gray-700">
-                วิชา: <span class="font-semibold">{{ subject.subject_name }}</span>
-            </p>
-            <p class="text-lg text-gray-700">
-                รหัสวิชา: <span class="font-semibold">{{ subject.subject_code }}</span>
-            </p>
-            <p class="text-lg text-gray-700">
-                ห้องสอบ: <span class="font-semibold">{{ subject.room }}</span>
-            </p>
-            <p class="text-lg text-gray-700">
-                วันที่สอบ: <span class="font-semibold">{{ subject.exam_date|date:"d F Y" }}</span>
-            </p>
-            <p class="text-lg text-gray-700">
-                เวลา: <span class="font-semibold">{{ subject.start_time|time:"H:i" }} - {{ subject.end_time|time:"H:i" }}</span>
-            </p>
-            <p class="text-lg text-gray-700">
-                ครูผู้คุมสอบหลัก: <span class="font-semibold">
-                    {% if subject.invigilator %}
-                        {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </span>
-            </p>
-            <p class="text-lg text-gray-700">
-                ครูผู้คุมสอบสำรอง: <span class="font-semibold">
-                    {% if subject.secondary_invigilator %}
-                        {{ subject.secondary_invigilator.user.first_name }} {{ subject.secondary_invigilator.user.last_name }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </span>
-            </p>
-        </div>
-
-        {% if student %}
-        <!-- ข้อมูลนักศึกษา -->
-        <div class="border-t border-gray-300 pt-4">
-            <h3 class="text-lg font-semibold text-gray-600">👨‍🎓 ข้อมูลนักศึกษา</h3>
-            <p class="text-3xl font-bold text-blue-600">{{ student.student_id }}</p>
-            <p class="text-lg text-gray-700 font-semibold">
-                {{ student.user.first_name }} {{ student.user.last_name }}
-            </p>
-            <p class="text-lg text-gray-700">
-                ระดับชั้น: <span class="font-semibold text-indigo-700">{{ student.student_class|default:"-" }}</span>
-            </p>
-            <p class="text-lg text-gray-700">
-                เลขที่นั่งสอบ: <span class="font-semibold text-indigo-700">{{ seat_number|default:"-" }}</span>
-            </p>
-        </div>
-
-        <!-- ปุ่มยืนยันสำหรับนักศึกษา -->
-        <div id="confirmation-box" class="mt-6">
-            <p class="text-lg text-gray-600">กดยืนยันเพื่อเข้าสอบ</p>
-            <button onclick="confirmExam()" id="confirm-button" class="bg-indigo-600 text-white px-6 py-2 rounded mt-4 hover:bg-indigo-700 shadow-md transition-all">
-                ✅ ยืนยันเข้าสอบ
-            </button>
-        </div>
-
-        <!-- แสดงเวลาหลังจากกดยืนยัน (นักศึกษา) -->
-        <div id="confirmed-box" class="hidden border-t border-gray-300 pt-4 mt-6">
-            <h3 class="text-lg font-semibold text-green-600">📌 คุณได้เช็คชื่อแล้ว</h3>
-            <p class="text-lg text-gray-700">
-                ลงชื่อเข้าห้องสอบเมื่อเวลา: <span id="checkin-time" class="font-bold text-indigo-700"></span> น.
-            </p>
-            <div class="mt-6">
-                <a href="{% url 'dashboard_student' %}" class="bg-indigo-600 text-white px-8 py-3 rounded-lg text-lg shadow-md hover:bg-indigo-700 transition-all">
-                    🔙 กลับไปที่หน้าหลัก
-                </a>
-            </div>
-        </div>
-
-        {% elif teacher %}
-        <!-- ข้อมูลครูคุมสอบ -->
-        <div class="border-t border-gray-300 pt-4">
-            <h3 class="text-lg font-semibold text-gray-600">👨‍🏫 ข้อมูลครูคุมสอบ</h3>
-            <p class="text-3xl font-bold text-yellow-600">{{ teacher.user.first_name }} {{ teacher.user.last_name }}</p>
-            <p class="text-lg text-gray-700">
-                โรงเรียน: <span class="font-semibold">{{ teacher.user.school_name }}</span>
-            </p>
-            <p class="text-lg text-gray-700">
-                คุณเป็นครูคุมสอบของห้องนี้
-            </p>
-            <p class="text-lg text-gray-700">
-                ครูผู้คุมสอบหลัก: <span class="font-semibold">
-                    {% if subject.invigilator %}
-                        {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </span>
-            </p>
-            <p class="text-lg text-gray-700">
-                ครูผู้คุมสอบสำรอง: <span class="font-semibold">
-                    {% if subject.secondary_invigilator %}
-                        {{ subject.secondary_invigilator.user.first_name }} {{ subject.secondary_invigilator.user.last_name }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </span>
-            </p>
-        </div>
-
-        <!-- ปุ่มยืนยันสำหรับครู -->
-        <div id="confirmation-box" class="mt-6">
-            <p class="text-lg text-gray-600">กดยืนยันว่าคุณเป็นครูคุมสอบ</p>
-            <button onclick="confirmTeacherExam()" id="confirm-button" class="bg-indigo-600 text-white px-6 py-2 rounded mt-4 hover:bg-indigo-700 shadow-md transition-all">
-                ✅ ยืนยันเป็นครูคุมสอบ
-            </button>
-        </div>
-
-        <!-- แสดงเวลาหลังจากกดยืนยัน (สำหรับครู) -->
-        <div id="confirmed-box" class="hidden border-t border-gray-300 pt-4 mt-6">
-            <h3 class="text-lg font-semibold text-green-600">📌 คุณได้เช็คชื่อแล้ว</h3>
-            <p class="text-lg text-gray-700">
-                ลงชื่อเข้าห้องสอบเมื่อเวลา: <span id="teacher-checkin-time" class="font-bold text-indigo-700"></span> น.
-            </p>
-            <div class="mt-6">
-                <a href="{% url 'dashboard_teacher' %}" class="bg-indigo-600 text-white px-8 py-3 rounded-lg text-lg shadow-md hover:bg-indigo-700 transition-all">
-                    🔙 กลับไปที่หน้าหลัก
-                </a>
-            </div>
-        </div>
-        {% endif %}
+<div class="min-h-screen bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 flex items-center justify-center p-8">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-indigo-800 to-purple-800 p-6">
+      <h2 class="text-4xl text-center font-extrabold text-white tracking-wider">ยืนยันการเข้าสอบ</h2>
     </div>
+    <!-- Content -->
+    <div class="p-8 space-y-8">
+      <!-- ข้อมูลวิชาและห้องสอบ -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-200 pb-6">
+        <div class="space-y-3">
+          <h3 class="text-2xl font-bold text-indigo-800">ข้อมูลวิชา</h3>
+          <p class="text-base text-gray-800"><span class="font-semibold">วิชา:</span> {{ subject.subject_name }}</p>
+          <p class="text-base text-gray-800"><span class="font-semibold">รหัสวิชา:</span> {{ subject.subject_code }}</p>
+          <p class="text-base text-gray-800"><span class="font-semibold">ห้องสอบ:</span> {{ subject.room }}</p>
+          <p class="text-base text-gray-800">
+            <span class="font-semibold">วันที่สอบ:</span>
+            {% localtime on %}{{ subject.exam_date|date:"d F Y" }}{% endlocaltime %}
+          </p>
+          <p class="text-base text-gray-800">
+            <span class="font-semibold">เวลา:</span>
+            {% localtime on %}{{ subject.start_time|time:"H:i" }} - {{ subject.end_time|time:"H:i" }}{% endlocaltime %}
+          </p>
+        </div>
+        <div class="space-y-3">
+          <h3 class="text-2xl font-bold text-indigo-800">ข้อมูลครูคุมสอบ</h3>
+          <p class="text-base text-gray-800">
+            <span class="font-semibold">หลัก:</span>
+            {% if subject.invigilator %}
+              {{ subject.invigilator.user.first_name }} {{ subject.invigilator.user.last_name }}
+            {% else %}
+              -
+            {% endif %}
+          </p>
+          <p class="text-base text-gray-800">
+            <span class="font-semibold">สำรอง:</span>
+            {% if subject.secondary_invigilator %}
+              {{ subject.secondary_invigilator.user.first_name }} {{ subject.secondary_invigilator.user.last_name }}
+            {% else %}
+              -
+            {% endif %}
+          </p>
+        </div>
+      </div>
+      
+      {% if student %}
+      <!-- ข้อมูลนักศึกษา -->
+      <div class="border-b border-gray-200 pb-6">
+        <h3 class="text-2xl font-bold text-indigo-800 mb-4">ข้อมูลนักศึกษา</h3>
+        <div class="flex flex-col md:flex-row md:justify-between items-center">
+          <div class="space-y-2">
+            <p class="text-base text-gray-800">
+              <span class="font-semibold">รหัสนักศึกษา:</span> {{ student.student_id }}
+            </p>
+            <p class="text-base text-gray-800">
+              <span class="font-semibold">ชื่อ-นามสกุล:</span> {{ student.user.first_name }} {{ student.user.last_name }}
+            </p>
+            <p class="text-base text-gray-800">
+              <span class="font-semibold">ระดับชั้น:</span> {{ student.student_class|default:"-" }}
+            </p>
+          </div>
+          <div class="mt-4 md:mt-0 text-center">
+            <p class="text-lg font-bold text-white bg-indigo-800 rounded-full px-4 py-2 shadow-lg">เลขที่นั่งสอบ</p>
+            <div class="mt-2 bg-gradient-to-r from-indigo-300 to-purple-300 text-white text-3xl font-extrabold px-8 py-6 rounded-full shadow-xl">
+              {{ seat_number|default:"-" }}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- ปุ่มยืนยันสำหรับนักศึกษา -->
+      <div id="confirmation-box" class="mt-8 text-center">
+        <p class="text-lg text-white mb-4">กดยืนยันเพื่อเข้าสอบ</p>
+        <button onclick="confirmExam()" id="confirm-button" class="w-full md:w-auto bg-gradient-to-r from-indigo-700 to-purple-700 hover:from-indigo-800 hover:to-purple-800 text-white font-bold py-3 px-12 rounded-full shadow-lg transition duration-300">
+          ยืนยันเข้าสอบ
+        </button>
+      </div>
+      
+      <!-- แสดงเวลาหลังจากยืนยัน (นักศึกษา) -->
+      <div id="confirmed-box" class="hidden mt-8 text-center">
+        <h3 class="text-2xl font-bold text-green-500 mb-2">คุณได้เช็คชื่อแล้ว</h3>
+        <p class="text-base text-gray-800">
+          ลงชื่อเข้าห้องสอบเมื่อเวลา: <span id="checkin-time" class="font-bold text-indigo-800"></span> น.
+        </p>
+        <div class="mt-6">
+          <a href="{% url 'dashboard_student' %}" class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-12 rounded-full shadow-lg transition duration-300">
+            กลับไปที่หน้าหลัก
+          </a>
+        </div>
+      </div>
+      
+      {% elif teacher %}
+      <!-- ข้อมูลครูคุมสอบ (สำหรับครู) -->
+      <div class="border-b border-gray-200 pb-6">
+        <h3 class="text-2xl font-bold text-indigo-800 mb-4">ข้อมูลครูคุมสอบ</h3>
+        <p class="text-base text-gray-800">
+          <span class="font-semibold">ชื่อ:</span> {{ teacher.user.first_name }} {{ teacher.user.last_name }}
+        </p>
+        <p class="text-base text-gray-800">
+          <span class="font-semibold">โรงเรียน:</span> {{ teacher.user.school_name }}
+        </p>
+      </div>
+      
+      <!-- ปุ่มยืนยันสำหรับครู -->
+      <div id="confirmation-box" class="mt-8 text-center">
+        <p class="text-lg text-white mb-4">กดยืนยันว่าคุณเป็นครูคุมสอบ</p>
+        <button onclick="confirmTeacherExam()" id="confirm-button" class="w-full md:w-auto bg-gradient-to-r from-indigo-700 to-purple-700 hover:from-indigo-800 hover:to-purple-800 text-white font-bold py-3 px-12 rounded-full shadow-lg transition duration-300">
+          ยืนยันเป็นครูคุมสอบ
+        </button>
+      </div>
+      
+      <!-- แสดงเวลาหลังจากยืนยัน (สำหรับครู) -->
+      <div id="confirmed-box" class="hidden mt-8 text-center">
+        <h3 class="text-2xl font-bold text-green-500 mb-2">คุณได้เช็คชื่อแล้ว</h3>
+        <p class="text-base text-gray-800">
+          ลงชื่อเข้าห้องสอบเมื่อเวลา: <span id="teacher-checkin-time" class="font-bold text-indigo-800"></span> น.
+        </p>
+        <div class="mt-6">
+          <a href="{% url 'dashboard_teacher' %}" class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-12 rounded-full shadow-lg transition duration-300">
+            กลับไปที่หน้าหลัก
+          </a>
+        </div>
+      </div>
+      {% endif %}
+      
+    </div>
+  </div>
 </div>
 
 <script>
-    function confirmExam() {
-        let subjectId = "{{ subject.id }}";
-        let checkinTime = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-        fetch("/exam/confirm_exam_entry/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": "{{ csrf_token }}"
-            },
-            body: JSON.stringify({ subject_id: subjectId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === "success") {
-                document.getElementById("confirmation-box").classList.add("hidden");
-                document.getElementById("confirmed-box").classList.remove("hidden");
-                document.getElementById("checkin-time").textContent = checkinTime;
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
-        });
-    }
+  function confirmExam() {
+    let subjectId = "{{ subject.id }}";
+    let checkinTime = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    fetch("/exam/confirm_exam_entry/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token }}"
+      },
+      body: JSON.stringify({ subject_id: subjectId })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === "success") {
+        document.getElementById("confirmation-box").classList.add("hidden");
+        document.getElementById("confirmed-box").classList.remove("hidden");
+        document.getElementById("checkin-time").textContent = checkinTime;
+      } else {
+        alert(data.message);
+      }
+    })
+    .catch(error => {
+      console.error("Error:", error);
+      alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+    });
+  }
 
-    function confirmTeacherExam() {
-        let subjectId = "{{ subject.id }}";
-        let checkinTime = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-        fetch("/exam/confirm_exam_entry_teacher/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": "{{ csrf_token }}"
-            },
-            body: JSON.stringify({ subject_id: subjectId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === "success") {
-                document.getElementById("confirmation-box").classList.add("hidden");
-                document.getElementById("confirmed-box").classList.remove("hidden");
-                document.getElementById("teacher-checkin-time").textContent = checkinTime;
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
-        });
-    }
+  function confirmTeacherExam() {
+    let subjectId = "{{ subject.id }}";
+    let checkinTime = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    fetch("/exam/confirm_exam_entry_teacher/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token }}"
+      },
+      body: JSON.stringify({ subject_id: subjectId })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === "success") {
+        document.getElementById("confirmation-box").classList.add("hidden");
+        document.getElementById("confirmed-box").classList.remove("hidden");
+        document.getElementById("teacher-checkin-time").textContent = checkinTime;
+      } else {
+        alert(data.message);
+      }
+    })
+    .catch(error => {
+      console.error("Error:", error);
+      alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+    });
+  }
 </script>
-
-<style>
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .animate-fade-in {
-        animation: fadeIn 0.6s ease-out;
-    }
-
-    button, a {
-        transition: transform 0.2s ease-in-out;
-    }
-
-    button:hover, a:hover {
-        transform: scale(1.05);
-    }
-
-    .hidden {
-        display: none;
-    }
-</style>
 {% endblock %}
 

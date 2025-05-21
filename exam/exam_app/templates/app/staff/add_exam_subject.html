@@ -52,7 +52,7 @@
       <!-- เวลาเริ่ม -->
       <div>
         <label class="block text-lg font-medium text-gray-700">⏰ เวลาเริ่ม</label>
-        <input type="time" id="start_time" name="start_time"
+        <input type="datetime-local" id="start_time" name="start_time"
           class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
           required>
       </div>
@@ -60,19 +60,14 @@
       <!-- เวลาสิ้นสุด -->
       <div>
         <label class="block text-lg font-medium text-gray-700">⏳ เวลาสิ้นสุด</label>
-        <input type="time" id="end_time" name="end_time"
+        <input type="datetime-local" id="end_time" name="end_time"
           class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
           required>
       </div>
 
-      <!-- (ลบ input สำหรับ qr_expiration ออกไป) -->
-
-      <!-- ห้องสอบ -->
-      <div class="md:col-span-2">
-        <label class="block text-lg font-medium text-gray-700">🏫 ห้องสอบ</label>
-        <input type="text" name="room" value="{{ form.room.value|default_if_none:'' }}"
-          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-          required>
+      <!-- แจ้งว่าระบบจะจัดห้องให้อัตโนมัติ -->
+      <div class="md:col-span-2 p-4 bg-yellow-100 border border-yellow-300 rounded-md text-yellow-800 italic text-center">
+        🏫 ห้องสอบจะถูกจัดสรรให้อัตโนมัติตามเวลาที่เลือกและความพร้อมของห้อง
       </div>
 
       <!-- ผู้คุมสอบหลัก -->
@@ -83,7 +78,9 @@
           required>
           <option value="">เลือกผู้คุมสอบหลัก</option>
           {% for teacher in form.fields.invigilator.queryset %}
-          <option value="{{ teacher.id }}">{{ teacher.user.get_full_name }}</option>
+          <option value="{{ teacher.id }}" {% if form.invigilator.value == teacher.id|stringformat:"s" %}selected{% endif %}>
+            {{ teacher.user.get_full_name }}
+          </option>
           {% endfor %}
         </select>
       </div>
@@ -95,7 +92,9 @@
           class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md">
           <option value="">ไม่เลือก</option>
           {% for teacher in form.fields.secondary_invigilator.queryset %}
-          <option value="{{ teacher.id }}">{{ teacher.user.get_full_name }}</option>
+          <option value="{{ teacher.id }}" {% if form.secondary_invigilator.value == teacher.id|stringformat:"s" %}selected{% endif %}>
+            {{ teacher.user.get_full_name }}
+          </option>
           {% endfor %}
         </select>
       </div>
@@ -130,24 +129,26 @@
   </form>
 </div>
 
-<!-- ✅ JavaScript ตั้งค่าเวลาให้เป็นเวลาประเทศไทย -->
+<!-- JavaScript ตั้งค่าเวลาให้เป็นเวลาท้องถิ่นในฟอร์ม datetime-local -->
 <script>
-  function convertToThaiTime(datetimeStr) {
+  function formatDatetimeLocal(datetimeStr) {
     if (!datetimeStr) return "";
     let dateObj = new Date(datetimeStr);
-    dateObj.setHours(dateObj.getHours() + 7); // แปลงเวลาเป็นโซนไทย (UTC+7)
-    return dateObj.toISOString().slice(11, 16); // คืนค่าในรูปแบบ HH:MM
+    // ปรับเวลาเป็นเวลาท้องถิ่น (local time zone)
+    let tzOffset = dateObj.getTimezoneOffset() * 60000; // offset in milliseconds
+    let localISOTime = (new Date(dateObj.getTime() - tzOffset)).toISOString().slice(0,16);
+    return localISOTime; // รูปแบบ "YYYY-MM-DDTHH:mm"
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    let start_time_input = document.getElementById("start_time");
-    let end_time_input = document.getElementById("end_time");
+    let startInput = document.getElementById("start_time");
+    let endInput = document.getElementById("end_time");
 
     let startTime = "{{ form.start_time.value|default_if_none:'' }}";
     let endTime = "{{ form.end_time.value|default_if_none:'' }}";
 
-    if (startTime) start_time_input.value = convertToThaiTime(startTime);
-    if (endTime) end_time_input.value = convertToThaiTime(endTime);
+    if (startTime) startInput.value = formatDatetimeLocal(startTime);
+    if (endTime) endInput.value = formatDatetimeLocal(endTime);
   });
 </script>
 {% endblock %}

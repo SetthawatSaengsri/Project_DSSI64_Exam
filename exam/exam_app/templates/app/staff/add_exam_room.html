@@ -1,0 +1,49 @@
+<!-- add_exam_room.html -->
+ 
+{% extends "app/base.html" %}
+{% block content %}
+<div class="max-w-6xl mx-auto p-6">
+    <h2 class="text-2xl font-bold text-indigo-700 mb-6">📍 เพิ่มอาคารและห้องสอบ</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- ฟอร์มเพิ่มอาคาร -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <h3 class="text-xl font-semibold text-green-600 mb-4">🏢 เพิ่มอาคาร</h3>
+            <form method="post">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    {{ building_form.as_p }}
+                </div>
+                <button type="submit" name="add_building"
+                        class="mt-4 w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition">
+                    ➕ เพิ่มอาคาร
+                </button>
+            </form>
+        </div>
+
+        <!-- ฟอร์มเพิ่มห้องสอบ -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <h3 class="text-xl font-semibold text-blue-600 mb-4">🏫 เพิ่มห้องสอบ</h3>
+            <form method="post">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    {{ room_form.as_p }}
+                </div>
+                <button type="submit" name="add_room"
+                        class="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition">
+                    ✅ บันทึกห้องสอบ
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="mt-8 text-center">
+        <a href="{% url 'list_exam_rooms' %}"
+           class="inline-block bg-gray-300 text-gray-700 px-6 py-2 rounded-full hover:bg-gray-400 transition">
+            ⬅️ กลับไปหน้ารายการห้องสอบ
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+

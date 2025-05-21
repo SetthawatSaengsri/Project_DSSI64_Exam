@@ -1,0 +1,33 @@
+{% extends "app/base.html" %}
+{% block content %}
+<div class="container mx-auto p-6">
+    <h2 class="text-2xl font-semibold mb-4 text-primary">🗂️ ห้องสอบในอาคาร {{ building.name }}</h2>
+
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">🏫 ชื่อห้อง</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">👥 ความจุ</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for room in rooms %}
+                <tr>
+                    <td class="px-6 py-4">{{ room.name }}</td>
+                    <td class="px-6 py-4">{{ room.capacity }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" class="px-6 py-4 text-center text-gray-500">🚫 ไม่มีห้องสอบในอาคารนี้</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'list_exam_rooms' %}" class="text-blue-600 hover:underline">&larr; กลับไปยังรายการอาคารทั้งหมด</a>
+    </div>
+</div>
+{% endblock %}

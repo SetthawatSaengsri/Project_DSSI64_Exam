@@ -1,5 +1,6 @@
 #forms.py
 
+from django.forms.widgets import DateInput, DateTimeInput
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import *
@@ -99,9 +100,8 @@ class StaffRegistrationForm(UserCreationForm):
 
 
 class ExamSubjectForm(forms.ModelForm):
-    
     student_class = forms.ChoiceField(
-        choices=[],  
+        choices=[],
         required=True,
         label="ระดับชั้น"
     )
@@ -114,41 +114,80 @@ class ExamSubjectForm(forms.ModelForm):
             'student_class'
         ]
         widgets = {
-            'exam_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
-            'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'exam_date': DateInput(attrs={'type': 'date', 'class': 'form-control'}),  # ใช้ DateInput สำหรับวันที่
+            'start_time': DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),  # ใช้ DateTimeInput สำหรับเวลา
+            'end_time': DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),  # ใช้ DateTimeInput สำหรับเวลา
         }
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)
+        user = kwargs.pop('user', None)  # รับ user จาก view
         super().__init__(*args, **kwargs)
 
         if user:
-            # ดึงรายชื่อครูที่อยู่ในโรงเรียนเดียวกัน
+            # กรองครูในโรงเรียนเดียวกัน
             teacher_qs = TeacherProfile.objects.filter(user__school_name=user.school_name)
             self.fields['invigilator'].queryset = teacher_qs
             self.fields['secondary_invigilator'].queryset = teacher_qs
             self.fields['secondary_invigilator'].required = False
 
-            # ดึงระดับชั้นจากนักเรียนในโรงเรียนเดียวกัน
+            # กรองห้องสอบทั้งหมด (ถ้ามีฟิลด์ school_name ในอนาคต สามารถกรองเพิ่มได้)
+            room_qs = ExamRoom.objects.all().order_by('name')
+            self.fields['room'].queryset = room_qs
+            self.fields['room'].empty_label = "เลือกห้องสอบ"
+
+            # ดึงระดับชั้นจากนักเรียนโรงเรียนเดียวกัน และจัดเรียงแบบไม่ซ้ำ
             student_classes = StudentProfile.objects.filter(
                 user__school_name=user.school_name
             ).values_list('student_class', flat=True).distinct()
 
-            # ตั้งค่า choices สำหรับระดับชั้น
             self.fields['student_class'].choices = [("", "เลือกระดับชั้น")] + [(sc, sc) for sc in student_classes if sc]
 
-            # Debug: แสดงระดับชั้นที่ดึงมา
-            print("ระดับชั้นที่ดึงมา:", list(student_classes))
+    def clean(self):
+        cleaned_data = super().clean()
+
+        start_time = cleaned_data.get("start_time")
+        end_time = cleaned_data.get("end_time")
+
+        if start_time and end_time and start_time >= end_time:
+            self.add_error('end_time', "เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม")
+
+        return cleaned_data
 
     def save(self, commit=True):
         subject = super().save(commit=False)
-        # กำหนดค่า qr_expiration โดยอัตโนมัติจาก end_time
-        subject.qr_expiration = subject.end_time
+        # ตั้งค่าเวลาหมดอายุ QR เป็นเวลาสิ้นสุดสอบ
+        subject.qr_expiration = subject.end_time.time() if subject.end_time else None
+
         if commit:
             subject.save()
             self.save_m2m()
         return subject
+
+
+class ExamRoomForm(forms.ModelForm):
+    class Meta:
+        model = ExamRoom
+        fields = ['building', 'name', 'capacity']  # ต้องเพิ่ม 'building'
+        widgets = {
+            'building': forms.Select(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ชื่อห้อง'}),
+            'capacity': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'ความจุ'}),
+        }
+        labels = {
+            'building': 'อาคาร',
+            'name': 'ชื่อห้องสอบ',
+            'capacity': 'ความจุ (จำนวนคน)',
+        }
+
+
+class BuildingForm(forms.ModelForm):
+    class Meta:
+        model = Building
+        fields = ['code', 'name']
+        labels = {
+            'code': 'รหัสอาคาร',
+            'name': 'ชื่ออาคาร',
+        }
 
 
     

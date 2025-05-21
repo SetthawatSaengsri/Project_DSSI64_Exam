@@ -213,7 +213,7 @@
                 </div>
                 <button type="submit" class="btn-primary">สมัครบัญชีเจ้าหน้าที่</button>
             </form>
-            
+
         </div>
     </div>
 
@@ -316,13 +316,17 @@
             const schoolSelect = document.querySelector("select[name='school_name']");
 
             emailInput.addEventListener("input", function () {
-                if (emailInput.value.includes("admin@gmail.com")) {
-                    schoolSelect.style.display = "admin";
+                if (emailInput.value.trim().toLowerCase() === "admin@gmail.com") {
+                    schoolSelect.parentElement.style.display = "none"; // ✅ ซ่อนแถว select
+                    schoolSelect.removeAttribute("required"); // ✅ ไม่ต้อง validate
                 } else {
-                    schoolSelect.style.display = "block";
+                    schoolSelect.parentElement.style.display = "block"; // ✅ แสดงขึ้น
+                    schoolSelect.setAttribute("required", "required"); // ✅ บังคับกรอก
                 }
             });
+
         });
+
 
     </script>
 

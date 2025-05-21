@@ -1,0 +1,45 @@
+{% extends "app/base.html" %}
+{% block content %}
+<div class="container mx-auto p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold text-primary">🏢 รายการอาคารและห้องสอบ</h2>
+        <a href="{% url 'add_exam_room' %}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+            + เพิ่มอาคาร / ห้องสอบ
+        </a>
+    </div>
+
+    <!-- อาคาร Section -->
+    <div class="bg-white shadow-md rounded-lg mb-6">
+        <div class="bg-blue-500 text-white px-4 py-2 rounded-t-lg">
+            📋 รายการอาคารทั้งหมด
+        </div>
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-6 py-3">🏢 รหัสอาคาร</th>
+                    <th class="px-6 py-3">🏫 ชื่ออาคาร</th>
+                    <th class="px-6 py-3 text-center">⚙️ การจัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for building in buildings %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <a href="{% url 'building_detail' building.id %}" class="text-blue-600 hover:underline">{{ building.code }}</a>
+                    </td>
+                    <td class="px-6 py-4">{{ building.name }}</td>
+                    <td class="px-6 py-4 text-center">
+                        <a href="#" class="bg-yellow-400 text-white px-3 py-1 rounded hover:bg-yellow-500">แก้ไข</a>
+                        <a href="#" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">ลบ</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center text-gray-500 py-4">🚫 ไม่มีอาคารในระบบ</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

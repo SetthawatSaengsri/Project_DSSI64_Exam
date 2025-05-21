@@ -3,22 +3,21 @@
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-   
+
 
 class User(AbstractUser):
-    username = models.CharField(max_length=150)  # อนุญาตให้ username ซ้ำได้
-    email = models.EmailField(unique=True)  # Email ยังคงไม่สามารถซ้ำได้
+    username = models.CharField(max_length=150)
+    email = models.EmailField(unique=True)
     is_student = models.BooleanField(default=False)
     is_teacher = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     school_name = models.CharField(max_length=100, blank=True, null=True)
 
-    USERNAME_FIELD = 'email'  # ใช้ email เป็นตัวระบุตัวตนหลัก
-    REQUIRED_FIELDS = ['username']  # username ยังเป็น requiredำ
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
 
     class Meta:
         constraints = [
-            # อนุญาต username ซ้ำได้ในโรงเรียนที่ต่างกัน
             models.UniqueConstraint(fields=['username', 'school_name'], name='unique_username_per_school')
         ]
 
@@ -26,30 +25,29 @@ class User(AbstractUser):
         return self.email
 
 
-
 class StudentProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='studentprofile')
-    student_id = models.CharField(max_length=10)  # ลบ unique=True
+    student_id = models.CharField(max_length=10)
     no_student = models.CharField(max_length=10)
     student_class = models.CharField(max_length=20)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['student_id', 'user'], name='unique_student_per_user') # กำหนดให้ student_id ซ้ำไม่ได้ในโรงเรียนเดียวกัน
+            models.UniqueConstraint(fields=['student_id', 'user'], name='unique_student_per_user')
         ]
 
     def __str__(self):
         return self.student_class
 
-    
+
 class TeacherProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher_profile')
-    teacher_id = models.CharField(max_length=10)  
+    teacher_id = models.CharField(max_length=10)
     school_name = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['teacher_id', 'school_name'], name='unique_teacher_per_school') 
+            models.UniqueConstraint(fields=['teacher_id', 'school_name'], name='unique_teacher_per_school')
         ]
 
     def __str__(self):
@@ -59,11 +57,33 @@ class TeacherProfile(models.Model):
 class StaffProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     school_name = models.CharField(max_length=100)
-    id_card = models.FileField(upload_to='id_cards/', null=True, blank=True)  # บันทึกไฟล์ที่อัพโหลด
+    id_card = models.FileField(upload_to='id_cards/', null=True, blank=True)
 
     def __str__(self):
         return f"Profile for {self.user.username}"
-    
+
+class Building(models.Model):
+    code = models.CharField(max_length=10, unique=True)
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+class ExamRoom(models.Model):
+    building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name='rooms', null=True)
+    name = models.CharField(max_length=50)
+    capacity = models.PositiveIntegerField()
+
+    class Meta:
+        unique_together = ('building', 'name')
+
+    def __str__(self):
+        building_name = self.building.name if self.building else "ไม่ระบุอาคาร"
+        return f"{building_name} ห้อง {self.name} (จุ {self.capacity} คน)"
+
+
+
+
 class ExamSubject(models.Model):
     subject_name = models.CharField(max_length=100)
     subject_code = models.CharField(max_length=20)
@@ -72,10 +92,15 @@ class ExamSubject(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
     school_name = models.CharField(max_length=100, null=True, blank=True)
-    room = models.CharField(max_length=20, blank=True, verbose_name="ห้องสอบ")
-    secondary_invigilator_checkin = models.BooleanField(default=False)
-    qr_expiration = models.TimeField(null=True, blank=True, help_text="เวลาที่ QR Code หมดอายุ (ตัวอย่าง: 14:30)")  # เพิ่มฟิลด์นี้
     
+    room = models.ForeignKey(
+        ExamRoom,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="ห้องสอบ"
+    )
+
     invigilator = models.ForeignKey(
         TeacherProfile,
         on_delete=models.SET_NULL,
@@ -93,6 +118,11 @@ class ExamSubject(models.Model):
         verbose_name="ผู้คุมสอบสำรอง"
     )
     invigilator_checkin = models.BooleanField(default=False)
+    invigilator_checkin_time = models.DateTimeField(null=True, blank=True)
+    secondary_invigilator_checkin = models.BooleanField(default=False)
+    secondary_invigilator_checkin_time = models.DateTimeField(null=True, blank=True)
+    qr_expiration = models.TimeField(null=True, blank=True, help_text="เวลาที่ QR Code หมดอายุ")
+    
     students = models.ManyToManyField(
         StudentProfile,
         blank=True,
@@ -102,14 +132,12 @@ class ExamSubject(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-                fields=['subject_code', 'school_name'], 
-                name='unique_subject_code_per_school'
-            )
+            models.UniqueConstraint(fields=['subject_code', 'school_name'], name='unique_subject_code_per_school')
         ]
 
     def __str__(self):
-        return f"{self.subject_name} ({self.subject_code})"
+        room_name = self.room.name if self.room else "ไม่ระบุห้อง"
+        return f"{self.subject_name} ({self.subject_code}) ห้อง {room_name}"
 
 
 

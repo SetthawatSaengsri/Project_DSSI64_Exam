@@ -1,4 +1,4 @@
-
+#urls.py
 
 from django.urls import path
 from . import views
@@ -12,14 +12,12 @@ urlpatterns = [
     path('register_staff/', views.register_staff, name='register_staff'),
     path('login/', views.login_user, name='login_user'),
     path('logout/', views.logout_user, name='logout_user'),
-    path("exam_completed/", views.exam_completed, name="exam_completed"),
     path("update_attendance_status/", views.update_attendance_status, name="update_attendance_status"),
     path("scanner/teacher/", views.scanner, name="scanner"),
     
     # Admin paths
     path('dashboard/admin/', views.dashboard_admin, name='dashboard_admin'),
     path('verify_staff/', views.verify_staff_registration, name='verify_staff_registration'),
-    path('verify_staff/<int:staff_id>/', views.verify_staff_registration_action, name='verify_staff_registration_action'),
     path('cancel_staff_registration/<int:staff_id>/', views.cancel_staff_registration, name='cancel_staff_registration'),
     path('manage_users/', views.manage_users, name='manage_users'),
     path('manage_users/edit/<int:user_id>/', views.edit_user, name='edit_user'),
@@ -37,19 +35,21 @@ urlpatterns = [
     path('teacher_check_student/', views.teacher_check_student, name='teacher_check_student'),
     path("exam/confirm_exam_entry_teacher/", views.confirm_exam_entry_teacher, name="confirm_exam_entry_teacher"),
     path("manual_teacher_checkin/", views.manual_teacher_checkin, name="manual_teacher_checkin"),
-    
+
     # Staff paths 
     path('dashboard_staff/', views.dashboard_staff, name='dashboard_staff'),
     path('import_csv/', views.import_csv, name='import_csv'),
     path('import_exam_subjects/', views.import_exam_subjects_csv, name='import_exam_subjects_csv'),
     path('staff/school_members/', views.school_members, name='school_members'),
-    path('add_exam_subject/', views.add_exam_subject, name='add_exam_subject'),
+    path('add_exam_subject/', views.add_exam_subject_auto_room, name='add_exam_subject'),
     path('exam_subjects_staff/', views.exam_subjects_staff, name='exam_subjects_staff'),
     path('edit_exam_subject/<int:subject_id>/', views.edit_exam_subject, name='edit_exam_subject'),
     path('delete_exam_subject/<int:subject_id>/', views.delete_exam_subject, name='delete_exam_subject'),
     path('select_exam_subject/', views.select_exam_subject, name='select_exam_subject'),
     path('exam_detail/<int:subject_id>/', views.exam_detail, name='exam_detail'),
-
+    path('exam_rooms/add/', views.add_exam_room, name='add_exam_room'),
+    path('exam_rooms/', views.list_exam_rooms, name='list_exam_rooms'),
+    path('building/<int:building_id>/', views.building_detail, name='building_detail'),
 
     # QR code generation paths
     path('exam/confirm_exam_entry/', views.confirm_exam_entry, name='confirm_exam_entry'),
