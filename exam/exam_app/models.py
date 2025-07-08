@@ -81,18 +81,22 @@ class ExamRoom(models.Model):
         building_name = self.building.name if self.building else "ไม่ระบุอาคาร"
         return f"{building_name} ห้อง {self.name} (จุ {self.capacity} คน)"
 
-
-
-
 class ExamSubject(models.Model):
     subject_name = models.CharField(max_length=100)
     subject_code = models.CharField(max_length=20)
-    academic_year = models.CharField(max_length=4)
+    academic_year = models.CharField(max_length=5)
     exam_date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
     school_name = models.CharField(max_length=100, null=True, blank=True)
-    
+
+    TERM_CHOICES = [
+        ("1", "เทอม 1"),
+        ("2", "เทอม 2"),
+        ("3", "เทอม 3"),
+    ]
+    term = models.CharField(max_length=1, choices=TERM_CHOICES, default="1")
+
     room = models.ForeignKey(
         ExamRoom,
         on_delete=models.SET_NULL,
@@ -109,6 +113,7 @@ class ExamSubject(models.Model):
         related_name='invigilated_exams',
         verbose_name="ผู้คุมสอบหลัก"
     )
+
     secondary_invigilator = models.ForeignKey(
         TeacherProfile,
         on_delete=models.SET_NULL,
@@ -117,12 +122,14 @@ class ExamSubject(models.Model):
         related_name='secondary_invigilated_exams',
         verbose_name="ผู้คุมสอบสำรอง"
     )
+
     invigilator_checkin = models.BooleanField(default=False)
     invigilator_checkin_time = models.DateTimeField(null=True, blank=True)
     secondary_invigilator_checkin = models.BooleanField(default=False)
     secondary_invigilator_checkin_time = models.DateTimeField(null=True, blank=True)
+
     qr_expiration = models.TimeField(null=True, blank=True, help_text="เวลาที่ QR Code หมดอายุ")
-    
+
     students = models.ManyToManyField(
         StudentProfile,
         blank=True,
@@ -132,13 +139,15 @@ class ExamSubject(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['subject_code', 'school_name'], name='unique_subject_code_per_school')
+            models.UniqueConstraint(
+                fields=['subject_code', 'school_name', 'academic_year', 'term'],
+                name='unique_subject_per_school_year_term'
+            )
         ]
 
     def __str__(self):
-        room_name = self.room.name if self.room else "ไม่ระบุห้อง"
+        room_name = self.room.room_name if self.room else "ไม่ระบุห้อง"
         return f"{self.subject_name} ({self.subject_code}) ห้อง {room_name}"
-
 
 
 class Attendance(models.Model):

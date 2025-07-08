@@ -17,7 +17,13 @@
   <form method="POST" class="space-y-6">
     {% csrf_token %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- ชื่อวิชา -->
+
+      <!-- แจ้งเตือนเกี่ยวกับการจัดห้อง -->
+      <div class="md:col-span-2 p-4 bg-yellow-100 border border-yellow-300 rounded-md text-yellow-800 italic text-center">
+        🏫 ห้องสอบจะถูกจัดสรรให้อัตโนมัติตามเวลาที่เลือกและความพร้อมของห้อง
+      </div>
+      
+      <!-- ฟิลด์ชื่อวิชา -->
       <div>
         <label class="block text-lg font-medium text-gray-700">📖 ชื่อวิชา</label>
         <input type="text" name="subject_name" value="{{ form.subject_name.value|default_if_none:'' }}"
@@ -25,7 +31,7 @@
           required>
       </div>
 
-      <!-- รหัสวิชา -->
+      <!-- ฟิลด์รหัสวิชา -->
       <div>
         <label class="block text-lg font-medium text-gray-700">🔢 รหัสวิชา</label>
         <input type="text" name="subject_code" value="{{ form.subject_code.value|default_if_none:'' }}"
@@ -33,7 +39,7 @@
           required>
       </div>
 
-      <!-- ปีการศึกษา -->
+      <!-- ฟิลด์ปีการศึกษา -->
       <div>
         <label class="block text-lg font-medium text-gray-700">📅 ปีการศึกษา</label>
         <input type="text" name="academic_year" value="{{ form.academic_year.value|default_if_none:'' }}"
@@ -41,7 +47,23 @@
           required>
       </div>
 
-      <!-- วันที่สอบ -->
+      <!-- ฟิลด์ภาคเรียน -->
+      <div>
+        <label class="block text-lg font-medium text-gray-700">📘 ภาคเรียน</label>
+        <select name="term"
+          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
+          required>
+          {% for value, label in form.term.field.choices %}
+            {% if value|stringformat:"s" == form.term.value|stringformat:"s" %}
+              <option value="{{ value }}" selected>{{ label }}</option>
+            {% else %}
+              <option value="{{ value }}">{{ label }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- ฟิลด์วันที่สอบ -->
       <div>
         <label class="block text-lg font-medium text-gray-700">📆 วันที่สอบ</label>
         <input type="date" name="exam_date" value="{{ form.exam_date.value|date:'Y-m-d' }}"
@@ -49,28 +71,23 @@
           required>
       </div>
 
-      <!-- เวลาเริ่ม -->
+      <!-- ฟิลด์เวลาเริ่ม -->
       <div>
         <label class="block text-lg font-medium text-gray-700">⏰ เวลาเริ่ม</label>
-        <input type="datetime-local" id="start_time" name="start_time"
+        <input type="time" id="start_time" name="start_time" value="{{ form.start_time.value|default_if_none:'' }}"
           class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
           required>
       </div>
 
-      <!-- เวลาสิ้นสุด -->
+      <!-- ฟิลด์เวลาสิ้นสุด -->
       <div>
         <label class="block text-lg font-medium text-gray-700">⏳ เวลาสิ้นสุด</label>
-        <input type="datetime-local" id="end_time" name="end_time"
+        <input type="time" id="end_time" name="end_time" value="{{ form.end_time.value|default_if_none:'' }}"
           class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
           required>
       </div>
 
-      <!-- แจ้งว่าระบบจะจัดห้องให้อัตโนมัติ -->
-      <div class="md:col-span-2 p-4 bg-yellow-100 border border-yellow-300 rounded-md text-yellow-800 italic text-center">
-        🏫 ห้องสอบจะถูกจัดสรรให้อัตโนมัติตามเวลาที่เลือกและความพร้อมของห้อง
-      </div>
-
-      <!-- ผู้คุมสอบหลัก -->
+      <!-- ฟิลด์ผู้คุมสอบหลัก -->
       <div class="md:col-span-2">
         <label class="block text-lg font-medium text-gray-700">👨‍🏫 ผู้คุมสอบหลัก</label>
         <select name="invigilator"
@@ -78,28 +95,32 @@
           required>
           <option value="">เลือกผู้คุมสอบหลัก</option>
           {% for teacher in form.fields.invigilator.queryset %}
-          <option value="{{ teacher.id }}" {% if form.invigilator.value == teacher.id|stringformat:"s" %}selected{% endif %}>
-            {{ teacher.user.get_full_name }}
-          </option>
+            {% if teacher.id|stringformat:"s" == form.invigilator.value|stringformat:"s" %}
+              <option value="{{ teacher.id }}" selected>{{ teacher.user.get_full_name }}</option>
+            {% else %}
+              <option value="{{ teacher.id }}">{{ teacher.user.get_full_name }}</option>
+            {% endif %}
           {% endfor %}
         </select>
       </div>
 
-      <!-- ผู้คุมสอบสำรอง -->
+      <!-- ฟิลด์ผู้คุมสอบสำรอง -->
       <div class="md:col-span-2">
         <label class="block text-lg font-medium text-gray-700">👨‍🏫 ผู้คุมสอบสำรอง (ถ้ามี)</label>
         <select name="secondary_invigilator"
           class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md">
           <option value="">ไม่เลือก</option>
           {% for teacher in form.fields.secondary_invigilator.queryset %}
-          <option value="{{ teacher.id }}" {% if form.secondary_invigilator.value == teacher.id|stringformat:"s" %}selected{% endif %}>
-            {{ teacher.user.get_full_name }}
-          </option>
+            {% if teacher.id|stringformat:"s" == form.secondary_invigilator.value|stringformat:"s" %}
+              <option value="{{ teacher.id }}" selected>{{ teacher.user.get_full_name }}</option>
+            {% else %}
+              <option value="{{ teacher.id }}">{{ teacher.user.get_full_name }}</option>
+            {% endif %}
           {% endfor %}
         </select>
       </div>
 
-      <!-- เลือกระดับชั้น -->
+      <!-- ฟิลด์ระดับชั้น -->
       <div class="md:col-span-2">
         <label class="block text-lg font-medium text-gray-700">🎓 ระดับชั้น</label>
         <select name="student_class" id="student_class"
@@ -107,15 +128,18 @@
           required>
           <option value="">เลือกระดับชั้น</option>
           {% for class_value, class_label in form.fields.student_class.choices %}
-          <option value="{{ class_value }}" {% if form.student_class.value == class_value %}selected{% endif %}>
-            {{ class_label }}
-          </option>
+            {% if class_value == form.student_class.value %}
+              <option value="{{ class_value }}" selected>{{ class_label }}</option>
+            {% else %}
+              <option value="{{ class_value }}">{{ class_label }}</option>
+            {% endif %}
           {% endfor %}
         </select>
       </div>
+
     </div>
 
-    <!-- ปุ่มบันทึก -->
+    <!-- ปุ่มยกเลิกและบันทึก -->
     <div class="flex justify-between mt-6">
       <a href="{% url 'exam_subjects_staff' %}"
         class="bg-red-500 hover:bg-red-700 text-white px-8 py-4 text-lg rounded-md shadow-md transition">
@@ -129,15 +153,14 @@
   </form>
 </div>
 
-<!-- JavaScript ตั้งค่าเวลาให้เป็นเวลาท้องถิ่นในฟอร์ม datetime-local -->
 <script>
+  // ฟังก์ชันสำหรับจัดการเวลาเริ่มและเวลาสิ้นสุด
   function formatDatetimeLocal(datetimeStr) {
     if (!datetimeStr) return "";
     let dateObj = new Date(datetimeStr);
-    // ปรับเวลาเป็นเวลาท้องถิ่น (local time zone)
-    let tzOffset = dateObj.getTimezoneOffset() * 60000; // offset in milliseconds
-    let localISOTime = (new Date(dateObj.getTime() - tzOffset)).toISOString().slice(0,16);
-    return localISOTime; // รูปแบบ "YYYY-MM-DDTHH:mm"
+    let tzOffset = dateObj.getTimezoneOffset() * 60000;
+    let localISOTime = (new Date(dateObj.getTime() - tzOffset)).toISOString().slice(0, 16);
+    return localISOTime;
   }
 
   document.addEventListener("DOMContentLoaded", function () {

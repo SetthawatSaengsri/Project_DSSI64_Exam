@@ -1,32 +1,34 @@
 #views.py
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse,JsonResponse,HttpResponseForbidden
+from django.shortcuts import render,redirect,get_object_or_404
+from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.forms import modelformset_factory
-from django.contrib import messages
-from .forms import *
-from .models import * 
-import json
-import chardet
-import qrcode
-from io import BytesIO
-import base64
-from django.contrib.auth.decorators import user_passes_test
-import csv
-import pandas as pd
-import pytz
-import qrcode
-from django.utils.timezone import localtime ,now
-from django.views.decorators.csrf import csrf_exempt
-from datetime import datetime, timedelta
-import qrcode.image.pil
-from django.db.models import Count
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Q
-from django.utils import timezone
+from django.contrib import messages
+from django.forms import modelformset_factory
+from django.views.decorators.csrf import csrf_exempt
 
+from django.db.models import Q, Count
+from django.utils import timezone
+from django.utils.timezone import make_aware, localtime, now
+
+from django.db.models import Sum
+from .forms import *
+from .models import *
+
+import csv
+import json
+import base64
+import pytz
+import pandas as pd
+from io import BytesIO
+from datetime import datetime, timedelta
+import math
+
+import qrcode
+import qrcode.image.pil
+from PIL import Image
 
 def index_view(request):
     if request.method == 'POST':
@@ -83,10 +85,6 @@ def login_user(request):
 
 
 @login_required
-def scanner(request):
-    return render(request, 'app/teacher/scanner.html')
-
-@login_required
 def logout_user(request):
     logout(request)
     return redirect('index_view')
@@ -105,6 +103,10 @@ def register_staff(request):
     else:
         form = StaffRegistrationForm()
     return render(request, 'app/register_staff.html', {'form': form})
+
+@login_required
+def scanner(request):
+    return render(request, 'app/teacher/scanner.html')
 
 ##################################################################################################################################################################
 @staff_member_required
@@ -209,11 +211,6 @@ def delete_user(request, user_id):
     return render(request, 'app/admin/delete_user.html', {'user_instance': user_instance})
 
 ##################################################################################################################################################################
-from django.shortcuts import render
-from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.auth.decorators import login_required
-from .models import TeacherProfile, StudentProfile, ExamSubject, Attendance
-from django.db.models import Count
 
 @staff_member_required
 @login_required
@@ -526,76 +523,7 @@ def school_members(request):
 
 thai_tz = pytz.timezone('Asia/Bangkok')
 
-# @login_required
-# def add_exam_subject(request):
-#     if request.method == 'POST':
-#         form = ExamSubjectForm(request.POST, user=request.user)
-#         if form.is_valid():
-#             subject = form.save(commit=False)
-
-#             # แปลงเวลาให้เป็นเวลาไทย
-#             thai_tz = pytz.timezone('Asia/Bangkok')
-#             subject.start_time = timezone.make_aware(form.cleaned_data['start_time'], timezone=thai_tz)
-#             subject.end_time = timezone.make_aware(form.cleaned_data['end_time'], timezone=thai_tz)
-
-#             room = form.cleaned_data['room']
-#             exam_date = form.cleaned_data['exam_date']
-
-#             # ตรวจสอบว่าห้องสอบถูกใช้งานอยู่หรือไม่
-#             existing_exam_room = ExamSubject.objects.filter(
-#                 room=room,
-#                 exam_date=exam_date
-#             ).filter(
-#                 start_time__lt=subject.end_time,
-#                 end_time__gt=subject.start_time
-#             ).exists()
-#             if existing_exam_room:
-#                 messages.error(
-#                     request, 
-#                     f"❌ ห้อง {room} ถูกใช้งานแล้วในช่วงเวลานี้ {subject.start_time.strftime('%H:%M')} - {subject.end_time.strftime('%H:%M')} ({exam_date})"
-#                 )
-#                 return render(request, 'app/staff/add_exam_subject.html', {'form': form})
-
-#             # **ตรวจสอบว่าครูถูกใช้งานในช่วงเวลาที่เลือกหรือไม่**
-#             invigilator = form.cleaned_data['invigilator']
-#             teacher_busy = ExamSubject.objects.filter(
-#                 invigilator=invigilator,
-#                 exam_date=exam_date
-#             ).filter(
-#                 start_time__lt=subject.end_time,
-#                 end_time__gt=subject.start_time
-#             ).exists()
-#             if teacher_busy:
-#                 messages.error(
-#                     request,
-#                     f"❌ ครู {invigilator.user.get_full_name()} ถูกใช้งานแล้วในช่วงเวลานี้ {subject.start_time.strftime('%H:%M')} - {subject.end_time.strftime('%H:%M')} ({exam_date})"
-#                 )
-#                 return render(request, 'app/staff/add_exam_subject.html', {'form': form})
-
-#             # ดึงนักเรียนที่อยู่ในระดับชั้นที่เลือก
-#             selected_class = form.cleaned_data['student_class']
-#             students = StudentProfile.objects.filter(
-#                 student_class=selected_class, 
-#                 user__school_name=request.user.school_name
-#             )
-
-#             # บันทึกข้อมูลรายวิชา
-#             subject.save()
-#             subject.students.set(students)
-#             subject.save()
-
-#             messages.success(request, f"✅ เพิ่มรายวิชา '{subject.subject_name}' สำเร็จ!")
-#             return redirect('exam_subjects_staff')
-#         else:
-#             messages.error(request, "⚠️ ข้อมูลไม่ถูกต้อง กรุณากรอกข้อมูลให้ครบถ้วน")
-#             print("ฟอร์มมีข้อผิดพลาด:", form.errors)
-#     else:
-#         form = ExamSubjectForm(user=request.user)
-
-#     return render(request, 'app/staff/add_exam_subject.html', {'form': form})
-
-
-@login_required
+# ฟังก์ชันที่กรองและจัดเรียงระดับชั้น
 def exam_subjects_staff(request):
     if not request.user.is_staff:
         return HttpResponse("คุณไม่มีสิทธิ์เข้าถึงข้อมูลนี้", status=403)
@@ -603,29 +531,40 @@ def exam_subjects_staff(request):
     school_name = request.user.school_name
     subjects = ExamSubject.objects.filter(invigilator__school_name=school_name).select_related('invigilator')
 
-    # ✅ ดึงระดับชั้นทั้งหมด
+    # ดึงระดับชั้นทั้งหมดและทำการจัดเรียงให้เป็นลำดับที่ถูกต้อง
     classes = StudentProfile.objects.filter(user__school_name=school_name).values_list('student_class', flat=True).distinct()
+    classes = sorted(classes, key=lambda x: (int(x.split('/')[0].replace('ม.', '')), int(x.split('/')[1])))
 
-    # ✅ ดึงปีการศึกษาทั้งหมด
+    # ดึงปีการศึกษาทั้งหมด
     academic_years = subjects.values_list('academic_year', flat=True).distinct().order_by('-academic_year')
 
     # รับค่าที่เลือกจาก dropdown
     selected_class = request.GET.get('student_class', 'all')
     selected_year = request.GET.get('academic_year', 'all')
+    selected_term = request.GET.get('term', 'all')
 
-    # ✅ กรองตามระดับชั้น
+    # กรองตามระดับชั้น
     if selected_class != 'all' and selected_class:
         subjects = subjects.filter(students__student_class=selected_class)
 
-    # ✅ กรองตามปีการศึกษา
+    # กรองตามปีการศึกษา
     if selected_year != 'all' and selected_year:
         subjects = subjects.filter(academic_year=selected_year)
 
+    # กรองเทอมที่เกี่ยวข้อง
+    if selected_year != 'all' and selected_class != 'all':
+        terms = subjects.filter(academic_year=selected_year, students__student_class=selected_class).values_list('term', flat=True).distinct()
+    else:
+        terms = [1, 2, 3]  # หากไม่ได้เลือกทั้งปีการศึกษาและระดับชั้น ให้แสดงทุกเทอม
+
     subjects = subjects.distinct()
 
-    # เพิ่มระดับชั้นให้แต่ละรายวิชา
+    # ✅ เพิ่มส่วนนี้: สร้าง student_classes สำหรับแต่ละ subject
     for subject in subjects:
-        subject.grades = list(subject.students.values_list('student_class', flat=True).distinct())
+        # ดึงระดับชั้นของนักเรียนที่เรียนในวิชานี้
+        student_classes = subject.students.values_list('student_class', flat=True).distinct()
+        # แปลงเป็น list และเรียงลำดับ
+        subject.student_classes = sorted(list(set(student_classes)))
 
     return render(request, 'app/staff/exam_subjects_staff.html', {
         'school_name': school_name,
@@ -634,8 +573,9 @@ def exam_subjects_staff(request):
         'selected_class': selected_class,
         'academic_years': academic_years,
         'selected_year': selected_year,
+        'terms': terms,
+        'selected_term': selected_term,
     })
-
 
 @login_required
 def select_exam_subject(request):
@@ -698,29 +638,60 @@ def exam_detail(request, subject_id):
 
 @staff_member_required
 def add_exam_room(request):
+    # จัดการการส่งฟอร์ม
     if request.method == 'POST':
-        room_form = ExamRoomForm(request.POST)
-        building_form = BuildingForm(request.POST)
-
-        if 'add_building' in request.POST and building_form.is_valid():
-            building_form.save()
-            messages.success(request, "✅ เพิ่มอาคารเรียบร้อยแล้ว")
-            return redirect('add_exam_room')  # reload เพื่อแสดง dropdown ที่อัปเดต
-
-        elif 'add_room' in request.POST and room_form.is_valid():
-            room_form.save()
-            messages.success(request, "✅ เพิ่มห้องสอบเรียบร้อยแล้ว")
-            return redirect('list_exam_rooms')
-        else:
-            messages.error(request, "❌ กรุณากรอกข้อมูลให้ถูกต้อง")
+        # จัดการการเพิ่มอาคาร
+        if 'add_building' in request.POST:
+            building_form = BuildingForm(request.POST)
+            room_form = ExamRoomForm()  # สร้างฟอร์มห้องเปล่า
+            
+            if building_form.is_valid():
+                building_form.save()
+                messages.success(request, "✅ เพิ่มอาคารเรียบร้อยแล้ว")
+                return redirect('add_exam_room')
+            else:
+                # แสดงข้อผิดพลาดของฟอร์ม
+                for field in building_form:
+                    for error in field.errors:
+                        messages.error(request, f"{field.label}: {error}")
+        
+        # จัดการการเพิ่มห้องสอบ
+        elif 'add_room' in request.POST:
+            room_form = ExamRoomForm(request.POST)
+            building_form = BuildingForm()  # สร้างฟอร์มอาคารเปล่า
+            
+            if room_form.is_valid():
+                room_form.save()
+                messages.success(request, "✅ เพิ่มห้องสอบเรียบร้อยแล้ว")
+                return redirect('add_exam_room')
+            else:
+                # แสดงข้อผิดพลาดของฟอร์ม
+                for field in room_form:
+                    for error in field.errors:
+                        messages.error(request, f"{field.label}: {error}")
     else:
+        # GET request - สร้างฟอร์มเปล่า
         room_form = ExamRoomForm()
         building_form = BuildingForm()
 
-    return render(request, 'app/staff/add_exam_room.html', {
+    # คำนวณสถิติ
+    total_buildings = Building.objects.count()
+    total_rooms = ExamRoom.objects.count()
+    total_capacity = ExamRoom.objects.aggregate(Sum('capacity'))['capacity__sum'] or 0
+    
+    # ดึงรายการอาคารทั้งหมดสำหรับ dropdown
+    buildings = Building.objects.all().order_by('code')
+
+    context = {
         'room_form': room_form,
         'building_form': building_form,
-    })
+        'buildings': buildings,
+        'total_buildings': total_buildings,
+        'total_rooms': total_rooms,
+        'total_capacity': total_capacity,
+    }
+
+    return render(request, 'app/staff/add_exam_room.html', context)
 
 
 def find_available_room(exam_date, start_time, end_time, school_name):
@@ -735,108 +706,545 @@ def find_available_room(exam_date, start_time, end_time, school_name):
 
 @staff_member_required
 def list_exam_rooms(request):
-    buildings = Building.objects.all().order_by('name')
-    rooms = ExamRoom.objects.all().order_by('name')
-    return render(request, 'app/staff/list_exam_rooms.html', {
-        'buildings': buildings,
-        'rooms': rooms
-    })
+    # ดึงข้อมูลอาคารพร้อมห้องที่เกี่ยวข้อง
+    buildings = Building.objects.all().prefetch_related('rooms').order_by('code')
     
+    # คำนวณสถิติสำหรับแต่ละอาคาร
+    building_stats = []
+    for building in buildings:
+        rooms = building.rooms.all()
+        total_capacity = sum(room.capacity for room in rooms)
+        building_stats.append({
+            'building': building,
+            'room_count': rooms.count(),
+            'total_capacity': total_capacity,
+            'rooms': rooms
+        })
+    
+    # สถิติรวม
+    total_buildings = buildings.count()
+    total_rooms = ExamRoom.objects.count()
+    total_capacity = ExamRoom.objects.aggregate(Sum('capacity'))['capacity__sum'] or 0
+    
+    context = {
+        'building_stats': building_stats,
+        'total_buildings': total_buildings,
+        'total_rooms': total_rooms,
+        'total_capacity': total_capacity,
+    }
+    
+    return render(request, 'app/staff/list_exam_rooms.html', context)
+
+# เพิ่มฟังก์ชันลบอาคาร
+@staff_member_required
+def delete_building(request, building_id):
+    if request.method == 'POST':
+        building = get_object_or_404(Building, id=building_id)
+        building_name = building.name
+        
+        # ตรวจสอบว่ามีห้องในอาคารหรือไม่
+        if building.rooms.exists():
+            messages.error(request, f"❌ ไม่สามารถลบอาคาร {building_name} ได้ เนื่องจากมีห้องสอบอยู่")
+        else:
+            building.delete()
+            messages.success(request, f"✅ ลบอาคาร {building_name} เรียบร้อยแล้ว")
+    
+    return redirect('list_exam_rooms')
+
+
+# เพิ่มฟังก์ชันลบห้องสอบ
+@staff_member_required
+def delete_exam_room(request, room_id):
+    if request.method == 'POST':
+        room = get_object_or_404(ExamRoom, id=room_id)
+        room_name = f"{room.building.name} ห้อง {room.name}"
+        
+        # ตรวจสอบว่ามีการใช้งานห้องหรือไม่
+        if ExamSubject.objects.filter(room=room).exists():
+            messages.error(request, f"❌ ไม่สามารถลบ {room_name} ได้ เนื่องจากมีการใช้งานในการสอบ")
+        else:
+            room.delete()
+            messages.success(request, f"✅ ลบ {room_name} เรียบร้อยแล้ว")
+    
+    return redirect('list_exam_rooms')   
+
+# เพิ่มฟังก์ชันแก้ไขอาคาร
+@staff_member_required
+def edit_building(request, building_id):
+    building = get_object_or_404(Building, id=building_id)
+    
+    if request.method == 'POST':
+        form = BuildingForm(request.POST, instance=building)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"✅ แก้ไขอาคาร {building.name} เรียบร้อยแล้ว")
+            return redirect('list_exam_rooms')
+    else:
+        form = BuildingForm(instance=building)
+    
+    return render(request, 'app/staff/edit_building.html', {
+        'form': form,
+        'building': building
+    })
+
+
+# เพิ่มฟังก์ชันแก้ไขห้องสอบ
+@staff_member_required
+def edit_exam_room(request, room_id):
+    room = get_object_or_404(ExamRoom, id=room_id)
+    
+    if request.method == 'POST':
+        form = ExamRoomForm(request.POST, instance=room)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"✅ แก้ไขห้อง {room.name} เรียบร้อยแล้ว")
+            return redirect('list_exam_rooms')
+    else:
+        form = ExamRoomForm(instance=room)
+    
+    # ดึงรายการอาคารสำหรับ dropdown
+    buildings = Building.objects.all().order_by('code')
+    
+    return render(request, 'app/staff/edit_exam_room.html', {
+        'form': form,
+        'room': room,
+        'buildings': buildings
+    })
+
 @login_required
 def building_detail(request, building_id):
     building = get_object_or_404(Building, id=building_id)
     rooms = ExamRoom.objects.filter(building=building)
     return render(request, 'app/staff/building_detail.html', {'building': building, 'rooms': rooms})
 
+THAI_TZ = pytz.timezone('Asia/Bangkok')
+
+# ในไฟล์ views.py - เพิ่ม debug ในฟังก์ชัน add_exam_subject_enhanced
+
 @login_required
-def add_exam_subject_auto_room(request):
+def add_exam_subject_enhanced(request):
+    """
+    ฟังก์ชันเพิ่มรายวิชา รองรับการจัดห้องอัตโนมัติและเลือกเอง
+    แก้ไขการจัดการ timezone + เพิ่ม debug
+    """
     if request.method == 'POST':
+        print("=== POST REQUEST DEBUG ===")
+        
         form = ExamSubjectForm(request.POST, user=request.user)
-        if form.is_valid():
-            subject = form.save(commit=False)
+        
+        if not form.is_valid():
+            print("=== FORM ERRORS ===")
+            print(f"Form errors: {form.errors}")
+            
+            # แสดง error แต่ละ field
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"❌ {field}: {error}")
+            
+            return render(request, 'app/staff/add_exam_subject_enhanced.html', {'form': form})
+        
+        # ✅ ฟอร์มถูกต้อง ดำเนินการต่อ
+        try:
+            # ดึงข้อมูลจากฟอร์มที่ผ่านการตรวจสอบแล้ว
+            cleaned_data = form.cleaned_data
+            exam_date = cleaned_data['exam_date']
+            start_time = cleaned_data.get('start_time')  # datetime object จาก clean()
+            end_time = cleaned_data.get('end_time')      # datetime object จาก clean()
+            room_assignment_type = cleaned_data['room_assignment_type']
+            selected_class = cleaned_data['student_class']
             school_name = request.user.school_name
-            thai_tz = pytz.timezone('Asia/Bangkok')
-
-            # แปลง datetime-local ที่ได้จากฟอร์มให้เป็น timezone-aware
-            exam_date = form.cleaned_data['exam_date']
-            start_time = form.cleaned_data['start_time']
-            end_time = form.cleaned_data['end_time']
-
-            # แปลงเป็น timezone-aware datetime
-            # ถ้า start_time และ end_time เป็น naive datetime ให้แปลง timezone
-            if start_time.tzinfo is None:
-                start_time = make_aware(start_time, thai_tz)
-            if end_time.tzinfo is None:
-                end_time = make_aware(end_time, thai_tz)
-
-            # ตรวจสอบความถูกต้องของเวลา
-            if start_time >= end_time:
-                messages.error(request, "เวลาเริ่มต้องน้อยกว่าเวลาสิ้นสุด")
-                return render(request, 'app/staff/add_exam_subject.html', {'form': form})
-
-            # ตรวจสอบครูผู้คุมสอบหลักว่างในช่วงเวลานี้หรือไม่
-            invigilator = form.cleaned_data['invigilator']
-            teacher_busy = ExamSubject.objects.filter(
-                invigilator=invigilator,
-                school_name=school_name
-            ).filter(
-                Q(start_time__lt=end_time) & Q(end_time__gt=start_time)
-            ).exists()
-            if teacher_busy:
-                messages.error(request, f"ครู {invigilator.user.get_full_name()} ไม่ว่างในช่วงเวลานี้")
-                return render(request, 'app/staff/add_exam_subject.html', {'form': form})
-
-            # ตรวจสอบครูผู้คุมสอบสำรอง (ถ้ามี)
-            secondary_invigilator = form.cleaned_data.get('secondary_invigilator')
-            if secondary_invigilator:
-                secondary_busy = ExamSubject.objects.filter(
-                    secondary_invigilator=secondary_invigilator,
-                    school_name=school_name
-                ).filter(
-                    Q(start_time__lt=end_time) & Q(end_time__gt=start_time)
-                ).exists()
-                if secondary_busy:
-                    messages.error(request, f"ครูสำรอง {secondary_invigilator.user.get_full_name()} ไม่ว่างในช่วงเวลานี้")
-                    return render(request, 'app/staff/add_exam_subject.html', {'form': form})
-
-            # หา ห้องสอบว่างในช่วงเวลานี้ (ห้องสอบที่ยังไม่มีการจองช่วงเวลานี้)
-            used_rooms_ids = ExamSubject.objects.filter(
-                school_name=school_name
-            ).filter(
-                Q(start_time__lt=end_time) & Q(end_time__gt=start_time)
-            ).values_list('room_id', flat=True)
-
-            available_room = ExamRoom.objects.exclude(id__in=used_rooms_ids).first()
-            if not available_room:
-                messages.error(request, "ไม่มีห้องสอบว่างในช่วงเวลานี้")
-                return render(request, 'app/staff/add_exam_subject.html', {'form': form})
-
-            # กำหนดข้อมูลรายวิชา
-            subject.start_time = start_time
-            subject.end_time = end_time
-            subject.school_name = school_name
-            subject.room = available_room
-
-            subject.save()
-
-            # กำหนดนักเรียนตามระดับชั้น
-            selected_class = form.cleaned_data['student_class']
+            
+            print(f"=== CLEANED DATA ===")
+            print(f"exam_date: {exam_date}")
+            print(f"start_time: {start_time}")
+            print(f"end_time: {end_time}")
+            print(f"room_assignment_type: {room_assignment_type}")
+            print(f"selected_class: {selected_class}")
+            print(f"school_name: {school_name}")
+            
+            # ตรวจสอบว่า user มี school_name หรือไม่
+            if not school_name:
+                messages.error(request, "❌ ไม่พบข้อมูลโรงเรียนของผู้ใช้")
+                return render(request, 'app/staff/add_exam_subject_enhanced.html', {'form': form})
+            
+            # นับจำนวนนักเรียน
             students = StudentProfile.objects.filter(
                 student_class=selected_class,
                 user__school_name=school_name
             )
-            subject.students.set(students)
+            student_count = students.count()
+            print(f"📚 จำนวนนักเรียนในชั้น {selected_class}: {student_count} คน")
+            
+            if student_count == 0:
+                messages.error(request, f"❌ ไม่พบนักเรียนในระดับชั้น {selected_class}")
+                return render(request, 'app/staff/add_exam_subject_enhanced.html', {'form': form})
+            
+            # ตรวจสอบไม่ให้ซ้ำรหัสวิชา
+            existing_subject = ExamSubject.objects.filter(
+                subject_code=cleaned_data['subject_code'],
+                school_name=school_name,
+                academic_year=cleaned_data['academic_year'],
+                term=cleaned_data['term']
+            ).first()
+            
+            if existing_subject:
+                messages.error(request, f"❌ รหัสวิชา {cleaned_data['subject_code']} มีอยู่แล้วในปีการศึกษา {cleaned_data['academic_year']} เทอม {cleaned_data['term']}")
+                return render(request, 'app/staff/add_exam_subject_enhanced.html', {'form': form})
+            
+            # ตรวจสอบความว่างของครู
+            invigilator = cleaned_data['invigilator']
+            print(f"👨‍🏫 invigilator: {invigilator}")
+            
+            # ตรวจสอบครูว่าง (ในวันเดียวกัน)
+            teacher_busy = ExamSubject.objects.filter(
+                Q(invigilator=invigilator) | Q(secondary_invigilator=invigilator),
+                school_name=school_name,
+                exam_date=exam_date,
+            ).exists()
+            
+            if teacher_busy:
+                messages.error(request, f"❌ ครู {invigilator.user.get_full_name()} มีการคุมสอบในวันนี้แล้ว")
+                return render(request, 'app/staff/add_exam_subject_enhanced.html', {'form': form})
+            
+            # จัดการห้องสอบ
+            selected_room = None
+            room_message = ""
+            
+            if room_assignment_type == 'auto':
+                print("🤖 Auto room assignment")
+                # หาห้องว่างอัตโนมัติ
+                available_rooms = ExamRoom.objects.filter(capacity__gte=student_count)
+                used_rooms = ExamSubject.objects.filter(
+                    exam_date=exam_date,
+                    school_name=school_name
+                ).values_list('room_id', flat=True)
+                
+                available_room = available_rooms.exclude(id__in=used_rooms).order_by('capacity').first()
+                
+                if not available_room:
+                    messages.error(request, f"❌ ไม่มีห้องสอบที่รองรับนักเรียน {student_count} คน")
+                    return render(request, 'app/staff/add_exam_subject_enhanced.html', {'form': form})
+                
+                selected_room = available_room
+                room_message = f"จัดห้องอัตโนมัติ: {available_room}"
+                
+            else:  # manual
+                print("🎯 Manual room assignment")
+                selected_room = cleaned_data.get('room')
+                
+                if not selected_room:
+                    messages.error(request, "❌ กรุณาเลือกห้องสอบ")
+                    return render(request, 'app/staff/add_exam_subject_enhanced.html', {'form': form})
+                
+                if selected_room.capacity < student_count:
+                    messages.error(request, f"❌ ห้อง {selected_room} มีความจุ {selected_room.capacity} คน แต่มีนักเรียน {student_count} คน")
+                    return render(request, 'app/staff/add_exam_subject_enhanced.html', {'form': form})
+                
+                room_message = f"เลือกห้องเอง: {selected_room}"
+            
+            print(f"🏫 Selected room: {selected_room}")
+            
+            # บันทึก subject โดยไม่ commit ก่อน
+            subject = form.save(commit=False)
+            
+            # กำหนดค่าเพิ่มเติม
+            subject.school_name = school_name
+            subject.room = selected_room
+            
+            # ตั้งค่า QR expiration time
+            if end_time:
+                if hasattr(end_time, 'time'):
+                    subject.qr_expiration = end_time.time()
+                else:
+                    subject.qr_expiration = end_time
+            
+            print(f"=== SAVING SUBJECT ===")
+            print(f"Final subject data:")
+            print(f"  exam_date: {subject.exam_date}")
+            print(f"  start_time: {subject.start_time}")
+            print(f"  end_time: {subject.end_time}")
+            print(f"  school_name: {subject.school_name}")
+            print(f"  room: {subject.room}")
+            
+            # บันทึกข้อมูล
             subject.save()
-
-            messages.success(request, f"เพิ่มรายวิชา '{subject.subject_name}' พร้อมจัดห้องสอบให้อัตโนมัติแล้ว")
+            subject.students.set(students)
+            
+            print(f"✅ Subject saved with ID: {subject.id}")
+            
+            messages.success(request, f"✅ เพิ่มรายวิชา '{subject.subject_name}' สำเร็จ! ({room_message})")
             return redirect('exam_subjects_staff')
-
-        else:
-            messages.error(request, "กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง")
+            
+        except Exception as e:
+            print(f"❌ Exception occurred: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f"❌ เกิดข้อผิดพลาด: {str(e)}")
+            return render(request, 'app/staff/add_exam_subject_enhanced.html', {'form': form})
+    
     else:
+        print("=== GET REQUEST ===")
         form = ExamSubjectForm(user=request.user)
+    
+    return render(request, 'app/staff/add_exam_subject_enhanced.html', {'form': form})
 
-    return render(request, 'app/staff/add_exam_subject.html', {'form': form})
+def _get_capacity_suggestions(student_count, exam_date, start_time, end_time, school_name):
+    """ให้คำแนะนำเมื่อไม่มีห้องเพียงพอ"""
+    suggestions = []
+    
+    # หาห้องที่ใหญ่ที่สุด
+    largest_room = ExamRoom.objects.order_by('-capacity').first()
+    if largest_room:
+        suggestions.append(f"💡 ห้องที่ใหญ่ที่สุด: {largest_room} (ความจุ {largest_room.capacity} คน)")
+    
+    # คำนวณจำนวนห้องที่ต้องการ
+    avg_capacity = ExamRoom.objects.aggregate(avg_cap=models.Avg('capacity'))['avg_cap'] or 30
+    required_rooms = math.ceil(student_count / avg_capacity)
+    suggestions.append(f"💡 จำเป็นต้องใช้ประมาณ {required_rooms} ห้อง สำหรับนักเรียน {student_count} คน")
+    
+    # แนะนำเปลี่ยนเวลา
+    suggestions.append("💡 ลองเปลี่ยนเวลาสอบ หรือแบ่งเป็นหลายช่วงเวลา")
+    
+    return suggestions
+
+# ✅ ฟังก์ชันช่วยที่แก้ไขแล้ว
+def _is_teacher_busy_naive(teacher, exam_date, start_datetime, end_datetime, school_name, is_secondary=False):
+    """ตรวจสอบว่าครูไม่ว่างหรือไม่ - ใช้ naive datetime"""
+    if is_secondary:
+        busy_check = ExamSubject.objects.filter(
+            Q(secondary_invigilator=teacher) | Q(invigilator=teacher),
+            school_name=school_name,
+            exam_date=exam_date
+        )
+    else:
+        busy_check = ExamSubject.objects.filter(
+            Q(invigilator=teacher) | Q(secondary_invigilator=teacher),
+            school_name=school_name,
+            exam_date=exam_date
+        )
+    
+    # ✅ เปรียบเทียบด้วย time แทน datetime
+    return busy_check.filter(
+        start_time__time__lt=end_datetime.time(),
+        end_time__time__gt=start_datetime.time()
+    ).exists()
+
+
+def _find_available_room_naive(exam_date, start_datetime, end_datetime, school_name, student_count=None):
+    """หาห้องที่ว่างในช่วงเวลาที่กำหนด - ใช้ naive datetime"""
+    used_rooms_ids = ExamSubject.objects.filter(
+        school_name=school_name,
+        exam_date=exam_date,
+        start_time__time__lt=end_datetime.time(),
+        end_time__time__gt=start_datetime.time()
+    ).values_list('room__id', flat=True)
+    
+    available_rooms = ExamRoom.objects.exclude(id__in=used_rooms_ids)
+    
+    if student_count:
+        available_rooms = available_rooms.filter(capacity__gte=student_count)
+    
+    available_room = available_rooms.order_by('capacity').first()
+    
+    if available_room:
+        building_name = available_room.building.name if available_room.building else "⚠️ ไม่มีอาคาร"
+        print(f"✅ จัดห้องอัตโนมัติ: {building_name} ห้อง {available_room.name} (ความจุ {available_room.capacity} คน, นักเรียน {student_count or 'ไม่ระบุ'} คน)")
+    else:
+        print(f"❌ ไม่มีห้องว่างสำหรับ {student_count} คน ในเวลา {start_datetime.time()} - {end_datetime.time()}")
+    
+    return available_room
+
+
+def _is_room_busy_naive(room, exam_date, start_datetime, end_datetime, school_name):
+    """ตรวจสอบว่าห้องไม่ว่างหรือไม่ - ใช้ naive datetime"""
+    is_busy = ExamSubject.objects.filter(
+        room=room,
+        school_name=school_name,
+        exam_date=exam_date,
+        start_time__time__lt=end_datetime.time(),
+        end_time__time__gt=start_datetime.time()
+    ).exists()
+    
+    if is_busy:
+        conflicting_subjects = ExamSubject.objects.filter(
+            room=room,
+            school_name=school_name,
+            exam_date=exam_date,
+            start_time__time__lt=end_datetime.time(),
+            end_time__time__gt=start_datetime.time()
+        )
+        print(f"❌ ห้อง {room} ถูกใช้โดย:")
+        for subject in conflicting_subjects:
+            print(f"   - {subject.subject_name} ({subject.start_time.strftime('%H:%M')} - {subject.end_time.strftime('%H:%M')})")
+    
+    return is_busy
+
+
+# AJAX endpoint สำหรับดึงห้องตามอาคาร
+@login_required
+def get_rooms_by_building(request):
+    """API สำหรับดึงรายการห้องตามอาคารที่เลือก"""
+    building_id = request.GET.get('building_id')
+    if building_id:
+        try:
+            rooms = ExamRoom.objects.filter(building_id=building_id).order_by('name')
+            room_data = []
+            for room in rooms:
+                room_data.append({
+                    'id': room.id,
+                    'name': room.name,
+                    'capacity': room.capacity,
+                    'full_name': f"{room.building.name} ห้อง {room.name}"
+                })
+            return JsonResponse({'rooms': room_data, 'success': True})
+        except Exception as e:
+            return JsonResponse({'rooms': [], 'success': False, 'error': str(e)})
+    return JsonResponse({'rooms': [], 'success': False, 'error': 'No building ID provided'})
+
+# ฟังก์ชันเสริมสำหรับตรวจสอบความพร้อมของห้อง
+@login_required
+def check_room_availability(request):
+    """ตรวจสอบความพร้อมของห้องในเวลาที่กำหนด"""
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        room_id = data.get('room_id')
+        exam_date = data.get('exam_date')
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+        
+        try:
+            room = ExamRoom.objects.get(id=room_id)
+            exam_date_obj = datetime.strptime(exam_date, '%Y-%m-%d').date()
+            start_datetime = timezone.make_aware(
+                datetime.combine(exam_date_obj, datetime.strptime(start_time, '%H:%M').time()),
+                timezone=thai_tz
+            )
+            end_datetime = timezone.make_aware(
+                datetime.combine(exam_date_obj, datetime.strptime(end_time, '%H:%M').time()),
+                timezone=thai_tz
+            )
+            
+            is_busy = _is_room_busy(room, exam_date_obj, start_datetime, end_datetime, request.user.school_name)
+            
+            # หาวิชาที่ใช้ห้องในเวลานั้น (ถ้ามี)
+            conflicting_subjects = ExamSubject.objects.filter(
+                room=room,
+                school_name=request.user.school_name,
+                exam_date=exam_date_obj,
+                start_time__lt=end_datetime,
+                end_time__gt=start_datetime
+            )
+            
+            conflict_details = []
+            for subject in conflicting_subjects:
+                conflict_details.append({
+                    'subject_name': subject.subject_name,
+                    'subject_code': subject.subject_code,
+                    'start_time': subject.start_time.strftime('%H:%M'),
+                    'end_time': subject.end_time.strftime('%H:%M')
+                })
+            
+            return JsonResponse({
+                'available': not is_busy,
+                'room_name': str(room),
+                'conflicts': conflict_details
+            })
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+# ฟังก์ชันสำหรับดึงสถิติห้องสอบ
+@login_required
+def get_room_statistics(request):
+    """ดึงสถิติการใช้งานห้องสอบ"""
+    total_rooms = ExamRoom.objects.count()
+    total_buildings = Building.objects.count()
+    
+    # นับจำนวนห้องที่ถูกใช้งานในวันนี้
+    today = timezone.now().date()
+    rooms_in_use_today = ExamSubject.objects.filter(
+        exam_date=today,
+        school_name=request.user.school_name
+    ).values_list('room_id', flat=True).distinct().count()
+    
+    # นับจำนวนวิชาสอบวันนี้
+    exams_today = ExamSubject.objects.filter(
+        exam_date=today,
+        school_name=request.user.school_name
+    ).count()
+    
+    return JsonResponse({
+        'total_rooms': total_rooms,
+        'total_buildings': total_buildings,
+        'rooms_in_use_today': rooms_in_use_today,
+        'exams_today': exams_today,
+        'room_utilization_percentage': round((rooms_in_use_today / total_rooms * 100) if total_rooms > 0 else 0, 2)
+    })
+
+# ฟังก์ชันสำหรับแนะนำห้องสอบที่เหมาะสม
+@login_required
+def suggest_rooms(request):
+    """แนะนำห้องสอบที่เหมาะสมตามจำนวนนักเรียน"""
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        student_class = data.get('student_class')
+        exam_date = data.get('exam_date')
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+        
+        try:
+            # นับจำนวนนักเรียนในชั้น
+            student_count = StudentProfile.objects.filter(
+                student_class=student_class,
+                user__school_name=request.user.school_name
+            ).count()
+            
+            # แปลงเวลา
+            exam_date_obj = datetime.strptime(exam_date, git add .
+                datetime.combine(exam_date_obj, datetime.strptime(start_time, '%H:%M').time()),
+                timezone=thai_tz
+            )
+            end_datetime = timezone.make_aware(
+                datetime.combine(exam_date_obj, datetime.strptime(end_time, '%H:%M').time()),
+                timezone=thai_tz
+            )
+            
+            # หาห้องที่ว่างและมีความจุเพียงพอ
+            used_rooms_ids = ExamSubject.objects.filter(
+                school_name=request.user.school_name,
+                exam_date=exam_date_obj,
+                start_time__lt=end_datetime,
+                end_time__gt=start_datetime
+            ).values_list('room_id', flat=True)
+            
+            available_rooms = ExamRoom.objects.exclude(id__in=used_rooms_ids).filter(
+                capacity__gte=student_count
+            ).order_by('capacity')
+            
+            suggestions = []
+            for room in available_rooms[:5]:  # แนะนำ 5 ห้องแรก
+                efficiency = round((student_count / room.capacity * 100), 2)
+                suggestions.append({
+                    'id': room.id,
+                    'name': room.name,
+                    'building': room.building.name,
+                    'capacity': room.capacity,
+                    'efficiency': efficiency,
+                    'full_name': str(room)
+                })
+            
+            return JsonResponse({
+                'suggestions': suggestions,
+                'student_count': student_count,
+                'recommended_capacity': student_count + 5  # เผื่อพิเศษ 5 คน
+            })
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 @login_required
 def delete_exam_subject(request, subject_id):
@@ -889,94 +1297,489 @@ def edit_exam_subject(request, subject_id):
         'subject': subject
     })
 
-
-thai_tz = pytz.timezone('Asia/Bangkok')
-
 @login_required
 def generate_qr_code(request, subject_id):
-    """ ฟังก์ชันสร้าง QR Code สำหรับยืนยันเข้าสอบ (บังคับให้ล็อกอินก่อนเข้า) """
+    """ฟังก์ชันสร้าง QR Code สำหรับยืนยันเข้าสอบ - เพิ่มการทดสอบสำหรับการสอบที่ผ่านมาแล้ว"""
     subject = get_object_or_404(ExamSubject, id=subject_id)
+    
+    # ✅ ตรวจสอบสิทธิ์การเข้าถึง
+    if not (request.user.is_staff or 
+            (request.user.is_teacher and hasattr(request.user, 'teacher_profile') and 
+             (subject.invigilator == request.user.teacher_profile or 
+              subject.secondary_invigilator == request.user.teacher_profile))):
+        messages.error(request, "❌ คุณไม่มีสิทธิ์เข้าถึง QR Code นี้")
+        return redirect('exam_subjects_staff')
+    
+    # ✅ ดึงระดับชั้นของนักเรียนที่เรียนในวิชานี้
+    student_classes = list(subject.students.values_list('student_class', flat=True).distinct())
+    subject.student_classes = sorted(student_classes)  # เรียงลำดับระดับชั้น
+    
+    # สร้าง URL สำหรับ QR Code
     qr_url = request.build_absolute_uri(f"/exam/confirm_exam_entry/?subject_id={subject_id}")
-
-    # ✅ รองรับการสร้าง QR Code โดยครูและเจ้าหน้าที่ (student_id ไม่บังคับ)
-    if request.user.is_student:
+    
+    # ✅ เพิ่ม timestamp เพื่อป้องกันการใช้ซ้ำ
+    import time
+    timestamp = int(time.time())
+    qr_url += f"&t={timestamp}"
+    
+    try:
+        # ✅ สร้าง QR Code ขนาดใหญ่และคมชัด
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=12,
+            border=4,
+        )
+        qr.add_data(qr_url)
+        qr.make(fit=True)
+        
+        # สร้างภาพ QR Code
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # ✅ เพิ่มขนาดภาพสำหรับการพิมพ์
         try:
-            student_profile = StudentProfile.objects.get(user=request.user)
-            qr_url += f"&student_id={student_profile.id}"
-        except StudentProfile.DoesNotExist:
-            pass  # ถ้าไม่มี student_id ไม่ต้องเพิ่มเข้าไป
+            img = img.resize((400, 400), Image.Resampling.LANCZOS)
+        except AttributeError:
+            try:
+                img = img.resize((400, 400), Image.LANCZOS)
+            except AttributeError:
+                img = img.resize((400, 400), Image.ANTIALIAS)
+        
+        # แปลงเป็น base64
+        buffer = BytesIO()
+        img.save(buffer, format="PNG", optimize=True, quality=95)
+        img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        
+    except Exception as e:
+        print(f"QR Code generation error: {e}")
+        # ใช้ QR Code แบบง่าย
+        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_L)
+        qr.add_data(qr_url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    
+    # ✅ แก้ไขการจัดการเวลา - ใช้ timezone ที่ถูกต้อง
+    thai_tz = pytz.timezone('Asia/Bangkok')
+    utc_tz = pytz.UTC
+    
+    # ✅ ใช้เวลาปัจจุบันใน UTC แล้วแปลงเป็นเวลาไทย
+    now_utc = timezone.now()  # เวลาปัจจุบันใน UTC
+    now_time = now_utc.astimezone(thai_tz)  # แปลงเป็นเวลาไทย
+    
+    print(f"🕐 Current time (UTC): {now_utc}")
+    print(f"🕐 Current time (Thai): {now_time}")
+    print(f"📅 Exam date: {subject.exam_date}")
+    print(f"⏰ Start time field: {subject.start_time} (type: {type(subject.start_time)})")
+    print(f"⏰ End time field: {subject.end_time} (type: {type(subject.end_time)})")
+    
+    # ✅ จัดการเวลาเริ่มและสิ้นสุดให้ถูกต้อง
+    try:
+        # ถ้าเป็น datetime object (มี timezone info แล้ว)
+        if hasattr(subject.start_time, 'astimezone'):
+            exam_start_time = subject.start_time.astimezone(thai_tz)
+            print(f"✅ Start time already datetime: {exam_start_time}")
+        else:
+            # ✅ สร้าง naive datetime แล้วใช้ pytz localize แทน make_aware
+            naive_start = datetime.combine(subject.exam_date, subject.start_time)
+            exam_start_time = thai_tz.localize(naive_start)
+            print(f"✅ Start time localized: {exam_start_time}")
             
-    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_L)
-    qr.add_data(qr_url)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    buffer = BytesIO()
-    img.save(buffer, format="PNG")
-    img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-
-    return render(request, "app/staff/qr_code.html", {
+        if hasattr(subject.end_time, 'astimezone'):
+            exam_end_time = subject.end_time.astimezone(thai_tz)
+            print(f"✅ End time already datetime: {exam_end_time}")
+        else:
+            # ✅ สร้าง naive datetime แล้วใช้ pytz localize แทน make_aware
+            naive_end = datetime.combine(subject.exam_date, subject.end_time)
+            exam_end_time = thai_tz.localize(naive_end)
+            print(f"✅ End time localized: {exam_end_time}")
+            
+    except Exception as e:
+        print(f"❌ Time conversion error: {e}")
+        # ใช้เวลาปัจจุบันเป็นเวลาเริ่มสอบ และบวก 2 ชั่วโมงเป็นเวลาสิ้นสุด
+        exam_start_time = now_time
+        exam_end_time = now_time + timedelta(hours=2)
+        print(f"⚠️ Using fallback times: {exam_start_time} - {exam_end_time}")
+    
+    # ✅ ตรวจสอบว่าเป็นการสอบในอดีตหรือไม่ (สำหรับการทดสอบ)
+    exam_date_today = now_time.date()
+    is_past_exam = subject.exam_date < exam_date_today
+    
+    if is_past_exam:
+        print(f"⚠️ TESTING MODE: This is a past exam ({subject.exam_date} vs {exam_date_today})")
+        # สำหรับการทดสอบ: ยืดเวลาหมดอายุให้เป็น 24 ชั่วโมงจากตอนนี้
+        qr_expiry_time = now_time + timedelta(hours=24)
+        print(f"🧪 Extended QR expiry for testing: {qr_expiry_time}")
+        
+        # ปรับเวลาเริ่มสอบให้เป็นเวลาปัจจุบัน (สำหรับการทดสอบ)
+        testing_start_time = now_time - timedelta(minutes=10)  # เริ่มสอบ 10 นาทีที่แล้ว
+        testing_end_time = now_time + timedelta(hours=2)       # สิ้นสุดอีก 2 ชั่วโมง
+        
+        print(f"🧪 Testing times:")
+        print(f"   Start: {testing_start_time}")
+        print(f"   End: {testing_end_time}")
+        print(f"   Expiry: {qr_expiry_time}")
+        
+        # ใช้เวลาทดสอบ
+        exam_start_time = testing_start_time
+        exam_end_time = testing_end_time
+    else:
+        # ✅ เพิ่มเวลาพิเศษ 30 นาทีหลังสิ้นสุดการสอบ (กรณีปกติ)
+        qr_expiry_time = exam_end_time + timedelta(minutes=30)
+    
+    # ✅ ตรวจสอบสถานะ QR Code
+    is_expired = now_time > qr_expiry_time
+    can_use_early = now_time >= (exam_start_time - timedelta(minutes=30))
+    
+    print(f"🕐 Current: {now_time}")
+    print(f"🕑 Exam start: {exam_start_time}")
+    print(f"🕒 Exam end: {exam_end_time}")
+    print(f"🕓 QR expiry: {qr_expiry_time}")
+    print(f"❓ Is expired: {is_expired}")
+    print(f"❓ Can use early: {can_use_early}")
+    print(f"🧪 Is past exam (testing mode): {is_past_exam}")
+    
+    # ✅ แสดงความแตกต่างของเวลา
+    if now_time > exam_end_time:
+        time_since_exam = now_time - exam_end_time
+        print(f"⏱️ Time since exam ended: {time_since_exam}")
+    else:
+        time_until_exam = exam_start_time - now_time
+        print(f"⏱️ Time until exam starts: {time_until_exam}")
+    
+    # ✅ คำนวณเวลาที่เหลือ
+    if now_time < qr_expiry_time:
+        time_remaining_seconds = (qr_expiry_time - now_time).total_seconds()
+    else:
+        time_remaining_seconds = 0
+    
+    print(f"⏳ Time remaining (seconds): {time_remaining_seconds}")
+    
+    context = {
         "subject": subject,
         "img_base64": img_base64,
-        "qr_url": qr_url
-    })
+        "qr_url": qr_url,
+        "current_time": now_time,
+        "exam_start_time": exam_start_time,
+        "exam_end_time": exam_end_time,
+        "qr_expiry_time": qr_expiry_time,
+        "is_expired": is_expired,
+        "can_use_early": can_use_early,
+        "time_remaining": time_remaining_seconds,
+        "is_past_exam": is_past_exam,  # ส่งตัวแปรนี้ไปด้วย
+    }
+
+    return render(request, "app/staff/qr_code.html", context)
 
 @csrf_exempt
 @login_required
 def confirm_exam_entry(request):
+    """ฟังก์ชันยืนยันเข้าสอบผ่าน QR Code - แก้ไข error"""
+    
     if request.method == "GET":
         subject_id = request.GET.get("subject_id")
+        timestamp = request.GET.get("t")
+        
         if not subject_id:
-            return JsonResponse({"status": "error", "message": "❌ ไม่พบรหัสวิชา"}, status=400)
-        subject = get_object_or_404(ExamSubject, id=subject_id)
-        student, teacher, seat_number = None, None, None
-        if request.user.is_student:
-            student = get_object_or_404(StudentProfile, user=request.user)
-            students = list(subject.students.order_by('student_class', 'user__last_name'))
-            seat_number = "-"
-            for idx, s in enumerate(students, start=1):
-                if s.user.id == request.user.id:
-                    seat_number = idx
-                    break
-        elif request.user.is_teacher:
-            teacher = get_object_or_404(TeacherProfile, user=request.user)
-        return render(request, "app/confirm_exam.html", {
-            "subject": subject,
-            "student": student,
-            "teacher": teacher,
-            "seat_number": seat_number
-        })
+            return render(request, "app/error.html", {
+                "message": "❌ ไม่พบรหัสวิชา"
+            })
+        
+        try:
+            subject = get_object_or_404(ExamSubject, id=subject_id)
+            
+            # ✅ แก้ไขการจัดการเวลา
+            thai_tz = pytz.timezone('Asia/Bangkok')
+            now = timezone.now().astimezone(thai_tz)
+            
+            # ✅ สร้าง datetime จาก date + time แล้วค่อยแปลง timezone
+            try:
+                if hasattr(subject.end_time, 'astimezone'):
+                    # ถ้าเป็น datetime object แล้ว
+                    exam_end_time = subject.end_time.astimezone(thai_tz)
+                else:
+                    # ถ้าเป็น time object ให้รวมกับ exam_date
+                    naive_end = datetime.combine(subject.exam_date, subject.end_time)
+                    exam_end_time = thai_tz.localize(naive_end)
+                
+                if hasattr(subject.start_time, 'astimezone'):
+                    exam_start_time = subject.start_time.astimezone(thai_tz)
+                else:
+                    naive_start = datetime.combine(subject.exam_date, subject.start_time)
+                    exam_start_time = thai_tz.localize(naive_start)
+                    
+            except Exception as e:
+                print(f"❌ Time conversion error: {e}")
+                return render(request, "app/staff/error.html", {
+                    "message": f"เกิดข้อผิดพลาดในการคำนวณเวลา: {str(e)}"
+                })
+            
+            qr_expiry_time = exam_end_time + timedelta(minutes=30)
+            
+            if now > qr_expiry_time:
+                return render(request, "app/staff/qr_expired.html", {
+                    "subject": subject,
+                    "message": "QR Code หมดอายุแล้ว ไม่สามารถใช้งานได้"
+                })
+            
+            # ตรวจสอบว่าอยู่ในช่วงเวลาที่เหมาะสม
+            check_in_start = exam_start_time - timedelta(minutes=30)
+            
+            if now < check_in_start:
+                return render(request, "app/staff/qr_too_early.html", {
+                    "subject": subject,
+                    "check_in_time": check_in_start,
+                    "message": f"ยังไม่ถึงเวลาเช็คชื่อ กรุณารอจนถึง {check_in_start.strftime('%H:%M')} น."
+                })
+            
+            # ดำเนินการตามบทบาทผู้ใช้
+            student, teacher, seat_number = None, None, None
+            
+            if request.user.is_student:
+                try:
+                    student = StudentProfile.objects.get(user=request.user)
+                    
+                    if not subject.students.filter(id=student.id).exists():
+                        return render(request, "app/staff/qr_not_registered.html", {
+                            "subject": subject,
+                            "message": "คุณไม่ได้ลงทะเบียนในวิชานี้"
+                        })
+                    
+                    # คำนวณเลขที่นั่ง
+                    students = list(subject.students.order_by('student_class', 'user__last_name'))
+                    for idx, s in enumerate(students, start=1):
+                        if s.user.id == request.user.id:
+                            seat_number = idx
+                            break
+                    
+                except StudentProfile.DoesNotExist:
+                    return render(request, "app/staff/error.html", {
+                        "message": "ไม่พบข้อมูลนักเรียน"
+                    })
+                    
+            elif request.user.is_teacher:
+                try:
+                    teacher = TeacherProfile.objects.get(user=request.user)
+                    
+                    if (teacher.id != subject.invigilator_id and 
+                        teacher.id != getattr(subject.secondary_invigilator, 'id', None)):
+                        return render(request, "app/staff/qr_unauthorized.html", {
+                            "subject": subject,
+                            "message": "คุณไม่ใช่ครูคุมสอบของวิชานี้"
+                        })
+                        
+                except TeacherProfile.DoesNotExist:
+                    return render(request, "app/staff/error.html", {
+                        "message": "ไม่พบข้อมูลครู"
+                    })
+            
+            context = {
+                "subject": subject,
+                "student": student,
+                "teacher": teacher,
+                "seat_number": seat_number,
+                "current_time": now,
+                "exam_start_time": exam_start_time,
+                "exam_end_time": exam_end_time,
+                "can_check_in": check_in_start <= now <= qr_expiry_time,
+            }
+            
+            return render(request, "app/staff/confirm_exam.html", context)
+            
+        except Exception as e:
+            print(f"❌ General error: {str(e)}")
+            return render(request, "app/staff/error.html", {
+                "message": f"เกิดข้อผิดพลาด: {str(e)}"
+            })
+    
     elif request.method == "POST":
         try:
             data = json.loads(request.body)
             subject_id = data.get("subject_id")
+            
             if not subject_id:
                 return JsonResponse({"status": "error", "message": "❌ ไม่มี subject_id"}, status=400)
+            
             subject = get_object_or_404(ExamSubject, id=subject_id)
+            
+            # ตรวจสอบเวลาหมดอายุอีกครั้ง
+            thai_tz = pytz.timezone('Asia/Bangkok')
+            now = timezone.now().astimezone(thai_tz)
+            
+            # แก้ไขการคำนวณเวลาหมดอายุ
+            try:
+                if hasattr(subject.end_time, 'astimezone'):
+                    exam_end_time = subject.end_time.astimezone(thai_tz)
+                else:
+                    naive_end = datetime.combine(subject.exam_date, subject.end_time)
+                    exam_end_time = thai_tz.localize(naive_end)
+                    
+                qr_expiry_time = exam_end_time + timedelta(minutes=30)
+                
+            except Exception as e:
+                return JsonResponse({
+                    "status": "error", 
+                    "message": f"❌ เกิดข้อผิดพลาดในการคำนวณเวลา: {str(e)}"
+                }, status=500)
+            
+            if now > qr_expiry_time:
+                return JsonResponse({
+                    "status": "error", 
+                    "message": "❌ QR Code หมดอายุแล้ว ไม่สามารถเช็คชื่อได้"
+                }, status=400)
+            
+            # ดำเนินการตามบทบาท
             if request.user.is_student:
                 student = get_object_or_404(StudentProfile, user=request.user)
-                attendance, created = Attendance.objects.get_or_create(student=student, subject=subject)
-                if not created:
-                    return JsonResponse({"status": "error", "message": "❌ คุณได้เช็คชื่อไปแล้ว!"}, status=400)
-                attendance.status = "on_time"
-                attendance.checkin_time = now()
-                attendance.save()
+                
+                existing_attendance = Attendance.objects.filter(
+                    student=student, 
+                    subject=subject
+                ).first()
+                
+                if existing_attendance:
+                    return JsonResponse({
+                        "status": "info",
+                        "message": f"✅ คุณได้เช็คชื่อไปแล้วเมื่อ {existing_attendance.checkin_time.strftime('%H:%M')} น.",
+                        "already_checked": True
+                    })
+                
+                attendance = Attendance.objects.create(
+                    student=student,
+                    subject=subject,
+                    status="on_time",
+                    checkin_time=now
+                )
+                
+                return JsonResponse({
+                    "status": "success",
+                    "message": "✅ เช็คชื่อนักเรียนสำเร็จ!",
+                    "checkin_time": now.strftime('%H:%M'),
+                    "seat_number": getattr(student, 'seat_number', 'ไม่ระบุ')
+                })
+                
             elif request.user.is_teacher:
                 teacher = get_object_or_404(TeacherProfile, user=request.user)
-                if teacher.id != subject.invigilator_id and teacher.id != subject.secondary_invigilator_id:
-                    return JsonResponse({"status": "error", "message": "❌ คุณไม่ใช่ครูคุมสอบของวิชานี้"}, status=403)
+                
                 if teacher.id == subject.invigilator_id:
+                    if subject.invigilator_checkin:
+                        return JsonResponse({
+                            "status": "info",
+                            "message": "✅ ครูหลักได้เช็คชื่อไปแล้ว",
+                            "already_checked": True
+                        })
+                    
                     subject.invigilator_checkin = True
-                    subject.invigilator_checkin_time = now()
-                elif teacher.id == subject.secondary_invigilator_id:
+                    subject.invigilator_checkin_time = now
+                    subject.save()
+                    
+                    return JsonResponse({
+                        "status": "success",
+                        "message": "✅ เช็คชื่อครูคุมสอบหลักสำเร็จ!",
+                        "position": "main"
+                    })
+                    
+                elif teacher.id == getattr(subject.secondary_invigilator, 'id', None):
+                    if subject.secondary_invigilator_checkin:
+                        return JsonResponse({
+                            "status": "info",
+                            "message": "✅ ครูสำรองได้เช็คชื่อไปแล้ว",
+                            "already_checked": True
+                        })
+                    
                     subject.secondary_invigilator_checkin = True
-                    subject.secondary_invigilator_checkin_time = now()
-                subject.save()
-            return JsonResponse({"status": "success", "message": "✅ เช็คชื่อสำเร็จ!"})
+                    subject.secondary_invigilator_checkin_time = now
+                    subject.save()
+                    
+                    return JsonResponse({
+                        "status": "success",
+                        "message": "✅ เช็คชื่อครูคุมสอบสำรองสำเร็จ!",
+                        "position": "secondary"
+                    })
+                
+                else:
+                    return JsonResponse({
+                        "status": "error",
+                        "message": "❌ คุณไม่ใช่ครูคุมสอบของวิชานี้"
+                    }, status=403)
+            
+            else:
+                return JsonResponse({
+                    "status": "error",
+                    "message": "❌ บทบาทผู้ใช้ไม่ถูกต้อง"
+                }, status=403)
+                
         except json.JSONDecodeError:
-            return JsonResponse({"status": "error", "message": "❌ ข้อมูล JSON ไม่ถูกต้อง"}, status=400)
+            return JsonResponse({
+                "status": "error",
+                "message": "❌ ข้อมูล JSON ไม่ถูกต้อง"
+            }, status=400)
         except Exception as e:
-            return JsonResponse({"status": "error", "message": f"❌ เกิดข้อผิดพลาด: {str(e)}"}, status=500)
-    return JsonResponse({"status": "error", "message": "❌ Method Not Allowed"}, status=405)
+            print(f"❌ POST error: {str(e)}")
+            return JsonResponse({
+                "status": "error",
+                "message": f"❌ เกิดข้อผิดพลาด: {str(e)}"
+            }, status=500)
+    
+    return JsonResponse({
+        "status": "error",
+        "message": "❌ Method ไม่ถูกต้อง"
+    }, status=405)
+
+
+# ✅ เพิ่มฟังก์ชันตรวจสอบสถานะ QR Code
+@login_required
+def check_qr_status(request, subject_id):
+    """ตรวจสอบสถานะ QR Code แบบ Real-time"""
+    try:
+        subject = get_object_or_404(ExamSubject, id=subject_id)
+        
+        thai_tz = pytz.timezone('Asia/Bangkok')
+        now = timezone.now().astimezone(thai_tz)
+        exam_start = subject.start_time.astimezone(thai_tz)
+        exam_end = subject.end_time.astimezone(thai_tz)
+        qr_expiry = exam_end + timedelta(minutes=30)
+        check_in_start = exam_start - timedelta(minutes=30)
+        
+        # กำหนดสถานะ
+        if now < check_in_start:
+            status = "too_early"
+            message = f"ยังไม่ถึงเวลาเช็คชื่อ (เริ่ม {check_in_start.strftime('%H:%M')} น.)"
+        elif now > qr_expiry:
+            status = "expired"
+            message = "QR Code หมดอายุแล้ว"
+        elif exam_start <= now <= exam_end:
+            status = "exam_ongoing"
+            message = "กำลังสอบ - สามารถเช็คชื่อได้"
+        elif check_in_start <= now < exam_start:
+            status = "check_in_open"
+            message = "เปิดให้เช็คชื่อแล้ว"
+        elif exam_end < now <= qr_expiry:
+            status = "post_exam"
+            message = "หลังสอบ - ยังเช็คชื่อได้"
+        else:
+            status = "unknown"
+            message = "สถานะไม่ทราบ"
+        
+        return JsonResponse({
+            "status": status,
+            "message": message,
+            "current_time": now.strftime('%H:%M:%S'),
+            "exam_start": exam_start.strftime('%H:%M'),
+            "exam_end": exam_end.strftime('%H:%M'),
+            "qr_expiry": qr_expiry.strftime('%H:%M'),
+            "can_use": status in ["check_in_open", "exam_ongoing", "post_exam"],
+            "time_remaining": max(0, (qr_expiry - now).total_seconds())
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            "status": "error",
+            "message": str(e)
+        }, status=500)
 
 @csrf_exempt
 @login_required

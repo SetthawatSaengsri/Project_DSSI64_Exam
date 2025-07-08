@@ -1,114 +1,711 @@
-<!-- qrcode.html -->
+<!-- qr_code.html - Enhanced Version with Student Classes -->
 
 {% extends "app/base.html" %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto py-12 px-6 sm:px-8 lg:px-10 text-center">
-    <h2 class="text-5xl font-extrabold text-indigo-700 mb-4 flex items-center justify-center gap-1 whitespace-nowrap">
-        📌 <span>QR Code สำหรับรายวิชา:</span><span class="text-indigo-800">{{ subject.subject_name }}</span>
-    </h2>
-
-    <!-- เวลาปัจจุบัน -->
-    <div class="flex justify-center items-center text-4xl font-extrabold text-red-500 mb-6">
-        <span class="mr-2">⏰</span> <span id="current-time">กำลังโหลด...</span>
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 -mx-6 -my-4 p-6">
+  <div class="max-w-6xl mx-auto">
+    
+    <!-- Header Section -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+        📱 QR Code การเข้าสอบ
+      </h1>
+      
+      <!-- <div class="inline-flex items-center px-6 py-3 bg-white/80 backdrop-blur-lg rounded-full shadow-lg">
+        <span class="text-2xl mr-2">⏰</span>
+        <span class="text-xl font-bold text-gray-700">เวลาปัจจุบัน:</span>
+        <span id="current-time" class="text-xl font-bold text-indigo-600 ml-2">กำลังโหลด...</span>
+      </div> -->
     </div>
 
-    <!-- QR Code -->
-    <div id="qr-container" class="bg-white shadow-xl rounded-2xl p-10 inline-block transition transform hover:scale-105">
-        <img id="qr-img" src="data:image/png;base64,{{ img_base64 }}" alt="QR Code"
-             class="mx-auto max-w-md border-4 border-gray-300 rounded-lg shadow-md">
-        <p id="qr-text" class="text-xl text-gray-700 mt-4 font-semibold">
-            📱 สแกน QR Code เพื่อเช็คชื่อเข้าสอบ
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      
+      <!-- QR Code Section -->
+      <div class="order-2 lg:order-1">
+        <div class="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-white/50">
+          <div class="text-center">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center justify-center">
+              <span class="bg-gradient-to-r from-purple-500 to-pink-500 p-3 rounded-full mr-3">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 3h7v7H3V3zm2 2v3h3V5H5zm9-2h7v7h-7V3zm2 2v3h3V5h-3zM3 14h7v7H3v-7zm2 2v3h3v-3H5zm7-2h1v1h-1v-1zm2 0h1v1h-1v-1zm2 0h1v1h-1v-1zm0 2h1v1h-1v-1zm2 0h1v1h-1v-1zm0 2h1v1h-1v-1zm-2 0h1v1h-1v-1zm0 2h1v1h-1v-1zm2 0h1v1h-1v-1zm2 0h1v1h-1v-1zm0-2h1v1h-1v-1zm0-2h1v1h-1v-1zm0-2h1v1h-1v-1zm-2 0h1v1h-1v-1zm-2 6h1v1h-1v-1z"/>
+                </svg>
+              </span>
+              QR Code สแกนเพื่อเข้าสอบ
+            </h2>
+            
+            <!-- QR Code Container -->
+            <div id="qr-container" class="relative inline-block">
+              <div class="bg-white p-8 rounded-2xl shadow-lg border-4 border-dashed border-gray-200 hover:border-indigo-300 transition-all duration-300">
+                <img id="qr-img" src="data:image/png;base64,{{ img_base64 }}" alt="QR Code"
+                     class="mx-auto w-64 h-64 rounded-lg transition-all duration-300">
+                
+                <!-- Expired Overlay -->
+                <div id="qr-expired-overlay" class="absolute inset-0 bg-red-500/90 rounded-2xl flex items-center justify-center hidden">
+                  <div class="text-center text-white">
+                    <svg class="w-16 h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <h3 class="text-xl font-bold mb-2">หมดเวลาการใช้งาน</h3>
+                    <p class="text-sm">QR Code นี้ไม่สามารถใช้งานได้แล้ว</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Status Messages -->
+              <div id="qr-active" class="mt-6 p-4 bg-green-100 border border-green-300 rounded-lg">
+                <p class="text-green-800 font-semibold flex items-center justify-center">
+                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  QR Code พร้อมใช้งาน - สแกนเพื่อเข้าสอบ
+                </p>
+              </div>
+              
+              <div id="qr-expired" class="mt-6 p-4 bg-red-100 border border-red-300 rounded-lg hidden">
+                <p class="text-red-800 font-semibold flex items-center justify-center">
+                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
+                  QR Code หมดอายุแล้ว - ไม่สามารถใช้งานได้
+                </p>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 mt-8">
+              <button onclick="copyQRCodeURL()"
+                      class="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                </svg>
+                คัดลอกลิงก์
+              </button>
+              
+              <button onclick="window.print()"
+                      class="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+                </svg>
+                พิมพ์ QR Code
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subject Details Section -->
+      <div class="order-1 lg:order-2">
+        <div class="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-white/50">
+          <div class="flex items-center mb-6">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-500 p-3 rounded-full mr-4">
+              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+              </svg>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-800">รายละเอียดการสอบ</h2>
+          </div>
+
+          <!-- Subject Information Grid -->
+          <div class="space-y-6">
+            <!-- Subject Name -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
+              <div class="flex items-center mb-2">
+                <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                <span class="text-sm font-medium text-blue-700">ชื่อวิชา</span>
+              </div>
+              <p class="text-xl font-bold text-blue-900">{{ subject.subject_name }}</p>
+            </div>
+
+            <!-- Subject Code -->
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
+              <div class="flex items-center mb-2">
+                <svg class="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                </svg>
+                <span class="text-sm font-medium text-purple-700">รหัสวิชา</span>
+              </div>
+              <p class="text-lg font-bold text-purple-900">{{ subject.subject_code }}</p>
+            </div>
+
+            <!-- Student Classes Section -->
+            <div class="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-xl border border-teal-200">
+              <div class="flex items-center mb-3">
+                <svg class="w-5 h-5 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                </svg>
+                <span class="text-sm font-medium text-teal-700">ระดับชั้นที่เข้าสอบ</span>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                {% for class in subject.student_classes %}
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-teal-100 text-teal-800 border border-teal-300">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                    {{ class }}
+                  </span>
+                {% empty %}
+                  <span class="text-teal-700 text-sm italic">ไม่มีข้อมูลระดับชั้น</span>
+                {% endfor %}
+              </div>
+              {% if subject.students.count %}
+                <div class="mt-3 pt-3 border-t border-teal-200">
+                  <p class="text-sm text-teal-600">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    จำนวนนักเรียนทั้งหมด: <span class="font-semibold">{{ subject.students.count }} คน</span>
+                  </p>
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Date and Time -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-4 rounded-xl border border-emerald-200">
+                <div class="flex items-center mb-2">
+                  <svg class="w-5 h-5 text-emerald-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  <span class="text-sm font-medium text-emerald-700">วันที่สอบ</span>
+                </div>
+                <p class="text-lg font-bold text-emerald-900">{{ subject.exam_date|date:"d/m/Y" }}</p>
+                <p class="text-sm text-emerald-700">{{ subject.exam_date|date:"l" }}</p>
+              </div>
+
+              <div class="bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200">
+                <div class="flex items-center mb-2">
+                  <svg class="w-5 h-5 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span class="text-sm font-medium text-amber-700">เวลาสอบ</span>
+                </div>
+                <p class="text-lg font-bold text-amber-900">{{ subject.start_time|time:"H:i" }} - {{ subject.end_time|time:"H:i" }}</p>
+                <p class="text-sm text-amber-700">{{ subject.start_time|time:"H:i" }} น. เริ่มสอบ</p>
+              </div>
+            </div>
+
+            <!-- Room Information -->
+            {% if subject.room %}
+            <div class="bg-gradient-to-r from-red-50 to-pink-50 p-4 rounded-xl border border-red-200">
+              <div class="flex items-center mb-2">
+                <svg class="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+                <span class="text-sm font-medium text-red-700">ห้องสอบ</span>
+              </div>
+              <p class="text-lg font-bold text-red-900">
+                {% if subject.room.building %}
+                  {{ subject.room.building.name }} ห้อง {{ subject.room.name }}
+                {% else %}
+                  ห้อง {{ subject.room.name }}
+                {% endif %}
+              </p>
+              <p class="text-sm text-red-700">ความจุ {{ subject.room.capacity }} คน</p>
+            </div>
+            {% endif %}
+
+            <!-- Teachers Information -->
+            <div class="bg-gradient-to-r from-gray-50 to-slate-50 p-4 rounded-xl border border-gray-200">
+              <div class="flex items-center mb-3">
+                <svg class="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                <span class="text-sm font-medium text-gray-700">ครูคุมสอบ</span>
+              </div>
+              {% if subject.invigilator %}
+                <p class="text-lg font-bold text-gray-900 mb-1">{{ subject.invigilator.user.get_full_name }}</p>
+                <p class="text-sm text-gray-600">ครูคุมสอบหลัก</p>
+              {% endif %}
+              {% if subject.secondary_invigilator %}
+                <p class="text-lg font-bold text-gray-900 mb-1 mt-2">{{ subject.secondary_invigilator.user.get_full_name }}</p>
+                <p class="text-sm text-gray-600">ครูคุมสอบสำรอง</p>
+              {% endif %}
+            </div>
+
+            <!-- Academic Info -->
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-gradient-to-r from-indigo-50 to-blue-50 p-3 rounded-lg border border-indigo-200 text-center">
+                <p class="text-sm text-indigo-700 mb-1">ปีการศึกษา</p>
+                <p class="text-lg font-bold text-indigo-900">{{ subject.academic_year }}</p>
+              </div>
+              <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-3 rounded-lg border border-purple-200 text-center">
+                <p class="text-sm text-purple-700 mb-1">ภาคเรียน</p>
+                <p class="text-lg font-bold text-purple-900">{{ subject.term }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions Section -->
+    <div class="mt-8 bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-white/50">
+      <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+        <svg class="w-8 h-8 text-indigo-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        วิธีการใช้งาน QR Code
+      </h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="text-center p-6 bg-gradient-to-b from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
+          <div class="bg-blue-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl text-white font-bold">1</span>
+          </div>
+          <h4 class="font-bold text-blue-900 mb-2">สำหรับนักเรียน</h4>
+          <p class="text-blue-700 text-sm">ใช้มือถือสแกน QR Code เพื่อเข้าสู่ระบบและเช็คชื่อเข้าสอบ</p>
+        </div>
+        
+        <div class="text-center p-6 bg-gradient-to-b from-green-50 to-emerald-50 rounded-2xl border border-green-200">
+          <div class="bg-green-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl text-white font-bold">2</span>
+          </div>
+          <h4 class="font-bold text-green-900 mb-2">สำหรับครู</h4>
+          <p class="text-green-700 text-sm">ครูคุมสอบสแกน QR Code เพื่อยืนยันการเข้าปฏิบัติหน้าที่</p>
+        </div>
+        
+        <div class="text-center p-6 bg-gradient-to-b from-red-50 to-pink-50 rounded-2xl border border-red-200">
+          <div class="bg-red-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl text-white font-bold">3</span>
+          </div>
+          <h4 class="font-bold text-red-900 mb-2">ข้อควรระวัง</h4>
+          <p class="text-red-700 text-sm">QR Code จะหมดอายุเมื่อสิ้นสุดเวลาสอบ ไม่สามารถใช้งานได้หลังจากนั้น</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Back Button -->
+    <div class="text-center mt-8">
+      <a href="{% url 'exam_subjects_staff' %}"
+         class="inline-flex items-center bg-gradient-to-r from-gray-500 to-slate-500 hover:from-gray-600 hover:to-slate-600 text-white px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        กลับไปหน้าจัดการรายวิชา
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden elements for printing -->
+<div class="print-only hidden">
+  <div class="text-center p-8">
+    <h1 class="text-3xl font-bold mb-4">{{ subject.subject_name }}</h1>
+    <div class="mb-4">
+      <p><strong>รหัสวิชา:</strong> {{ subject.subject_code }}</p>
+      <p><strong>วันที่:</strong> {{ subject.exam_date|date:"d/m/Y" }}</p>
+      <p><strong>เวลา:</strong> {{ subject.start_time|time:"H:i" }} - {{ subject.end_time|time:"H:i" }}</p>
+      {% if subject.room %}
+        <p><strong>ห้องสอบ:</strong> 
+          {% if subject.room.building %}{{ subject.room.building.name }} ห้อง {{ subject.room.name }}{% else %}ห้อง {{ subject.room.name }}{% endif %}
         </p>
-        <p id="qr-expired" class="text-xl text-red-500 mt-4 font-semibold hidden">
-            ⛔ หมดเวลาการใช้งาน QR Code แล้ว
-        </p>
-    </div>  
-
-    <!-- ปุ่มคัดลอกลิงก์ -->
-    <div class="flex justify-center mt-10">
-        <button onclick="copyQRCodeURL()"
-            class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 text-lg rounded-xl shadow-lg transition-transform transform hover:scale-105">
-            📋 คัดลอกลิงก์ยืนยันเข้าสอบ
-        </button>
+      {% endif %}
+      <p><strong>ระดับชั้น:</strong> 
+        {% for class in subject.student_classes %}
+          {{ class }}{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+      </p>
+      <p><strong>จำนวนนักเรียน:</strong> {{ subject.students.count }} คน</p>
     </div>
-
-    <!-- ปุ่มพิมพ์และกลับ -->
-    <div class="flex justify-center mt-6 space-x-6">
-        <button onclick="window.print()"
-            class="bg-green-600 hover:bg-green-700 text-white px-10 py-4 text-lg rounded-xl shadow-lg transition-transform transform hover:scale-105">
-            🖨️ พิมพ์ QR Code
-        </button>
-        <a href="{% url 'exam_subjects_staff' %}"
-            class="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 text-lg rounded-xl shadow-lg transition-transform transform hover:scale-105">
-            🔙 กลับไปหน้าวิชา
-        </a>
-    </div>
+    <img src="data:image/png;base64,{{ img_base64 }}" alt="QR Code" class="mx-auto" style="width: 300px; height: 300px;">
+    <p class="mt-4 text-lg font-semibold">สแกน QR Code เพื่อเข้าสอบ</p>
+  </div>
 </div>
 
 <script>
-    // ใช้ exam_date และ qr_expiration ที่กรอกในฟอร์ม
-    const examEndTime = new Date("{{ subject.exam_date }}T{{ subject.qr_expiration }}");
-    examEndTime.setHours(examEndTime.getHours() + 7); // +7 สำหรับเวลาในไทย
+// Configuration - ใช้ข้อมูลจาก backend ที่คำนวณแล้ว
+const qrUrl = "{{ qr_url|escapejs }}";
+const isExpiredFromBackend = {{ is_expired|yesno:"true,false" }};
+const canUseEarly = {{ can_use_early|yesno:"true,false" }};
 
-    // ฟังก์ชันอัปเดตเวลาปัจจุบัน
-    function updateTime() {
-        const now = new Date();
-        now.setHours(now.getHours() + 7); // ปรับให้ตรงกับเวลาไทย
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-        document.getElementById("current-time").textContent = `${hours}:${minutes}:${seconds}`;
+// สร้างวันที่หมดอายุจากข้อมูลที่ส่งมาจาก backend
+const qrExpiryTime = new Date("{{ qr_expiry_time|date:'c' }}");
+const examStartTime = new Date("{{ exam_start_time|date:'c' }}");
+const examEndTime = new Date("{{ exam_end_time|date:'c' }}");
+
+console.log("🕐 Current backend time:", "{{ current_time|date:'c' }}");
+console.log("🕑 Exam start:", "{{ exam_start_time|date:'c' }}");
+console.log("🕒 Exam end:", "{{ exam_end_time|date:'c' }}");
+console.log("🕓 QR expiry:", "{{ qr_expiry_time|date:'c' }}");
+console.log("❓ Is expired (backend):", isExpiredFromBackend);
+
+// Elements
+const currentTimeEl = document.getElementById("current-time");
+const qrImg = document.getElementById("qr-img");
+const qrActive = document.getElementById("qr-active");
+const qrExpired = document.getElementById("qr-expired");
+const qrExpiredOverlay = document.getElementById("qr-expired-overlay");
+const qrContainer = document.getElementById("qr-container");
+
+// Update current time display
+function updateTime() {
+    const now = new Date();
+    const options = {
+        timeZone: 'Asia/Bangkok',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    };
+    currentTimeEl.textContent = now.toLocaleTimeString('th-TH', options);
+}
+
+// Check if QR code is expired
+function checkQRExpiration() {
+    const now = new Date();
+    
+    // ✅ ใช้เวลาหมดอายุจาก backend แทน
+    const isExpired = now > qrExpiryTime;
+    
+    console.log("🕐 Current JS time:", now.toISOString());
+    console.log("🕓 QR expiry time:", qrExpiryTime.toISOString());
+    console.log("❓ Is expired (JS):", isExpired);
+    
+    if (isExpired) {
+        // QR expired - show overlay and change status
+        qrExpiredOverlay.classList.remove('hidden');
+        qrImg.classList.add('opacity-30', 'grayscale');
+        qrActive.classList.add('hidden');
+        qrExpired.classList.remove('hidden');
+        qrContainer.classList.add('cursor-not-allowed');
+        console.log("❌ QR Code expired - UI updated");
+    } else {
+        // QR active - hide overlay and show active status
+        qrExpiredOverlay.classList.add('hidden');
+        qrImg.classList.remove('opacity-30', 'grayscale');
+        qrActive.classList.remove('hidden');
+        qrExpired.classList.add('hidden');
+        qrContainer.classList.remove('cursor-not-allowed');
+        console.log("✅ QR Code active - UI updated");
     }
+    
+    return !isExpired;
+}
 
-    // ฟังก์ชันตรวจสอบว่า QR Code หมดอายุหรือยัง
-    function checkQRExpiration() {
-        const now = new Date();
-        now.setHours(now.getHours() + 7);
-        if (now >= examEndTime) {
-            document.getElementById("qr-img").classList.add("opacity-30");
-            document.getElementById("qr-text").classList.add("hidden");
-            document.getElementById("qr-expired").classList.remove("hidden");
-        }
+// Copy QR code URL to clipboard
+async function copyQRCodeURL() {
+    if (!checkQRExpiration()) {
+        alert("❌ QR Code หมดอายุแล้ว ไม่สามารถคัดลอกได้");
+        return;
     }
-
-    // ฟังก์ชันคัดลอก URL ของ QR Code ไปยังคลิปบอร์ด
-    function copyQRCodeURL() {
-        const qrUrl = "{{ qr_url }}";
-        navigator.clipboard.writeText(qrUrl).then(() => {
-            alert("✅ คัดลอกลิงก์แล้ว! พร้อมแชร์ให้นักเรียน");
-        }).catch(err => {
-            alert("❌ คัดลอกลิงก์ไม่สำเร็จ");
-            console.error(err);
-        });
+    
+    try {
+        await navigator.clipboard.writeText(qrUrl);
+        
+        // Show success notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>คัดลอกลิงก์สำเร็จ!</span>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+        
+    } catch (err) {
+        console.error('Failed to copy: ', err);
+        alert("❌ ไม่สามารถคัดลอกลิงก์ได้ กรุณาลองใหม่อีกครั้ง");
     }
+}
 
-    setInterval(updateTime, 1000);
-    setInterval(checkQRExpiration, 10000);
+// Initialize and start timers
+function initialize() {
+    console.log("🚀 Initializing QR Code page...");
+    console.log("Backend says expired:", isExpiredFromBackend);
+    console.log("Backend says can use early:", canUseEarly);
+    
     updateTime();
     checkQRExpiration();
+    
+    // ✅ แสดงสถานะเริ่มต้นตาม backend
+    if (isExpiredFromBackend) {
+        console.log("⚠️ Backend says QR is expired - setting initial state");
+        qrExpiredOverlay.classList.remove('hidden');
+        qrImg.classList.add('opacity-30', 'grayscale');
+        qrActive.classList.add('hidden');
+        qrExpired.classList.remove('hidden');
+        qrContainer.classList.add('cursor-not-allowed');
+    }
+    
+    // Update time every second
+    setInterval(updateTime, 1000);
+    
+    // Check expiration every 10 seconds (more frequent for debugging)
+    setInterval(checkQRExpiration, 10000);
+    
+    console.log("✅ QR Code page initialized");
+}
+
+// Start when page loads
+document.addEventListener('DOMContentLoaded', initialize);
+
+// Print function enhancement
+window.addEventListener('beforeprint', function() {
+    document.querySelectorAll('.print-only').forEach(el => {
+        el.classList.remove('hidden');
+    });
+});
+
+window.addEventListener('afterprint', function() {
+    document.querySelectorAll('.print-only').forEach(el => {
+        el.classList.add('hidden');
+    });
+});
 </script>
 
-{% endblock %}
-
-{% block extra_css %}
 <style>
-    @media print {
-        body * {
-            visibility: hidden;
-        }
-        .container,
-        .container * {
-            visibility: visible;
-        }
-        .container {
-            position: absolute;
-            left: 0;
-            top: 0;
-        }
-        .container img {
-            width: 100%;
-        }
+@media print {
+    /* Hide all elements first */
+    body * {
+        visibility: hidden;
     }
+    
+    /* Show only print elements */
+    .print-only, .print-only * {
+        visibility: visible;
+    }
+    
+    .print-only {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white;
+        padding: 20px;
+    }
+    
+    /* Hide non-print elements */
+    .no-print {
+        display: none !important;
+    }
+    
+    /* Print-specific styles */
+    .print-only h1 {
+        font-size: 28px;
+        margin-bottom: 20px;
+        text-align: center;
+        color: #000;
+    }
+    
+    .print-only p {
+        font-size: 16px;
+        margin: 8px 0;
+        color: #000;
+    }
+    
+    .print-only img {
+        display: block;
+        margin: 20px auto;
+        max-width: 300px;
+        max-height: 300px;
+    }
+    
+    /* Remove all backgrounds and shadows for print */
+    .print-only * {
+        background: transparent !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+    
+    /* Page break settings */
+    .print-only {
+        page-break-before: auto;
+        page-break-after: auto;
+        page-break-inside: avoid;
+    }
+}
+
+/* Enhanced animations */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: .5;
+    }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Gradient animations */
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+}
+
+/* Hover effects */
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading animation for QR */
+.qr-loading {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Enhanced status indicators */
+.status-indicator {
+    position: relative;
+    overflow: hidden;
+}
+
+.status-indicator::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.status-indicator:hover::before {
+    left: 100%;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+    .grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .text-4xl {
+        font-size: 2rem;
+    }
+    
+    .text-5xl {
+        font-size: 2.5rem;
+    }
+    
+    .px-8 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .gap-8 {
+        gap: 1rem;
+    }
+}
+
+/* QR Code specific styles */
+.qr-container {
+    transition: all 0.3s ease;
+}
+
+.qr-container:hover {
+    transform: scale(1.02);
+}
+
+/* Status message styles */
+.status-message {
+    transition: all 0.3s ease;
+    transform: translateY(0);
+}
+
+.status-message.slide-in {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Button hover effects */
+button, .btn {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:hover, .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+button:active, .btn:active {
+    transform: translateY(0);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Glass morphism effects */
+.glass {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Gradient text effect */
+.gradient-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
 </style>
+
 {% endblock %}

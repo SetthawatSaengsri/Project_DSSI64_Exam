@@ -1,11 +1,11 @@
 #forms.py
 
-from django.forms.widgets import DateInput, DateTimeInput
+from django.forms.widgets import DateInput, DateTimeInput,Select,TimeInput
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import *
-from django.forms.widgets import DateTimeInput,Select
 from django.forms import ModelForm
+import pytz
 
 class UserEditForm(forms.ModelForm):
     class Meta:
@@ -98,69 +98,141 @@ class StaffRegistrationForm(UserCreationForm):
 
         return user
 
-
 class ExamSubjectForm(forms.ModelForm):
+    ROOM_ASSIGNMENT_CHOICES = [
+        ('auto', 'จัดห้องอัตโนมัติ'),
+        ('manual', 'เลือกห้องเอง'),
+    ]
+    
+    term = forms.ChoiceField(
+        choices=ExamSubject.TERM_CHOICES,
+        required=True,
+        label="ภาคเรียน"
+    )
+    
     student_class = forms.ChoiceField(
         choices=[],
         required=True,
         label="ระดับชั้น"
     )
+    
+    room_assignment_type = forms.ChoiceField(
+        choices=ROOM_ASSIGNMENT_CHOICES,
+        required=True,
+        label="วิธีการจัดห้องสอบ",
+        initial='auto',  # ตั้งค่าเริ่มต้นเป็น auto
+        widget=forms.RadioSelect(attrs={'class': 'room-assignment-radio'})
+    )
+    
+    building = forms.ModelChoiceField(
+        queryset=Building.objects.all(),
+        required=False,
+        label="อาคาร",
+        empty_label="เลือกอาคาร"
+    )
+    
+    # Override room field to make it optional initially
+    room = forms.ModelChoiceField(
+        queryset=ExamRoom.objects.none(),
+        required=False,
+        label="ห้องสอบ",
+        empty_label="เลือกห้องสอบ"
+    )
 
     class Meta:
         model = ExamSubject
         fields = [
-            'subject_name', 'subject_code', 'academic_year', 'exam_date',
-            'start_time', 'end_time', 'room', 'invigilator', 'secondary_invigilator',
-            'student_class'
+            'subject_name', 'subject_code', 'academic_year', 'term',
+            'exam_date', 'start_time', 'end_time',
+            'room_assignment_type', 'building', 'room', 
+            'invigilator', 'secondary_invigilator', 'student_class'
         ]
         widgets = {
-            'exam_date': DateInput(attrs={'type': 'date', 'class': 'form-control'}),  # ใช้ DateInput สำหรับวันที่
-            'start_time': DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),  # ใช้ DateTimeInput สำหรับเวลา
-            'end_time': DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),  # ใช้ DateTimeInput สำหรับเวลา
+            'exam_date': DateInput(attrs={
+                'type': 'date', 
+                'class': 'form-control'
+            }),
+            'start_time': TimeInput(attrs={
+                'type': 'time', 
+                'class': 'form-control',
+                'step': '300'  # 5-minute intervals
+            }),
+            'end_time': TimeInput(attrs={
+                'type': 'time', 
+                'class': 'form-control',
+                'step': '300'  # 5-minute intervals
+            }),
         }
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)  # รับ user จาก view
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
         if user:
-            # กรองครูในโรงเรียนเดียวกัน
+            # Filter teachers by school
             teacher_qs = TeacherProfile.objects.filter(user__school_name=user.school_name)
             self.fields['invigilator'].queryset = teacher_qs
             self.fields['secondary_invigilator'].queryset = teacher_qs
             self.fields['secondary_invigilator'].required = False
 
-            # กรองห้องสอบทั้งหมด (ถ้ามีฟิลด์ school_name ในอนาคต สามารถกรองเพิ่มได้)
-            room_qs = ExamRoom.objects.all().order_by('name')
-            self.fields['room'].queryset = room_qs
-            self.fields['room'].empty_label = "เลือกห้องสอบ"
-
-            # ดึงระดับชั้นจากนักเรียนโรงเรียนเดียวกัน และจัดเรียงแบบไม่ซ้ำ
+            # Get student classes for this school
             student_classes = StudentProfile.objects.filter(
                 user__school_name=user.school_name
             ).values_list('student_class', flat=True).distinct()
 
-            self.fields['student_class'].choices = [("", "เลือกระดับชั้น")] + [(sc, sc) for sc in student_classes if sc]
+            self.fields['student_class'].choices = [("", "เลือกระดับชั้น")] + [
+                (sc, sc) for sc in student_classes if sc
+            ]
+
+            # Set up building and room querysets
+            self.fields['building'].queryset = Building.objects.all().order_by('code')
+            
+            # If building is selected, filter rooms
+            if 'building' in self.data:
+                try:
+                    building_id = int(self.data.get('building'))
+                    self.fields['room'].queryset = ExamRoom.objects.filter(
+                        building_id=building_id
+                    ).order_by('name')
+                except (ValueError, TypeError):
+                    pass
+            elif self.instance.pk and hasattr(self.instance, 'room') and self.instance.room:
+                # For editing existing instances
+                self.fields['room'].queryset = ExamRoom.objects.filter(
+                    building=self.instance.room.building
+                ).order_by('name')
 
     def clean(self):
         cleaned_data = super().clean()
-
         start_time = cleaned_data.get("start_time")
         end_time = cleaned_data.get("end_time")
+        room_assignment_type = cleaned_data.get("room_assignment_type")
+        room = cleaned_data.get("room")
+        building = cleaned_data.get("building")
 
+        # Validate time
         if start_time and end_time and start_time >= end_time:
             self.add_error('end_time', "เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม")
+
+        # Validate room selection for manual assignment
+        if room_assignment_type == 'manual':
+            if not building:
+                self.add_error('building', "กรุณาเลือกอาคาร")
+            if not room:
+                self.add_error('room', "กรุณาเลือกห้องสอบ")
 
         return cleaned_data
 
     def save(self, commit=True):
         subject = super().save(commit=False)
-        # ตั้งค่าเวลาหมดอายุ QR เป็นเวลาสิ้นสุดสอบ
-        subject.qr_expiration = subject.end_time.time() if subject.end_time else None
-
+        
+        # หมายเหตุ: การแปลงเวลาจะทำใน view แทน เพราะที่นี่ยังเป็น time object
+        # ไม่ต้องแปลง timezone ที่นี่
+        
         if commit:
             subject.save()
             self.save_m2m()
+
         return subject
 
 

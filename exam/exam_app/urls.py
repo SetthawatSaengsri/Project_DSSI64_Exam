@@ -41,15 +41,25 @@ urlpatterns = [
     path('import_csv/', views.import_csv, name='import_csv'),
     path('import_exam_subjects/', views.import_exam_subjects_csv, name='import_exam_subjects_csv'),
     path('staff/school_members/', views.school_members, name='school_members'),
-    path('add_exam_subject/', views.add_exam_subject_auto_room, name='add_exam_subject'),
+    
+    #ส่วนเพิ่มรายวิชา
+    # path('add_exam_subject/', views.add_exam_subject_auto_room, name='add_exam_subject'),
     path('exam_subjects_staff/', views.exam_subjects_staff, name='exam_subjects_staff'),
     path('edit_exam_subject/<int:subject_id>/', views.edit_exam_subject, name='edit_exam_subject'),
     path('delete_exam_subject/<int:subject_id>/', views.delete_exam_subject, name='delete_exam_subject'),
     path('select_exam_subject/', views.select_exam_subject, name='select_exam_subject'),
     path('exam_detail/<int:subject_id>/', views.exam_detail, name='exam_detail'),
+    path('add-exam-subject/', views.add_exam_subject_enhanced, name='add_exam_subject'),
+    path('add-exam-subject/enhanced/', views.add_exam_subject_enhanced, name='add_exam_subject_enhanced'),
+    path('get_rooms_by_building/', views.get_rooms_by_building, name='get_rooms_by_building'),
+    
     path('exam_rooms/add/', views.add_exam_room, name='add_exam_room'),
     path('exam_rooms/', views.list_exam_rooms, name='list_exam_rooms'),
     path('building/<int:building_id>/', views.building_detail, name='building_detail'),
+    path('building/<int:building_id>/edit/', views.edit_building, name='edit_building'),
+    path('building/<int:building_id>/delete/', views.delete_building, name='delete_building'),
+    path('room/<int:room_id>/edit/', views.edit_exam_room, name='edit_exam_room'),
+    path('room/<int:room_id>/delete/', views.delete_exam_room, name='delete_exam_room'),
 
     # QR code generation paths
     path('exam/confirm_exam_entry/', views.confirm_exam_entry, name='confirm_exam_entry'),

@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'exam_app',
     'compressor', 
     'widget_tweaks',
-   
+    
 
 ]
 
@@ -111,13 +111,46 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'Asia/Bangkok'
-
+# Internationalization
+LANGUAGE_CODE = 'th'  # ภาษาไทย
+TIME_ZONE = 'Asia/Bangkok'  # ✅ เวลาไทยอย่างถูกต้อง
 USE_I18N = True
+USE_TZ = True  # ✅ ใช้ timezone
+USE_L10N = True
 
-USE_TZ = True
+# ✅ เพิ่มการตั้งค่าสำหรับการแสดงวันที่และเวลาในรูปแบบไทย
+DATETIME_FORMAT = 'j F Y เวลา H:i น.'
+DATE_FORMAT = 'j F Y'
+TIME_FORMAT = 'H:i น.'
+
+# ✅ ตั้งค่าการจัดรูปแบบวันที่สำหรับ input
+DATETIME_INPUT_FORMATS = [
+    '%Y-%m-%d %H:%M',
+    '%Y-%m-%d %H:%M:%S',
+    '%d/%m/%Y %H:%M',
+    '%d/%m/%Y %H:%M:%S',
+]
+
+DATE_INPUT_FORMATS = [
+    '%Y-%m-%d',
+    '%d/%m/%Y',
+    '%d-%m-%Y',
+]
+
+TIME_INPUT_FORMATS = [
+    '%H:%M',
+    '%H:%M:%S',
+]
+
+# ✅ ตั้งค่าภาษาไทยสำหรับ datetime
+import locale
+try:
+    locale.setlocale(locale.LC_TIME, 'th_TH.UTF-8')  # Linux/Mac
+except:
+    try:
+        locale.setlocale(locale.LC_TIME, 'Thai_Thailand.874')  # Windows
+    except:
+        pass  # ใช้ default ถ้าไม่ได้
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/

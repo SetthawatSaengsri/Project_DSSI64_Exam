@@ -1,0 +1,731 @@
+<!-- app/staff/add_exam_subject_enhanced.html -->
+
+{% extends 'app/base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 -mx-6 -my-4 p-6">
+  <div class="max-w-7xl mx-auto">
+    
+    <!-- Header Section with Animation -->
+    <div class="mb-8 animate-fade-in">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div class="flex items-center space-x-4">
+          <div class="relative">
+            <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-4 rounded-2xl shadow-xl animate-pulse-slow">
+              <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+              </svg>
+            </div>
+            <div class="absolute -top-1 -right-1 bg-yellow-400 rounded-full w-4 h-4 animate-bounce"></div>
+          </div>
+          <div>
+            <h1 class="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              เพิ่มรายวิชาสอบ
+            </h1>
+            <p class="text-gray-600 mt-2 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              โรงเรียน: <span class="font-semibold text-indigo-600 ml-1">{{ user.school_name }}</span>
+            </p>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap gap-3">
+          <a href="{% url 'exam_subjects_staff' %}"
+             class="group bg-gradient-to-r from-gray-500 to-slate-500 hover:from-gray-600 hover:to-slate-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
+            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            กลับไปหน้ารายวิชา
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {% if messages %}
+    <div class="messages mb-8">
+      {% for message in messages %}
+      <div class="group bg-white/90 backdrop-blur-lg rounded-2xl shadow-xl p-6 mb-4 border border-white/30 
+                  {% if message.tags == 'success' %}border-green-300/50 bg-green-50/80
+                  {% elif message.tags == 'error' %}border-red-300/50 bg-red-50/80
+                  {% elif message.tags == 'warning' %}border-yellow-300/50 bg-yellow-50/80
+                  {% else %}border-blue-300/50 bg-blue-50/80{% endif %}
+                  hover:shadow-2xl transition-all duration-300">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 rounded-xl
+                      {% if message.tags == 'success' %}bg-green-500
+                      {% elif message.tags == 'error' %}bg-red-500
+                      {% elif message.tags == 'warning' %}bg-yellow-500
+                      {% else %}bg-blue-500{% endif %}">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {% if message.tags == 'success' %}
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              {% elif message.tags == 'error' %}
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              {% elif message.tags == 'warning' %}
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              {% else %}
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              {% endif %}
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-gray-900">{{ message }}</p>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Form Container -->
+    <div class="bg-white/90 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/30 overflow-hidden">
+      <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-6">
+        <div class="flex items-center space-x-3">
+          <div class="w-3 h-3 bg-gradient-to-r from-emerald-400 to-blue-500 rounded-full"></div>
+          <h2 class="text-2xl font-bold text-gray-900">ข้อมูลรายวิชาสอบ</h2>
+        </div>
+        <p class="text-gray-600 mt-2">กรอกข้อมูลรายวิชาสอบใหม่ และเลือกการจัดห้องสอบ</p>
+      </div>
+
+      <form method="POST" class="p-8 space-y-8" id="examForm">
+        {% csrf_token %}
+
+        <!-- ข้อมูลพื้นฐานของวิชา -->
+        <div class="space-y-6">
+          <div class="flex items-center space-x-3 mb-6">
+            <div class="w-8 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"></div>
+            <h3 class="text-xl font-semibold text-gray-800">📋 ข้อมูลพื้นฐาน</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- ชื่อวิชา -->
+            <div class="group">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">📖 ชื่อวิชา</label>
+              <div class="relative">
+                <input type="text" name="subject_name" value="{{ form.subject_name.value|default_if_none:'' }}"
+                  class="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 placeholder-gray-400 group-hover:shadow-md"
+                  placeholder="เช่น คณิตศาสตร์" required>
+                <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+              </div>
+            </div>
+
+            <!-- รหัสวิชา -->
+            <div class="group">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">🔢 รหัสวิชา</label>
+              <div class="relative">
+                <input type="text" name="subject_code" value="{{ form.subject_code.value|default_if_none:'' }}"
+                  class="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 placeholder-gray-400 group-hover:shadow-md"
+                  placeholder="เช่น MATH101" required>
+                <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+              </div>
+            </div>
+
+            <!-- ปีการศึกษา -->
+            <div class="group">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">📅 ปีการศึกษา (พ.ศ.)</label>
+              <div class="relative">
+                <input type="text" name="academic_year" value="{{ form.academic_year.value|default_if_none:'' }}"
+                  class="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 placeholder-gray-400 group-hover:shadow-md"
+                  placeholder="เช่น 2567" required>
+                <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+              </div>
+            </div>
+
+            <!-- ภาคเรียน -->
+            <div class="group">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">📘 ภาคเรียน</label>
+              <div class="relative">
+                <select name="term"
+                  class="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 group-hover:shadow-md"
+                  required>
+                  {% for value, label in form.term.field.choices %}
+                    <option value="{{ value }}" {% if value|stringformat:"s" == form.term.value|stringformat:"s" %}selected{% endif %}>
+                      {{ label }}
+                    </option>
+                  {% endfor %}
+                </select>
+                <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ระดับชั้น -->
+          <div class="group">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">🎓 ระดับชั้น</label>
+            <div class="relative">
+              <select name="student_class" id="student_class"
+                class="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 group-hover:shadow-md"
+                required>
+                {% for class_value, class_label in form.fields.student_class.choices %}
+                  <option value="{{ class_value }}" {% if class_value == form.student_class.value %}selected{% endif %}>
+                    {{ class_label }}
+                  </option>
+                {% endfor %}
+              </select>
+              <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- วันเวลาสอบ -->
+        <div class="space-y-6">
+          <div class="flex items-center space-x-3 mb-6">
+            <div class="w-8 h-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"></div>
+            <h3 class="text-xl font-semibold text-gray-800">⏰ วันเวลาสอบ (เวลาไทย)</h3>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- วันที่สอบ -->
+            <div class="group">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">📆 วันที่สอบ</label>
+              <div class="relative">
+                <input type="date" name="exam_date" value="{{ form.exam_date.value|date:'Y-m-d' }}"
+                  class="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 group-hover:shadow-md"
+                  id="exam_date" required>
+                <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+              </div>
+              <div class="mt-2 text-xs text-gray-500" id="thai_date_display"></div>
+            </div>
+
+            <!-- เวลาเริ่ม -->
+            <div class="group">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">🕘 เวลาเริ่มสอบ</label>
+              <div class="relative">
+                <input type="time" name="start_time" value="{{ form.start_time.value|time:'H:i' }}"
+                  class="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 group-hover:shadow-md"
+                  id="start_time" step="300" required>
+                <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+              </div>
+            </div>
+
+            <!-- เวลาสิ้นสุด -->
+            <div class="group">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">🕙 เวลาสิ้นสุดสอบ</label>
+              <div class="relative">
+                <input type="time" name="end_time" value="{{ form.end_time.value|time:'H:i' }}"
+                  class="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 group-hover:shadow-md"
+                  id="end_time" step="300" required>
+                <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="time_duration" class="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 text-center hidden">
+            <div class="flex items-center justify-center space-x-2">
+              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span class="text-blue-800 font-medium" id="duration_text"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- การจัดห้องสอบ -->
+        <div class="space-y-6">
+          <div class="flex items-center space-x-3 mb-6">
+            <div class="w-8 h-1 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full"></div>
+            <h3 class="text-xl font-semibold text-gray-800">🏫 การจัดห้องสอบ</h3>
+          </div>
+          
+          <!-- เลือกวิธีจัดห้อง -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="relative">
+              <input type="radio" id="room_auto" name="room_assignment_type" value="auto" 
+                     class="sr-only" checked>
+              <label for="room_auto" class="group cursor-pointer">
+                <div class="bg-white/80 border-2 border-indigo-200 rounded-xl p-6 hover:border-indigo-400 hover:shadow-lg transition-all duration-300 room-option-auto">
+                  <div class="flex items-center space-x-4">
+                    <div class="bg-gradient-to-r from-indigo-500 to-purple-500 p-3 rounded-xl">
+                      <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                      </svg>
+                    </div>
+                    <div>
+                      <div class="font-semibold text-gray-900">🤖 จัดห้องอัตโนมัติ</div>
+                      <div class="text-sm text-gray-600">ระบบเลือกห้องที่ว่างให้</div>
+                    </div>
+                  </div>
+                </div>
+              </label>
+            </div>
+            
+            <div class="relative">
+              <input type="radio" id="room_manual" name="room_assignment_type" value="manual" 
+                     class="sr-only">
+              <label for="room_manual" class="group cursor-pointer">
+                <div class="bg-white/80 border-2 border-gray-200 rounded-xl p-6 hover:border-emerald-400 hover:shadow-lg transition-all duration-300 room-option-manual">
+                  <div class="flex items-center space-x-4">
+                    <div class="bg-gradient-to-r from-emerald-500 to-teal-500 p-3 rounded-xl">
+                      <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100-4m0 4v2m0-6V4"></path>
+                      </svg>
+                    </div>
+                    <div>
+                      <div class="font-semibold text-gray-900">🎯 เลือกห้องเอง</div>
+                      <div class="text-sm text-gray-600">เลือกอาคารและห้องสอบเอง</div>
+                    </div>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- การเลือกอาคารและห้อง (แสดงเมื่อเลือก manual) -->
+          <div id="manual_room_selection" class="hidden space-y-6 p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- เลือกอาคาร -->
+              <div class="group">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">🏢 อาคาร</label>
+                <div class="relative">
+                  <select name="building" id="building_select"
+                    class="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 group-hover:shadow-md">
+                    <option value="">เลือกอาคาร</option>
+                    {% for building in form.fields.building.queryset %}
+                      <option value="{{ building.id }}">{{ building.name }} ({{ building.code }})</option>
+                    {% endfor %}
+                  </select>
+                  <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                </div>
+              </div>
+
+              <!-- เลือกห้อง -->
+              <div class="group">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">🚪 ห้องสอบ</label>
+                <div class="relative">
+                  <select name="room" id="room_select"
+                    class="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 group-hover:shadow-md">
+                    <option value="">เลือกอาคารก่อน</option>
+                  </select>
+                  <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                </div>
+                <div id="room_info" class="mt-3 p-3 bg-white/60 rounded-lg border border-emerald-200 hidden">
+                  <div class="flex items-center space-x-2 text-sm text-emerald-700">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span id="room_capacity_text"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ครูผู้คุมสอบ -->
+        <div class="space-y-6">
+          <div class="flex items-center space-x-3 mb-6">
+            <div class="w-8 h-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full"></div>
+            <h3 class="text-xl font-semibold text-gray-800">👨‍🏫 ครูผู้คุมสอบ</h3>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- ครูผู้คุมสอบหลัก -->
+            <div class="group">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">👨‍🏫 ครูผู้คุมสอบหลัก</label>
+              <div class="relative">
+                <select name="invigilator"
+                  class="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 group-hover:shadow-md"
+                  required>
+                  <option value="">เลือกครูผู้คุมสอบหลัก</option>
+                  {% for teacher in form.fields.invigilator.queryset %}
+                    <option value="{{ teacher.id }}" {% if teacher.id|stringformat:"s" == form.invigilator.value|stringformat:"s" %}selected{% endif %}>
+                      {{ teacher.user.get_full_name }} ({{ teacher.teacher_id }})
+                    </option>
+                  {% endfor %}
+                </select>
+                <div class="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+              </div>
+            </div>
+
+            <!-- ครูผู้คุมสอบสำรอง -->
+            <div class="group">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">👨‍🏫 ครูผู้คุมสอบสำรอง (ไม่บังคับ)</label>
+              <div class="relative">
+                <select name="secondary_invigilator"
+                  class="w-full px-4 py-3 bg-white/80 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 group-hover:shadow-md">
+                  <option value="">ไม่มี</option>
+                  {% for teacher in form.fields.secondary_invigilator.queryset %}
+                    <option value="{{ teacher.id }}" {% if teacher.id|stringformat:"s" == form.secondary_invigilator.value|stringformat:"s" %}selected{% endif %}>
+                      {{ teacher.user.get_full_name }} ({{ teacher.teacher_id }})
+                    </option>
+                  {% endfor %}
+                </select>
+                <div class="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ปุ่มดำเนินการ -->
+        <div class="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-200">
+          <a href="{% url 'exam_subjects_staff' %}"
+            class="flex-1 bg-gradient-to-r from-gray-500 to-slate-500 hover:from-gray-600 hover:to-slate-600 text-white px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 text-center">
+            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            ยกเลิก
+          </a>
+          <button type="submit"
+            class="flex-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white px-12 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700">
+            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            บันทึกรายวิชา
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+      <div class="bg-white rounded-2xl p-8 shadow-2xl">
+        <div class="flex flex-col items-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mb-4"></div>
+          <p class="text-gray-600 font-medium">กำลังบันทึกข้อมูล...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // การจัดการเวลาไทย
+    const thaiDateOptions = {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    };
+
+    // ตั้งค่าวันที่เป็นปัจจุบันของไทย
+    const examDateInput = document.getElementById('exam_date');
+    if (!examDateInput.value) {
+        const now = new Date();
+        const thaiDate = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
+        examDateInput.value = thaiDate.toISOString().split('T')[0];
+    }
+
+    // แสดงวันที่เป็นภาษาไทย
+    function updateThaiDateDisplay() {
+        const dateValue = examDateInput.value;
+        if (dateValue) {
+            const date = new Date(dateValue + 'T00:00:00');
+            const thaiDate = date.toLocaleDateString('th-TH', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('thai_date_display').textContent = `📅 ${thaiDate}`;
+        }
+    }
+
+    examDateInput.addEventListener('change', updateThaiDateDisplay);
+    updateThaiDateDisplay();
+
+    // คำนวณระยะเวลาสอบ
+    function calculateDuration() {
+        const startTime = document.getElementById('start_time').value;
+        const endTime = document.getElementById('end_time').value;
+        const durationDiv = document.getElementById('time_duration');
+        const durationText = document.getElementById('duration_text');
+        
+        if (startTime && endTime) {
+            const start = new Date('2000-01-01T' + startTime);
+            const end = new Date('2000-01-01T' + endTime);
+            const diffMs = end - start;
+            
+            if (diffMs > 0) {
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                durationText.textContent = `ระยะเวลาสอบ: ${diffHours} ชั่วโมง ${diffMinutes} นาที`;
+                durationDiv.classList.remove('hidden');
+                durationDiv.className = durationDiv.className.replace(/from-\w+-50 to-\w+-50 border-\w+-200/g, 'from-green-50 to-emerald-50 border-green-200');
+            } else {
+                durationText.textContent = '⚠️ เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม';
+                durationDiv.classList.remove('hidden');
+                durationDiv.className = durationDiv.className.replace(/from-\w+-50 to-\w+-50 border-\w+-200/g, 'from-red-50 to-pink-50 border-red-200');
+            }
+        } else {
+            durationDiv.classList.add('hidden');
+        }
+    }
+
+    document.getElementById('start_time').addEventListener('change', calculateDuration);
+    document.getElementById('end_time').addEventListener('change', calculateDuration);
+
+    // การจัดการการเลือกประเภทการจัดห้อง
+    const roomRadios = document.querySelectorAll('input[name="room_assignment_type"]');
+    const manualRoomSection = document.getElementById('manual_room_selection');
+    const buildingSelect = document.getElementById('building_select');
+    const roomSelect = document.getElementById('room_select');
+    const roomInfo = document.getElementById('room_info');
+
+    function toggleRoomSelection() {
+        const isManual = document.getElementById('room_manual').checked;
+        const autoOption = document.querySelector('.room-option-auto');
+        const manualOption = document.querySelector('.room-option-manual');
+        
+        if (isManual) {
+            manualRoomSection.classList.remove('hidden');
+            autoOption.classList.remove('border-indigo-400', 'bg-indigo-50');
+            autoOption.classList.add('border-gray-200');
+            manualOption.classList.remove('border-gray-200');
+            manualOption.classList.add('border-emerald-400', 'bg-emerald-50');
+        } else {
+            manualRoomSection.classList.add('hidden');
+            manualOption.classList.remove('border-emerald-400', 'bg-emerald-50');
+            manualOption.classList.add('border-gray-200');
+            autoOption.classList.remove('border-gray-200');
+            autoOption.classList.add('border-indigo-400', 'bg-indigo-50');
+            buildingSelect.value = '';
+            roomSelect.innerHTML = '<option value="">เลือกอาคารก่อน</option>';
+            roomInfo.classList.add('hidden');
+        }
+    }
+
+    roomRadios.forEach(radio => {
+        radio.addEventListener('change', toggleRoomSelection);
+    });
+
+    // ดึงรายการห้องเมื่อเลือกอาคาร
+    buildingSelect.addEventListener('change', function() {
+        const buildingId = this.value;
+        roomSelect.innerHTML = '<option value="">กำลังโหลด...</option>';
+        roomInfo.classList.add('hidden');
+
+        if (buildingId) {
+            showLoading();
+            fetch(`/get_rooms_by_building/?building_id=${buildingId}`)
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    roomSelect.innerHTML = '<option value="">เลือกห้องสอบ</option>';
+                    data.rooms.forEach(room => {
+                        const option = document.createElement('option');
+                        option.value = room.id;
+                        option.textContent = `ห้อง ${room.name} (จุได้ ${room.capacity} คน)`;
+                        option.dataset.capacity = room.capacity;
+                        roomSelect.appendChild(option);
+                    });
+                    
+                    // Show notification
+                    showNotification(`โหลดห้องสอบในอาคารนี้เรียบร้อยแล้ว (${data.rooms.length} ห้อง)`, 'success');
+                })
+                .catch(error => {
+                    hideLoading();
+                    console.error('Error:', error);
+                    roomSelect.innerHTML = '<option value="">เกิดข้อผิดพลาด</option>';
+                    showNotification('เกิดข้อผิดพลาดในการโหลดข้อมูลห้อง', 'error');
+                });
+        } else {
+            roomSelect.innerHTML = '<option value="">เลือกอาคารก่อน</option>';
+        }
+    });
+
+    // แสดงข้อมูลห้องเมื่อเลือกห้อง
+    roomSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value && selectedOption.dataset.capacity) {
+            const capacity = selectedOption.dataset.capacity;
+            document.getElementById('room_capacity_text').textContent = `ความจุห้อง: ${capacity} คน`;
+            roomInfo.classList.remove('hidden');
+        } else {
+            roomInfo.classList.add('hidden');
+        }
+    });
+
+    // เรียกใช้งานครั้งแรก
+    toggleRoomSelection();
+    calculateDuration();
+
+    // Form submission with loading
+    document.getElementById('examForm').addEventListener('submit', function(e) {
+        showLoading();
+        // Allow form to submit normally
+    });
+
+    // Animation on scroll
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+
+    // Observe form sections
+    document.querySelectorAll('.space-y-6').forEach(section => {
+        section.style.opacity = '0';
+        section.style.transform = 'translateY(20px)';
+        section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(section);
+    });
+});
+
+// Utility functions
+function showLoading() {
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+    document.getElementById('loadingOverlay').classList.add('flex');
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    document.getElementById('loadingOverlay').classList.remove('flex');
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 max-w-sm bg-white rounded-xl shadow-2xl border border-gray-200 p-4 transform translate-x-full transition-transform duration-300`;
+    
+    const colors = {
+        success: 'border-green-200 bg-green-50',
+        error: 'border-red-200 bg-red-50',
+        warning: 'border-yellow-200 bg-yellow-50',
+        info: 'border-blue-200 bg-blue-50'
+    };
+    
+    const iconColors = {
+        success: 'text-green-600',
+        error: 'text-red-600',
+        warning: 'text-yellow-600',
+        info: 'text-blue-600'
+    };
+    
+    const icons = {
+        success: 'M5 13l4 4L19 7',
+        error: 'M6 18L18 6M6 6l12 12',
+        warning: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z',
+        info: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+    };
+    
+    notification.className += ` ${colors[type]}`;
+    
+    notification.innerHTML = `
+        <div class="flex items-start space-x-3">
+            <svg class="w-6 h-6 ${iconColors[type]} mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${icons[type]}"></path>
+            </svg>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-gray-900">${message}</p>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 5000);
+}
+</script>
+
+<style>
+/* Custom CSS Animations */
+@keyframes animate-pulse-slow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.animate-pulse-slow {
+    animation: animate-pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+/* Glass morphism effect */
+.backdrop-blur-lg {
+    backdrop-filter: blur(16px);
+}
+
+.backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+}
+
+/* Enhanced form styling */
+input:focus, select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Radio button styling for room selection */
+input[type="radio"]:checked + label > div {
+    transform: scale(1.02);
+}
+
+/* Custom transitions */
+.transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+}
+
+/* Enhanced button styles */
+button:active {
+    transform: scale(0.98);
+}
+
+/* Loading animation */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Hover effects */
+.group:hover .group-hover\:scale-110 {
+    transform: scale(1.1);
+}
+
+.group:hover .group-hover\:shadow-xl {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Form section hover effects */
+.group:hover input,
+.group:hover select {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+{% endblock %}
