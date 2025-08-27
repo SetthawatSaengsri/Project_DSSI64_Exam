@@ -1,177 +1,748 @@
 {% extends 'app/base.html' %}
+{% load static %}
+
+{% block title %}เพิ่มรายวิชาสอบ | Exam Manager{% endblock %}
+
+{% block page_title %}เพิ่มรายวิชาสอบ{% endblock %}
+{% block page_subtitle %}จัดการข้อมูลการสอบแบบครบวงจร{% endblock %}
+
+{% block current_page %}add-exam{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-  <h2 class="text-3xl font-bold text-indigo-700 text-center mb-6">📚 เพิ่มรายวิชา</h2>
-
-  {% if messages %}
-  <div class="messages">
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} p-4 mb-4 rounded-md shadow-md">
-      {{ message }}
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
-
-  <form method="POST" class="space-y-6">
-    {% csrf_token %}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-      <!-- แจ้งเตือนเกี่ยวกับการจัดห้อง -->
-      <div class="md:col-span-2 p-4 bg-yellow-100 border border-yellow-300 rounded-md text-yellow-800 italic text-center">
-        🏫 ห้องสอบจะถูกจัดสรรให้อัตโนมัติตามเวลาที่เลือกและความพร้อมของห้อง
-      </div>
-      
-      <!-- ฟิลด์ชื่อวิชา -->
-      <div>
-        <label class="block text-lg font-medium text-gray-700">📖 ชื่อวิชา</label>
-        <input type="text" name="subject_name" value="{{ form.subject_name.value|default_if_none:'' }}"
-          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-          required>
-      </div>
-
-      <!-- ฟิลด์รหัสวิชา -->
-      <div>
-        <label class="block text-lg font-medium text-gray-700">🔢 รหัสวิชา</label>
-        <input type="text" name="subject_code" value="{{ form.subject_code.value|default_if_none:'' }}"
-          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-          required>
-      </div>
-
-      <!-- ฟิลด์ปีการศึกษา -->
-      <div>
-        <label class="block text-lg font-medium text-gray-700">📅 ปีการศึกษา</label>
-        <input type="text" name="academic_year" value="{{ form.academic_year.value|default_if_none:'' }}"
-          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-          required>
-      </div>
-
-      <!-- ฟิลด์ภาคเรียน -->
-      <div>
-        <label class="block text-lg font-medium text-gray-700">📘 ภาคเรียน</label>
-        <select name="term"
-          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-          required>
-          {% for value, label in form.term.field.choices %}
-            {% if value|stringformat:"s" == form.term.value|stringformat:"s" %}
-              <option value="{{ value }}" selected>{{ label }}</option>
-            {% else %}
-              <option value="{{ value }}">{{ label }}</option>
-            {% endif %}
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- ฟิลด์วันที่สอบ -->
-      <div>
-        <label class="block text-lg font-medium text-gray-700">📆 วันที่สอบ</label>
-        <input type="date" name="exam_date" value="{{ form.exam_date.value|date:'Y-m-d' }}"
-          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-          required>
-      </div>
-
-      <!-- ฟิลด์เวลาเริ่ม -->
-      <div>
-        <label class="block text-lg font-medium text-gray-700">⏰ เวลาเริ่ม</label>
-        <input type="time" id="start_time" name="start_time" value="{{ form.start_time.value|default_if_none:'' }}"
-          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-          required>
-      </div>
-
-      <!-- ฟิลด์เวลาสิ้นสุด -->
-      <div>
-        <label class="block text-lg font-medium text-gray-700">⏳ เวลาสิ้นสุด</label>
-        <input type="time" id="end_time" name="end_time" value="{{ form.end_time.value|default_if_none:'' }}"
-          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-          required>
-      </div>
-
-      <!-- ฟิลด์ผู้คุมสอบหลัก -->
-      <div class="md:col-span-2">
-        <label class="block text-lg font-medium text-gray-700">👨‍🏫 ผู้คุมสอบหลัก</label>
-        <select name="invigilator"
-          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-          required>
-          <option value="">เลือกผู้คุมสอบหลัก</option>
-          {% for teacher in form.fields.invigilator.queryset %}
-            {% if teacher.id|stringformat:"s" == form.invigilator.value|stringformat:"s" %}
-              <option value="{{ teacher.id }}" selected>{{ teacher.user.get_full_name }}</option>
-            {% else %}
-              <option value="{{ teacher.id }}">{{ teacher.user.get_full_name }}</option>
-            {% endif %}
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- ฟิลด์ผู้คุมสอบสำรอง -->
-      <div class="md:col-span-2">
-        <label class="block text-lg font-medium text-gray-700">👨‍🏫 ผู้คุมสอบสำรอง (ถ้ามี)</label>
-        <select name="secondary_invigilator"
-          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md">
-          <option value="">ไม่เลือก</option>
-          {% for teacher in form.fields.secondary_invigilator.queryset %}
-            {% if teacher.id|stringformat:"s" == form.secondary_invigilator.value|stringformat:"s" %}
-              <option value="{{ teacher.id }}" selected>{{ teacher.user.get_full_name }}</option>
-            {% else %}
-              <option value="{{ teacher.id }}">{{ teacher.user.get_full_name }}</option>
-            {% endif %}
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- ฟิลด์ระดับชั้น -->
-      <div class="md:col-span-2">
-        <label class="block text-lg font-medium text-gray-700">🎓 ระดับชั้น</label>
-        <select name="student_class" id="student_class"
-          class="border-2 border-gray-300 bg-gray-100 focus:ring-indigo-500 focus:border-indigo-500 w-full p-4 text-lg rounded-md shadow-md"
-          required>
-          <option value="">เลือกระดับชั้น</option>
-          {% for class_value, class_label in form.fields.student_class.choices %}
-            {% if class_value == form.student_class.value %}
-              <option value="{{ class_value }}" selected>{{ class_label }}</option>
-            {% else %}
-              <option value="{{ class_value }}">{{ class_label }}</option>
-            {% endif %}
-          {% endfor %}
-        </select>
-      </div>
-
+<div class="max-w-7xl mx-auto space-y-8">
+    <!-- Header Section -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                <i class="fas fa-plus text-white text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                    เพิ่มรายวิชาสอบ
+                </h1>
+                <p class="text-slate-400">สร้างรายการสอบใหม่พร้อมจัดห้องและครูอัตโนมัติ</p>
+            </div>
+        </div>
+        <a href="{% url 'exam_subjects' %}" class="inline-flex items-center px-6 py-3 rounded-xl glass-dark hover:bg-slate-700/50 text-white transition-all duration-300 border border-slate-600">
+            <i class="fas fa-arrow-left mr-3"></i>
+            กลับไปหน้ารายการ
+        </a>
     </div>
 
-    <!-- ปุ่มยกเลิกและบันทึก -->
-    <div class="flex justify-between mt-6">
-      <a href="{% url 'exam_subjects_staff' %}"
-        class="bg-red-500 hover:bg-red-700 text-white px-8 py-4 text-lg rounded-md shadow-md transition">
-        ❌ ยกเลิก
-      </a>
-      <button type="submit"
-        class="bg-indigo-600 text-white px-10 py-4 text-lg rounded-md shadow-md hover:bg-indigo-700 transition">
-        💾 บันทึก
-      </button>
-    </div>
-  </form>
+    <form method="post" action="{% url 'add_exam_subject' %}" class="space-y-8" id="add-exam-form">
+        {% csrf_token %}
+
+        <!-- ข้อมูลวิชา -->
+        <div class="glass-dark border border-slate-700/50 rounded-2xl p-8 shadow-xl">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-book text-white"></i>
+                </div>
+                <h2 class="text-2xl font-semibold text-white">ข้อมูลรายวิชา</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-tag mr-2 text-purple-400"></i>ชื่อวิชา
+                    </label>
+                    <input type="text" name="subject_name" required 
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300" 
+                           placeholder="เช่น คณิตศาสตร์พื้นฐาน">
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-hashtag mr-2 text-purple-400"></i>รหัสวิชา
+                    </label>
+                    <input type="text" name="subject_code" required 
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300" 
+                           placeholder="เช่น MATH101">
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-calendar-alt mr-2 text-purple-400"></i>ปีการศึกษา
+                    </label>
+                    <input type="text" name="academic_year" required 
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300" 
+                           placeholder="เช่น 2568">
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-graduation-cap mr-2 text-purple-400"></i>ภาคเรียน
+                    </label>
+                    <select name="term" required 
+                            class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300">
+                        <option value="">-- เลือกภาคเรียน --</option>
+                        <option value="1">เทอม 1</option>
+                        <option value="2">เทอม 2</option>
+                        <option value="3">เทอม 3</option>
+                    </select>
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-calendar mr-2 text-purple-400"></i>วันสอบ
+                    </label>
+                    <input type="date" name="exam_date" id="exam_date" required 
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300">
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-clock mr-2 text-purple-400"></i>เวลาเริ่มสอบ
+                    </label>
+                    <input type="time" name="start_time" id="start_time" required 
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300">
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-clock mr-2 text-purple-400"></i>เวลาสิ้นสุดสอบ
+                    </label>
+                    <input type="time" name="end_time" id="end_time" required 
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600 rounded-xl text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300">
+                </div>
+            </div>
+        </div>
+
+        <!-- กลุ่มนักเรียน -->
+        <div class="glass-dark border border-slate-700/50 rounded-2xl p-8 shadow-xl">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-users text-white"></i>
+                </div>
+                <h2 class="text-2xl font-semibold text-white">กลุ่มนักเรียน</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">
+                        <i class="fas fa-layer-group mr-2 text-emerald-400"></i>ระดับชั้น
+                    </label>
+                    <select name="student_class" id="student_class" required 
+                            class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600 rounded-xl text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-300">
+                        <option value="">-- เลือกระดับชั้น --</option>
+                        {% for c in classes %}
+                            {% if c %}<option value="{{ c }}">{{ c }}</option>{% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <div class="flex items-center h-12 px-4 py-3 bg-slate-900/40 border border-slate-700 rounded-xl">
+                        <i class="fas fa-info-circle mr-3 text-emerald-400"></i>
+                        <span class="text-slate-300" id="class-count">เลือกระดับชั้นเพื่อดูจำนวนนักเรียน</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ห้องสอบ -->
+        <div class="glass-dark border border-slate-700/50 rounded-2xl p-8 shadow-xl">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-door-open text-white"></i>
+                </div>
+                <h2 class="text-2xl font-semibold text-white">ห้องสอบ</h2>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- ตัวเลือกประเภทการจัด -->
+                <div class="flex flex-wrap gap-4">
+                    <label class="inline-flex items-center px-6 py-3 bg-slate-900/40 hover:bg-slate-700/50 rounded-xl cursor-pointer transition-all duration-300 border border-slate-600 hover:border-yellow-500 has-[:checked]:border-yellow-500 has-[:checked]:bg-yellow-500/10">
+                        <input type="radio" name="room_assignment_type" value="auto" checked class="mr-3 text-yellow-500">
+                        <i class="fas fa-magic mr-2 text-yellow-400"></i>
+                        <span class="text-white font-medium">จัดห้องสอบอัตโนมัติ</span>
+                    </label>
+                    <label class="inline-flex items-center px-6 py-3 bg-slate-900/40 hover:bg-slate-700/50 rounded-xl cursor-pointer transition-all duration-300 border border-slate-600 hover:border-yellow-500 has-[:checked]:border-yellow-500 has-[:checked]:bg-yellow-500/10">
+                        <input type="radio" name="room_assignment_type" value="manual" class="mr-3 text-yellow-500">
+                        <i class="fas fa-hand-point-up mr-2 text-yellow-400"></i>
+                        <span class="text-white font-medium">เลือกเอง (Manual)</span>
+                    </label>
+                </div>
+
+                <!-- ส่วนอัตโนมัติ -->
+                <div id="auto-room-section" class="space-y-4">
+                    <input type="hidden" name="auto_selected_room" id="auto_selected_room">
+                    <div class="flex items-center space-x-4">
+                        <button type="button" id="btn-find-rooms" 
+                                class="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-medium transition-all duration-300 shadow-lg">
+                            <i class="fas fa-search mr-3"></i>
+                            ค้นหาห้องว่าง
+                        </button>
+                        <span class="text-slate-400 text-sm" id="auto-room-hint">กรณีไม่เลือก ระบบจะจับคู่ให้โดยอัตโนมัติ</span>
+                    </div>
+                    <div id="auto-room-results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+
+                <!-- ส่วน Manual -->
+                <div id="manual-room-section" class="hidden space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-building mr-2 text-yellow-400"></i>อาคาร
+                            </label>
+                            <select id="building" 
+                                    class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600 rounded-xl text-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all duration-300">
+                                <option value="">-- เลือกอาคาร --</option>
+                                {% for b in buildings %}
+                                    <option value="{{ b.id }}">{{ b.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-door-closed mr-2 text-yellow-400"></i>ห้องสอบ
+                            </label>
+                            <select name="room" id="room" 
+                                    class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600 rounded-xl text-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all duration-300">
+                                <option value="">-- เลือกอาคารก่อน --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ครูคุมสอบ -->
+        <div class="glass-dark border border-slate-700/50 rounded-2xl p-8 shadow-xl">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-chalkboard-teacher text-white"></i>
+                </div>
+                <h2 class="text-2xl font-semibold text-white">ครูคุมสอบ</h2>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- ตัวเลือกประเภทการจัด -->
+                <div class="flex flex-wrap gap-4">
+                    <label class="inline-flex items-center px-6 py-3 bg-slate-900/40 hover:bg-slate-700/50 rounded-xl cursor-pointer transition-all duration-300 border border-slate-600 hover:border-cyan-500 has-[:checked]:border-cyan-500 has-[:checked]:bg-cyan-500/10">
+                        <input type="radio" name="teacher_assignment_type" value="auto" checked class="mr-3 text-cyan-500">
+                        <i class="fas fa-magic mr-2 text-cyan-400"></i>
+                        <span class="text-white font-medium">จัดครูอัตโนมัติ</span>
+                    </label>
+                    <label class="inline-flex items-center px-6 py-3 bg-slate-900/40 hover:bg-slate-700/50 rounded-xl cursor-pointer transition-all duration-300 border border-slate-600 hover:border-cyan-500 has-[:checked]:border-cyan-500 has-[:checked]:bg-cyan-500/10">
+                        <input type="radio" name="teacher_assignment_type" value="manual" class="mr-3 text-cyan-500">
+                        <i class="fas fa-hand-point-up mr-2 text-cyan-400"></i>
+                        <span class="text-white font-medium">เลือกเอง (Manual)</span>
+                    </label>
+                </div>
+
+                <!-- ส่วน Manual สำหรับครู -->
+                <div id="manual-teacher-section" class="hidden space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-user-tie mr-2 text-cyan-400"></i>ครูคุมสอบหลัก
+                            </label>
+                            <select name="invigilator" id="invigilator" 
+                                    class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600 rounded-xl text-white focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300">
+                                <option value="">-- เลือกครู --</option>
+                                {% for t in teachers %}
+                                    <option value="{{ t.id }}">{{ t.user.get_full_name }} ({{ t.teacher_id }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-300">
+                                <i class="fas fa-user-check mr-2 text-cyan-400"></i>ครูคุมสอบสำรอง
+                                <span class="text-xs text-slate-500">(ไม่บังคับ)</span>
+                            </label>
+                            <select name="secondary_invigilator" id="secondary_invigilator" 
+                                    class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600 rounded-xl text-white focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300">
+                                <option value="">-- ไม่ระบุ --</option>
+                                {% for t in teachers %}
+                                    <option value="{{ t.id }}">{{ t.user.get_full_name }} ({{ t.teacher_id }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ปุ่มบันทึก -->
+        <div class="flex items-center justify-between pt-8">
+            <button type="reset" 
+                    class="inline-flex items-center px-8 py-3 rounded-xl glass-dark hover:bg-slate-700/50 text-white font-medium transition-all duration-300 border border-slate-600">
+                <i class="fas fa-eraser mr-3"></i>
+                ล้างค่า
+            </button>
+            <div class="flex items-center space-x-4">
+                <button type="button" onclick="previewForm()"
+                        class="inline-flex items-center px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-medium transition-all duration-300 shadow-lg">
+                    <i class="fas fa-eye mr-3"></i>
+                    ตัวอย่าง
+                </button>
+                <button type="submit" 
+                        class="inline-flex items-center px-8 py-3 rounded-xl bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold transition-all duration-300 shadow-xl">
+                    <i class="fas fa-save mr-3"></i>
+                    บันทึกวิชา
+                </button>
+            </div>
+        </div>
+    </form>
 </div>
 
+<!-- Template สำหรับ Room Card -->
+<template id="room-card-template">
+    <div class="room-card cursor-pointer p-4 rounded-xl border border-slate-700 bg-slate-900/50 hover:border-indigo-500 hover:bg-slate-800/50 transition-all duration-300 shadow-lg">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="text-slate-200 font-medium room-name">อาคาร A ห้อง 101</div>
+                <div class="text-xs text-slate-400 room-capacity">จุ 40 คน</div>
+                <div class="flex items-center mt-2 space-x-2">
+                    <span class="px-2 py-1 bg-green-600/20 text-green-400 text-xs rounded-md">
+                        <i class="fas fa-check mr-1"></i>ว่าง
+                    </span>
+                </div>
+            </div>
+            <div class="select-indicator">
+                <i class="far fa-circle text-slate-500 text-xl"></i>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
 <script>
-  // ฟังก์ชันสำหรับจัดการเวลาเริ่มและเวลาสิ้นสุด
-  function formatDatetimeLocal(datetimeStr) {
-    if (!datetimeStr) return "";
-    let dateObj = new Date(datetimeStr);
-    let tzOffset = dateObj.getTimezoneOffset() * 60000;
-    let localISOTime = (new Date(dateObj.getTime() - tzOffset)).toISOString().slice(0, 16);
-    return localISOTime;
-  }
+    // ฟังก์ชันหลักสำหรับการจัดการฟอร์ม
+    document.addEventListener('DOMContentLoaded', function() {
+        const $ = (s, r=document)=>r.querySelector(s);
+        const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
 
-  document.addEventListener("DOMContentLoaded", function () {
-    let startInput = document.getElementById("start_time");
-    let endInput = document.getElementById("end_time");
+        // ---- Toggle sections (rooms/teachers) ----
+        function toggleSections(){
+            const roomType = $('input[name="room_assignment_type"]:checked')?.value;
+            const tType = $('input[name="teacher_assignment_type"]:checked')?.value;
+            
+            // Room sections
+            if($('#auto-room-section')) {
+                $('#auto-room-section').classList.toggle('hidden', roomType !== 'auto');
+            }
+            if($('#manual-room-section')) {
+                $('#manual-room-section').classList.toggle('hidden', roomType !== 'manual');
+            }
+            
+            // Teacher sections
+            if($('#manual-teacher-section')) {
+                $('#manual-teacher-section').classList.toggle('hidden', tType !== 'manual');
+            }
+        }
 
-    let startTime = "{{ form.start_time.value|default_if_none:'' }}";
-    let endTime = "{{ form.end_time.value|default_if_none:'' }}";
+        // Event listeners for radio buttons
+        $$('input[name="room_assignment_type"]').forEach(r => {
+            r.addEventListener('change', toggleSections);
+        });
+        $$('input[name="teacher_assignment_type"]').forEach(r => {
+            r.addEventListener('change', toggleSections);
+        });
 
-    if (startTime) startInput.value = formatDatetimeLocal(startTime);
-    if (endTime) endInput.value = formatDatetimeLocal(endTime);
-  });
+        // Initialize
+        toggleSections();
+
+        // ---- Helpers ----
+        function getSchedule(){
+            return {
+                date: $('#exam_date')?.value||'', 
+                start: $('#start_time')?.value||'', 
+                end: $('#end_time')?.value||''
+            };
+        }
+        
+        function getCsrf(){
+            const name='csrftoken';
+            const m=document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
+            return m?m.pop():'';
+        }
+
+        // ---- Student class -> count ----
+        $('#student_class')?.addEventListener('change', async (e)=>{
+            const val = e.target.value;
+            const countEl = $('#class-count');
+            
+            if(!val) { 
+                countEl.textContent = 'เลือกระดับชั้นเพื่อดูจำนวนนักเรียน'; 
+                return; 
+            }
+            
+            countEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>กำลังโหลด...';
+            
+            try{
+                const url = `{% url 'get_class_students_count' %}?class=${encodeURIComponent(val)}`;
+                const res = await fetch(url); 
+                const data = await res.json();
+                
+                if(data.success) {
+                    countEl.innerHTML = `<i class="fas fa-users mr-2 text-emerald-400"></i>นักเรียนทั้งหมด: <span class="font-semibold text-emerald-400">${data.count}</span> คน`;
+                } else {
+                    countEl.textContent = 'ไม่สามารถโหลดข้อมูลได้';
+                }
+            }catch(err) { 
+                console.error('Error:', err);
+                countEl.textContent = 'เกิดข้อผิดพลาดในการโหลดข้อมูล'; 
+            }
+        });
+
+        // =================== ROOMS ===================
+        // Auto: search available rooms
+        $('#btn-find-rooms')?.addEventListener('click', async ()=>{
+            const {date,start,end} = getSchedule();
+            if(!date || !start || !end){ 
+                showNotification('โปรดกรอก วันสอบ/เวลาเริ่ม/เวลาสิ้นสุด ก่อนค้นหาห้อง', 'warning'); 
+                return; 
+            }
+            
+            const resultsEl = $('#auto-room-results');
+            resultsEl.innerHTML = '<div class="col-span-full text-center py-8"><i class="fas fa-spinner fa-spin mr-2 text-indigo-400"></i><span class="text-slate-400">กำลังค้นหาห้องว่าง...</span></div>';
+            
+            try {
+                const url = `{% url 'check_room_availability' %}?date=${encodeURIComponent(date)}&start_time=${encodeURIComponent(start)}&end_time=${encodeURIComponent(end)}`;
+                const res = await fetch(url); 
+                const data = await res.json();
+                
+                resultsEl.innerHTML = '';
+                
+                if(!data.success || !data.available_rooms?.length){
+                    resultsEl.innerHTML = '<div class="col-span-full text-center py-8 text-slate-400">ไม่พบห้องว่าง ระบบจะเลือกให้อัตโนมัติเมื่อบันทึก</div>';
+                    return;
+                }
+                
+                const tpl = $('#room-card-template');
+                data.available_rooms.forEach(r=>{
+                    const node = tpl.content.cloneNode(true);
+                    const btn = $('.room-card', node);
+                    
+                    btn.dataset.roomId = r.id;
+                    $('.room-name', node).textContent = r.full_name || `${r.building_name} ห้อง ${r.name}`;
+                    $('.room-capacity', node).textContent = `จุ ${r.capacity} คน`;
+                    
+                    btn.addEventListener('click', ()=>{
+                        // Remove selection from other cards
+                        $$('#auto-room-results .room-card').forEach(x=>{
+                            x.classList.remove('border-indigo-500', 'bg-indigo-900/30');
+                            const ic = $('.select-indicator i', x); 
+                            ic.className = 'far fa-circle text-slate-500 text-xl';
+                        });
+                        
+                        // Select this card
+                        $('#auto_selected_room').value = r.id;
+                        btn.classList.add('border-indigo-500', 'bg-indigo-900/30');
+                        const ic = $('.select-indicator i', btn); 
+                        ic.className = 'fas fa-dot-circle text-indigo-400 text-xl';
+                        
+                        showNotification(`เลือกห้อง ${r.full_name || r.name} แล้ว`, 'success', 3000);
+                    });
+                    
+                    resultsEl.appendChild(node);
+                });
+            } catch(err) {
+                console.error('Error:', err);
+                resultsEl.innerHTML = '<div class="col-span-full text-center py-8 text-red-400">เกิดข้อผิดพลาดในการค้นหา</div>';
+            }
+        });
+
+        // Manual: building -> rooms
+        $('#building')?.addEventListener('change', async (e)=>{
+            const id = e.target.value; 
+            const sel = $('#room');
+            
+            if(!id){ 
+                sel.innerHTML = '<option value="">-- เลือกอาคารก่อน --</option>'; 
+                return; 
+            }
+            
+            sel.innerHTML = '<option value="">กำลังโหลด...</option>';
+            
+            try{
+                const url = `{% url 'get_rooms_by_building' %}?building_id=${encodeURIComponent(id)}`;
+                const res = await fetch(url); 
+                const data = await res.json();
+                
+                sel.innerHTML = '<option value="">-- เลือกห้อง --</option>';
+                (data.rooms||[]).forEach(r=>{
+                    const opt = document.createElement('option');
+                    opt.value = r.id; 
+                    opt.textContent = r.display_text || `${r.full_name} (จุ ${r.capacity} คน)`; 
+                    sel.appendChild(opt);
+                });
+            }catch(err){ 
+                console.error('Error:', err);
+                sel.innerHTML = '<option value="">-- เกิดข้อผิดพลาด --</option>'; 
+            }
+        });
+
+        // Manual: choose room -> quick suitability check
+        $('#room')?.addEventListener('change', async ()=>{
+            const roomId = $('#room').value; 
+            if(!roomId) return;
+            
+            const {date,start,end} = getSchedule();
+            const cls = $('#student_class')?.value || ''; 
+            let count = 0;
+            
+            // Get student count first
+            try{ 
+                if(cls){ 
+                    const r = await fetch(`{% url 'get_class_students_count' %}?class=${encodeURIComponent(cls)}`); 
+                    const d = await r.json(); 
+                    if(d.success) count = d.count; 
+                } 
+            }catch(err){ console.error('Error getting student count:', err); }
+            
+            // Check room suitability
+            try{
+                const res = await fetch(`{% url 'check_room_suitability' %}`, {
+                    method:'POST', 
+                    headers:{
+                        'Content-Type':'application/json',
+                        'X-CSRFToken': getCsrf()
+                    }, 
+                    body: JSON.stringify({
+                        room_id: roomId, 
+                        date, 
+                        start_time: start, 
+                        end_time: end, 
+                        student_count: count
+                    })
+                });
+                const data = await res.json();
+                
+                if(data.success && data.warnings?.length) {
+                    showNotification('คำเตือนเกี่ยวกับห้องที่เลือก:\n- ' + data.warnings.join('\n- '), 'warning', 8000);
+                }
+            }catch(err){ 
+                console.error('Error checking room suitability:', err);
+            }
+        });
+
+        // =================== TEACHERS ===================
+        // Prevent duplicate in manual selection
+        $('#invigilator')?.addEventListener('change', ()=>{
+            const pri = $('#invigilator').value;
+            $('#secondary_invigilator option').forEach(o=>{
+                if(o.value && o.value === pri) {
+                    o.disabled = true;
+                    o.style.color = '#64748b';
+                } else {
+                    o.disabled = false;
+                    o.style.color = '';
+                }
+            });
+        });
+
+        // Teacher conflict check
+        async function checkTeacherConflicts(){
+            const {date,start,end} = getSchedule(); 
+            if(!date||!start||!end) return;
+            
+            const inv = $('#invigilator')?.value || ''; 
+            const sec = $('#secondary_invigilator')?.value || '';
+            
+            try{
+                const url = `{% url 'check_teacher_conflicts' %}?date=${encodeURIComponent(date)}&start_time=${encodeURIComponent(start)}&end_time=${encodeURIComponent(end)}&invigilator=${encodeURIComponent(inv)}&secondary_invigilator=${encodeURIComponent(sec)}`;
+                const res = await fetch(url); 
+                const data = await res.json();
+                
+                if(data.success && data.conflicts?.length) {
+                    showNotification('พบตารางครูชนกัน:\n- ' + data.conflicts.join('\n- '), 'warning', 8000);
+                }
+            }catch(err){ 
+                console.error('Error checking teacher conflicts:', err);
+            }
+        }
+
+        // Add event listeners for conflict checking
+        ['change','blur'].forEach(ev=>{
+            $('#invigilator')?.addEventListener(ev, checkTeacherConflicts);
+            $('#secondary_invigilator')?.addEventListener(ev, checkTeacherConflicts);
+            $('#exam_date')?.addEventListener(ev, checkTeacherConflicts);
+            $('#start_time')?.addEventListener(ev, checkTeacherConflicts);
+            $('#end_time')?.addEventListener(ev, checkTeacherConflicts);
+        });
+
+        // =================== FORM VALIDATION ===================
+        $('#add-exam-form')?.addEventListener('submit', (e)=>{
+            const rType = $('input[name="room_assignment_type"]:checked')?.value || 'auto';
+            const tType = $('input[name="teacher_assignment_type"]:checked')?.value || 'auto';
+            
+            // Validate manual room selection
+            if(rType==='manual' && !$('#room')?.value){ 
+                e.preventDefault(); 
+                showNotification('กรุณาเลือกห้องสอบ (โหมดเลือกเอง)', 'error'); 
+                $('#room').focus();
+                return false; 
+            }
+            
+            // Validate manual teacher selection
+            if(tType==='manual' && !$('#invigilator')?.value){ 
+                e.preventDefault(); 
+                showNotification('กรุณาเลือกครูคุมสอบหลัก (โหมดเลือกเอง)', 'error'); 
+                $('#invigilator').focus();
+                return false; 
+            }
+
+            // Time validation
+            const startTime = $('#start_time')?.value;
+            const endTime = $('#end_time')?.value;
+            if(startTime && endTime && startTime >= endTime) {
+                e.preventDefault();
+                showNotification('เวลาเริ่มสอบต้องมาก่อนเวลาสิ้นสุดสอบ', 'error');
+                $('#end_time').focus();
+                return false;
+            }
+
+            // Show loading state
+            const submitBtn = $('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i>กำลังบันทึก...';
+            submitBtn.disabled = true;
+            
+            showLoading();
+            showNotification('กำลังบันทึกข้อมูลรายวิชาสอب...', 'info');
+        });
+
+        // Reset form functionality
+        $('button[type="reset"]')?.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            showConfirmModal('คุณต้องการล้างข้อมูลทั้งหมดหรือไม่?', function() {
+                document.getElementById('add-exam-form').reset();
+                $('#class-count').textContent = 'เลือกระดับชั้นเพื่อดูจำนวนนักเรียน';
+                $('#auto-room-results').innerHTML = '';
+                $('#auto_selected_room').value = '';
+                $('#room').innerHTML = '<option value="">-- เลือกอาคารก่อน --</option>';
+                
+                // Reset radio buttons to default
+                $('input[name="room_assignment_type"][value="auto"]').checked = true;
+                $('input[name="teacher_assignment_type"][value="auto"]').checked = true;
+                toggleSections();
+                
+                showNotification('ล้างข้อมูลเรียบร้อยแล้ว', 'success');
+            });
+        });
+
+        // Time validation on change
+        $('#start_time, #end_time').forEach(input => {
+            input?.addEventListener('change', function() {
+                const startTime = $('#start_time')?.value;
+                const endTime = $('#end_time')?.value;
+                
+                if (startTime && endTime && startTime >= endTime) {
+                    this.classList.add('border-red-500');
+                    showNotification('เวลาเริ่มสอบต้องมาก่อนเวลาสิ้นสุดสอบ', 'warning');
+                } else {
+                    $('#start_time')?.classList.remove('border-red-500');
+                    $('#end_time')?.classList.remove('border-red-500');
+                }
+            });
+        });
+
+        // Auto-save draft functionality (แบบง่าย)
+        function saveDraft() {
+            const formData = new FormData($('#add-exam-form'));
+            const draftData = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (value.trim()) {
+                    draftData[key] = value;
+                }
+            }
+            
+            // ในการใช้งานจริงอาจบันทึกลงฐานข้อมูล
+            console.log('Draft saved:', draftData);
+        }
+
+        // Auto-save every 30 seconds if there are changes
+        let hasChanges = false;
+        $('input, select, textarea').forEach(element => {
+            element.addEventListener('change', () => {
+                hasChanges = true;
+            });
+        });
+
+        setInterval(() => {
+            if (hasChanges) {
+                saveDraft();
+                hasChanges = false;
+            }
+        }, 30000);
+
+    }); // End DOMContentLoaded
+
+    // =================== PREVIEW FUNCTION ===================
+    window.previewForm = function() {
+        const formData = new FormData(document.getElementById('add-exam-form'));
+        const data = {};
+        
+        for (let [key, value] of formData.entries()) {
+            data[key] = value;
+        }
+        
+        // สร้างข้อความ preview
+        let preview = '<div class="space-y-4">';
+        preview += `<h3 class="text-xl font-bold text-white mb-4">ตัวอย่างข้อมูลรายวิชา</h3>`;
+        
+        if (data.subject_name) {
+            preview += `<p><strong>ชื่อวิชา:</strong> ${data.subject_name}</p>`;
+        }
+        if (data.subject_code) {
+            preview += `<p><strong>รหัสวิชา:</strong> ${data.subject_code}</p>`;
+        }
+        if (data.academic_year && data.term) {
+            preview += `<p><strong>ปีการศึกษา:</strong> ${data.academic_year} ภาคเรียนที่ ${data.term}</p>`;
+        }
+        if (data.exam_date && data.start_time && data.end_time) {
+            preview += `<p><strong>วันเวลาสอบ:</strong> ${formatThaiDate(data.exam_date)} เวลา ${data.start_time} - ${data.end_time}</p>`;
+        }
+        if (data.student_class) {
+            preview += `<p><strong>ระดับชั้น:</strong> ${data.student_class}</p>`;
+        }
+        
+        const roomType = data.room_assignment_type || 'auto';
+        const teacherType = data.teacher_assignment_type || 'auto';
+        
+        preview += `<p><strong>การจัดห้อง:</strong> ${roomType === 'auto' ? 'อัตโนมัติ' : 'เลือกเอง'}</p>`;
+        preview += `<p><strong>การจัดครู:</strong> ${teacherType === 'auto' ? 'อัตโนมัติ' : 'เลือกเอง'}</p>`;
+        
+        preview += '</div>';
+        
+        // แสดงใน modal หรือ notification
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="glass-dark rounded-3xl p-8 w-full max-w-2xl border border-white/20">
+                ${preview}
+                <div class="flex justify-end mt-6">
+                    <button onclick="this.closest('.fixed').remove()" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl text-white">
+                        ปิด
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    };
+
+    // Helper function for Thai date formatting (if not available globally)
+    function formatThaiDate(dateString) {
+        const date = new Date(dateString);
+        const thaiMonths = [
+            'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+        ];
+
+        const day = date.getDate();
+        const month = thaiMonths[date.getMonth()];
+        const year = date.getFullYear() + 543;
+
+        return `${day} ${month} ${year}`;
+    }
+
+    console.log('🎓 Add Exam Subject form initialized successfully!');
+
 </script>
 {% endblock %}

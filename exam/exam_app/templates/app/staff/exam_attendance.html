@@ -1,0 +1,321 @@
+{% extends "app/base.html" %}
+
+{% block title %}การเช็คชื่อ - {{ subject.subject_name }} | ระบบจัดการการสอบ{% endblock %}
+{% block page_title %}การเช็คชื่อ - {{ subject.subject_name }}{% endblock %}
+{% block page_subtitle %}ติดตามสถานะการเข้าสอบของนักเรียนแบบเรียลไทม์{% endblock %}
+{% block current_page %}exams{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ===== Theme: chips / buttons ให้โทนเดียวกับหน้าจัดการการสอบ ===== */
+  .chip{display:inline-flex;align-items:center;padding:.25rem .625rem;border-radius:9999px;font-size:.75rem;line-height:1rem;font-weight:600;border-width:1px}
+  .chip-blue{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.1);color:#60a5fa}
+  .chip-green{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#22c55e}
+  .chip-yellow{border-color:rgba(234,179,8,.5);background:rgba(234,179,8,.12);color:#eab308}
+  .chip-red{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.1);color:#ef4444}
+  .chip-slate{border-color:rgba(148,163,184,.35);background:rgba(148,163,184,.12);color:#94a3b8}
+  .chip-purple{border-color:rgba(147,51,234,.5);background:rgba(147,51,234,.12);color:#a78bfa}
+
+  .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.625rem 1rem;border-radius:.75rem;font-weight:600;transition:.2s}
+  .btn svg,.btn i{font-size:.9rem}
+  .btn-primary{background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff}
+  .btn-primary:hover{filter:brightness(1.05);transform:translateY(-1px)}
+  .btn-secondary{background:linear-gradient(135deg,#64748b,#475569);color:#fff}
+  .btn-secondary:hover{filter:brightness(1.05);transform:translateY(-1px)}
+  .btn-success{background:linear-gradient(135deg,#10b981,#22c55e);color:#fff}
+  .btn-warning{background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff}
+  .btn-danger{background:linear-gradient(135deg,#ef4444,#f97316);color:#fff}
+
+  .glass{background:linear-gradient(135deg,rgba(15,23,42,.65),rgba(30,41,59,.65));border:1px solid rgba(255,255,255,.15)}
+  .glass-soft{background:linear-gradient(135deg,rgba(15,23,42,.45),rgba(30,41,59,.45));border:1px solid rgba(255,255,255,.12)}
+  .student-row{transition:all .2s ease}
+  .student-row:hover{background:rgba(59,130,246,.08);transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.15)}
+
+  .status-dot{width:8px;height:8px;border-radius:9999px;display:inline-block;margin-right:.5rem}
+  .dot-on{background:#22c55e}
+  .dot-late{background:#eab308}
+  .dot-absent{background:#ef4444}
+  .dot-excused{background:#38bdf8}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ===== Header ===== -->
+<div class="mb-8 text-center space-y-4">
+  <div>
+    <h2 class="text-3xl lg:text-4xl font-bold font-kanit mb-2">
+      <span class="text-gradient">{{ subject.subject_name }}</span>
+    </h2>
+    <div class="flex items-center justify-center flex-wrap gap-2 text-slate-300">
+      <span class="chip chip-blue"><i class="fa-solid fa-hashtag"></i>{{ subject.subject_code }}</span>
+      <span class="chip chip-slate"><i class="fa-solid fa-calendar-day"></i>{{ subject.exam_date|date:"d/m/Y" }}</span>
+      <span class="chip chip-purple"><i class="fa-regular fa-clock"></i>{{ subject.start_time|time:"H:i" }}–{{ subject.end_time|time:"H:i" }}</span>
+      {% if subject.room %}
+        <span class="chip chip-slate"><i class="fa-solid fa-building-columns"></i>{{ subject.room.building.name }} ห้อง {{ subject.room.name }}</span>
+      {% endif %}
+      <!-- ระดับชั้น -->
+      <span class="chip chip-green"><i class="fa-solid fa-layer-group"></i>ระดับชั้น {{ subject.student_class|default:"หลายห้อง" }}</span>
+    </div>
+  </div>
+  <div class="flex justify-center">
+    <div class="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+  </div>
+</div>
+
+<!-- ===== Action Row ===== -->
+<div class="flex flex-wrap gap-3 mb-8">
+  <a href="{% url 'generate_qr_code' subject.id %}" class="btn btn-primary shadow-glow-blue"><i class="fa-solid fa-qrcode"></i> QR เช็คชื่อ</a>
+  <a href="{% url 'exam_seating_view' subject.id %}" class="btn btn-secondary"><i class="fa-solid fa-th-large"></i> ผังที่นั่ง</a>
+  <button type="button" onclick="location.reload()" class="btn btn-warning"><i class="fa-solid fa-rotate"></i> รีเฟรช</button>
+
+  {% if request.user.is_staff %}{# หรือใช้ตัวแปร can_edit ถ้ามี #}
+  <div class="ml-auto flex flex-wrap gap-2">
+    <!-- เช็คชื่อเป็นกลุ่ม (เลือกแถวด้วย checkbox ด้านซ้าย) -->
+    <button class="btn btn-success" onclick="bulkUpdate('on_time')"><i class="fa-solid fa-user-check"></i> ตรงเวลา</button>
+    <button class="btn btn-warning" onclick="bulkUpdate('late')"><i class="fa-solid fa-person-running"></i> มาสาย</button>
+    <button class="btn btn-danger" onclick="bulkUpdate('absent')"><i class="fa-solid fa-user-xmark"></i> ขาดสอบ</button>
+    <button class="btn btn-secondary" onclick="bulkUpdate('excused')"><i class="fa-solid fa-notes-medical"></i> ลาป่วย</button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ===== Stats ===== -->
+<div class="grid lg:grid-cols-4 sm:grid-cols-2 gap-4 mb-8">
+  <div class="glass rounded-2xl p-5 text-center">
+    <div class="text-3xl font-bold text-blue-400">{{ stats.total|default:students|length }}</div>
+    <div class="text-slate-400 text-sm">นักเรียนทั้งหมด</div>
+  </div>
+  <div class="glass rounded-2xl p-5 text-center">
+    <div class="text-3xl font-bold text-green-400">{{ stats.on_time|default:0 }}</div>
+    <div class="text-slate-400 text-sm">ตรงเวลา</div>
+  </div>
+  <div class="glass rounded-2xl p-5 text-center">
+    <div class="text-3xl font-bold text-yellow-400">{{ stats.late|default:0 }}</div>
+    <div class="text-slate-400 text-sm">มาสาย</div>
+  </div>
+  <div class="glass rounded-2xl p-5 text-center">
+    <div class="text-3xl font-bold text-red-400">{{ stats.absent|default:0 }}</div>
+    <div class="text-slate-400 text-sm">ขาดสอบ</div>
+  </div>
+</div>
+
+<!-- ===== Table ===== -->
+<div class="glass rounded-2xl border border-white/20 overflow-hidden">
+  <div class="p-6 border-b border-white/10 flex items-center justify-between gap-3">
+    <h3 class="text-xl font-bold text-white flex items-center gap-3">
+      <i class="fas fa-users text-blue-400"></i> รายชื่อนักเรียน
+    </h3>
+    <div class="flex items-center gap-2">
+      <div class="relative">
+        <input id="studentSearch" type="text" placeholder="ค้นหา ชื่อ/รหัส/ห้อง..."
+               class="w-72 pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-600 rounded-xl focus:border-blue-500 focus:outline-none text-white">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+      </div>
+      <select id="statusFilter" class="px-3 py-2.5 bg-slate-800/50 border border-slate-600 rounded-xl text-white">
+        <option value="">ทุกสถานะ</option>
+        <option value="on_time">ตรงเวลา</option>
+        <option value="late">มาสาย</option>
+        <option value="absent">ขาดสอบ</option>
+        <option value="excused">ลาป่วย</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-800/50">
+          {% if request.user.is_staff %}
+            <th class="text-center px-4 py-3 w-10"><input type="checkbox" id="selectAll" class="rounded"></th>
+          {% endif %}
+          <th class="text-left px-4 py-3 text-slate-300 font-semibold">#</th>
+          <th class="text-left px-4 py-3 text-slate-300 font-semibold">นักเรียน</th>
+          <th class="text-center px-4 py-3 text-slate-300 font-semibold">ห้อง/เลขที่</th>
+          <th class="text-center px-4 py-3 text-slate-300 font-semibold">สถานะ</th>
+          <th class="text-center px-4 py-3 text-slate-300 font-semibold">เวลาเช็คชื่อ</th>
+          {% if request.user.is_staff %}
+            <th class="text-right px-4 py-3 text-slate-300 font-semibold">เช็คชื่อ (เร็ว)</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody id="studentTableBody" class="divide-y divide-white/5">
+        {% for student in students %}
+          {# หา attendance ของนักเรียนนี้ โดยวน items แล้วจับคู่ id (เลี่ยง filter พิเศษ) #}
+          {% with att=None %}
+            {% for sid, a in attendance_dict.items %}
+              {% if sid == student.id %}
+                {% with att=a %}{% endwith %}
+              {% endif %}
+            {% endfor %}
+          {% endwith %}
+
+          <tr class="student-row" data-search="{{ student.user.get_full_name }} {{ student.student_id }} {{ student.student_class }}">
+            {% if request.user.is_staff %}
+              <td class="px-4 py-3 text-center">
+                <input type="checkbox" class="student-checkbox rounded" value="{{ student.id }}">
+              </td>
+            {% endif %}
+            <td class="px-4 py-3 text-slate-300">{{ forloop.counter }}</td>
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                  <i class="fas fa-user-graduate text-blue-400"></i>
+                </div>
+                <div>
+                  <p class="font-medium text-white">{{ student.user.get_full_name }}</p>
+                  <p class="text-xs text-slate-400">{{ student.student_id }}</p>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <div>
+                <p class="font-medium text-white">{{ student.student_class }}</p>
+                <p class="text-xs text-slate-400">เลขที่ {{ student.student_number }}</p>
+              </div>
+            </td>
+            <td class="px-4 py-4 text-center">
+              {% if att %}
+                {% if att.status == 'on_time' %}
+                  <span class="chip chip-green"><span class="status-dot dot-on"></span>ตรงเวลา</span>
+                {% elif att.status == 'late' %}
+                  <span class="chip chip-yellow"><span class="status-dot dot-late"></span>มาสาย</span>
+                {% elif att.status == 'excused' %}
+                  <span class="chip chip-blue"><span class="status-dot dot-excused"></span>ลาป่วย</span>
+                {% else %}
+                  <span class="chip chip-red"><span class="status-dot dot-absent"></span>ขาดสอบ</span>
+                {% endif %}
+              {% else %}
+                <span class="chip chip-red"><span class="status-dot dot-absent"></span>ขาดสอบ</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-4 text-center">
+              {% if att and att.checkin_time %}
+                <div>
+                  <p class="text-white font-medium">{{ att.checkin_time|time:"H:i" }}</p>
+                  <p class="text-xs text-slate-400">{{ att.checkin_time|date:"d/m" }}</p>
+                </div>
+              {% else %}
+                <span class="text-slate-500">—</span>
+              {% endif %}
+            </td>
+
+            {% if request.user.is_staff %}
+              <td class="px-4 py-4">
+                <div class="flex flex-wrap gap-2 justify-end">
+                  <button class="btn btn-success"  onclick="quickUpdate({{ student.id }}, 'on_time')"><i class="fa-solid fa-check"></i> ตรงเวลา</button>
+                  <button class="btn btn-warning" onclick="quickUpdate({{ student.id }}, 'late')"><i class="fa-solid fa-clock"></i> มาสาย</button>
+                  <button class="btn btn-secondary" onclick="quickUpdate({{ student.id }}, 'excused')"><i class="fa-solid fa-notes-medical"></i> ลาป่วย</button>
+                  <button class="btn btn-danger"   onclick="quickUpdate({{ student.id }}, 'absent')"><i class="fa-solid fa-xmark"></i> ขาดสอบ</button>
+                </div>
+              </td>
+            {% endif %}
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="{% if request.user.is_staff %}7{% else %}6{% endif %}" class="px-6 py-16 text-center">
+              <div class="text-slate-400">
+                <i class="fas fa-users text-4xl mb-4 opacity-50"></i>
+                <p>ไม่พบนักเรียนในรายวิชานี้</p>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- แจ้งเตือน -->
+<div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+  // ค้นหา / กรอง
+  $('#studentSearch').addEventListener('input', filterTable);
+  $('#statusFilter').addEventListener('change', filterTable);
+  function filterTable(){
+    const q = $('#studentSearch').value.trim().toLowerCase();
+    const st = $('#statusFilter').value;
+    let shown = 0;
+    $$('.student-row').forEach(row=>{
+      const text = row.getAttribute('data-search').toLowerCase();
+      let okText = !q || text.includes(q);
+      let okStatus = true;
+      if(st){
+        const chip = row.querySelector('.chip');
+        const label = chip ? chip.textContent.trim() : 'ขาดสอบ';
+        const map = {'ตรงเวลา':'on_time','มาสาย':'late','ขาดสอบ':'absent','ลาป่วย':'excused'};
+        okStatus = (map[label]||'absent')===st;
+      }
+      row.style.display = (okText && okStatus)? '' : 'none';
+      if(row.style.display!=='none') shown++;
+    });
+  }
+
+  // เลือกทั้งหมด
+  const selectAll = $('#selectAll');
+  if(selectAll){
+    selectAll.addEventListener('change', e=>{
+      $$('.student-checkbox').forEach(cb=>cb.checked = e.target.checked);
+    });
+  }
+
+  // อัปเดตรายคนแบบเร็ว
+  async function quickUpdate(studentId, status){
+    try{
+      const res = await fetch("{% url 'manual_attendance_update' %}", {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken': csrftoken},
+        body: JSON.stringify({student_id: studentId, subject_id: {{ subject.id }}, status})
+      });
+      const data = await res.json();
+      if(data.success){ notify('อัปเดตสำเร็จ','success'); setTimeout(()=>location.reload(), 800); }
+      else { notify(data.error || 'เกิดข้อผิดพลาด','error'); }
+    }catch(e){ notify('เชื่อมต่อไม่ได้','error'); }
+  }
+
+  // อัปเดตแบบกลุ่ม
+  async function bulkUpdate(status){
+    const ids = $$('.student-checkbox:checked').map(cb=>parseInt(cb.value));
+    if(ids.length===0){ notify('กรุณาเลือกรายชื่อนักเรียน','warning'); return; }
+    try{
+      const res = await fetch("{% url 'bulk_attendance_update' subject.id %}", {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken': csrftoken},
+        body: JSON.stringify({status, student_ids: ids})
+      });
+      const data = await res.json();
+      if(data.success){ notify(`อัปเดต ${ids.length} คนสำเร็จ`,'success'); setTimeout(()=>location.reload(), 800); }
+      else { notify(data.error || 'เกิดข้อผิดพลาด','error'); }
+    }catch(e){ notify('เชื่อมต่อไม่ได้','error'); }
+  }
+
+  // แจ้งเตือนเล็กๆ มุมขวาบน
+  function notify(message, type='info', ms=2500){
+    const colors = {
+      success:'bg-green-500/90 border-green-400',
+      error:'bg-red-500/90 border-red-400',
+      warning:'bg-yellow-500/90 border-yellow-400',
+      info:'bg-blue-500/90 border-blue-400'
+    };
+    const icons = {
+      success:'fa-check-circle', error:'fa-exclamation-circle',
+      warning:'fa-exclamation-triangle', info:'fa-info-circle'
+    };
+    const box = document.createElement('div');
+    box.className = `${colors[type]} border rounded-xl p-3 text-white shadow-xl backdrop-blur-sm transform translate-x-full transition-transform duration-300`;
+    box.innerHTML = `<div class="flex items-center gap-2"><i class="fas ${icons[type]}"></i><span class="font-medium">${message}</span></div>`;
+    $('#notificationContainer').appendChild(box);
+    setTimeout(()=> box.style.transform='translateX(0)', 50);
+    setTimeout(()=>{
+      box.style.transform='translateX(100%)';
+      setTimeout(()=> box.remove(), 300);
+    }, ms);
+  }
+</script>
+{% endblock %}

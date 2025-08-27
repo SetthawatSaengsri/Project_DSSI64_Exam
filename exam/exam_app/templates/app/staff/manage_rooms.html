@@ -1,0 +1,886 @@
+{% extends 'app/base.html' %}
+
+{% block title %}จัดการห้องสอบและอาคาร - ระบบจัดการการสอบ{% endblock %}
+{% block current_page %}rooms{% endblock %}
+{% block page_title %}จัดการห้องสอบและอาคาร{% endblock %}
+{% block page_subtitle %}Building & Room Management{% endblock %}
+
+{% block extra_css %}
+<!-- CSRF Token สำหรับ AJAX -->
+<meta name="csrf-token" content="{{ csrf_token }}">
+<style>
+    .building-card {
+        transition: all 0.3s ease;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(10px);
+    }
+    .building-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+        background: rgba(15, 23, 42, 0.8);
+    }
+    .room-item {
+        transition: all 0.3s ease;
+        background: rgba(30, 41, 59, 0.5);
+        border-left: 4px solid transparent;
+    }
+    .room-item:hover {
+        background: rgba(59, 130, 246, 0.1);
+        border-left-color: #3b82f6;
+        transform: translateX(5px);
+    }
+    .capacity-badge {
+        background: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+        border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    .modal {
+        backdrop-filter: blur(8px);
+        background: rgba(0, 0, 0, 0.6);
+    }
+    .modal-content {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        animation: modalSlideIn 0.3s ease-out;
+    }
+    @keyframes modalSlideIn {
+        from { 
+            opacity: 0; 
+            transform: translateY(-30px) scale(0.95); 
+        }
+        to { 
+            opacity: 1; 
+            transform: translateY(0) scale(1); 
+        }
+    }
+    .stats-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        transition: all 0.3s ease;
+    }
+    .stats-card:hover {
+        box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
+        transform: scale(1.02);
+    }
+    .empty-state {
+        background: rgba(71, 85, 105, 0.2);
+        border: 2px dashed rgba(148, 163, 184, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="mb-12 text-center space-y-6">
+    <div class="animate-slide-up">
+        <h2 class="text-4xl lg:text-5xl font-bold font-kanit mb-4">
+            <span class="text-gradient">จัดการห้องสอบและอาคาร</span>
+        </h2>
+        <p class="text-xl text-slate-300 font-prompt">จัดการอาคารและห้องสอบในระบบ</p>
+    </div>
+    <div class="flex justify-center">
+        <div class="w-32 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="stats-card rounded-2xl p-6 animate-float">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-sm mb-1">อาคารทั้งหมด</p>
+                <p class="text-3xl font-bold text-blue-400" id="totalBuildings">0</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                <i class="fas fa-building text-blue-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stats-card rounded-2xl p-6 animate-float" style="animation-delay: 0.1s;">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-sm mb-1">ห้องสอบทั้งหมด</p>
+                <p class="text-3xl font-bold text-green-400" id="totalRooms">0</p>
+            </div>
+            <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                <i class="fas fa-door-open text-green-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stats-card rounded-2xl p-6 animate-float" style="animation-delay: 0.2s;">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-sm mb-1">ความจุรวม</p>
+                <p class="text-3xl font-bold text-purple-400" id="totalCapacity">0</p>
+            </div>
+            <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                <i class="fas fa-users text-purple-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stats-card rounded-2xl p-6 animate-float" style="animation-delay: 0.3s;">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-sm mb-1">ใช้งานวันนี้</p>
+                <p class="text-3xl font-bold text-orange-400" id="roomsInUse">0</p>
+            </div>
+            <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                <i class="fas fa-calendar-check text-orange-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="flex flex-wrap gap-4 mb-8">
+    <button onclick="openBuildingModal()" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold shadow-glow-blue">
+        <i class="fas fa-plus mr-2"></i>เพิ่มอาคาร
+    </button>
+    <button onclick="openRoomModal()" class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold shadow-glow-green">
+        <i class="fas fa-plus mr-2"></i>เพิ่มห้องสอบ
+    </button>
+    <a href="{% url 'export_rooms_data' %}" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold shadow-glow-purple">
+        <i class="fas fa-download mr-2"></i>ส่งออก Excel
+    </a>
+    <button onclick="loadRoomsData()" class="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold shadow-glow-orange">
+        <i class="fas fa-sync-alt mr-2"></i>รีเฟรชข้อมูล
+    </button>
+</div>
+
+<!-- Buildings and Rooms Display -->
+<div class="glass rounded-2xl border border-white/20 p-6">
+    <div class="flex items-center justify-between mb-6">
+        <h3 class="text-2xl font-bold text-gradient">รายการอาคารและห้องสอบ</h3>
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+                <input type="text" id="searchInput" placeholder="ค้นหาอาคารหรือห้อง..." 
+                    class="px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-xl focus:border-blue-500 focus:outline-none transition-colors">
+                <button onclick="searchRooms()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buildings List -->
+    <div id="buildingsList" class="space-y-6">
+        <!-- Buildings will be loaded here via JavaScript -->
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="text-center py-12">
+        <div class="loading-shimmer rounded-xl p-8 mx-auto max-w-md">
+            <i class="fas fa-spinner animate-spin text-4xl text-slate-400 mb-4"></i>
+            <p class="text-slate-400 text-lg">กำลังโหลดข้อมูล...</p>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="text-center py-12 hidden">
+        <div class="empty-state rounded-xl p-8 mx-auto max-w-md">
+            <i class="fas fa-building text-4xl text-slate-400 mb-4"></i>
+            <p class="text-slate-400 text-lg mb-2">ยังไม่มีอาคารในระบบ</p>
+            <p class="text-slate-500 text-sm mb-4">เริ่มต้นโดยการเพิ่มอาคารใหม่</p>
+            <button onclick="openBuildingModal()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">
+                <i class="fas fa-plus mr-2"></i>เพิ่มอาคาร
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Building Modal -->
+<div id="buildingModal" class="modal fixed inset-0 hidden z-50 flex items-center justify-center p-4">
+    <div class="modal-content rounded-2xl p-6 max-w-md w-full">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gradient flex items-center">
+                <i class="fas fa-building mr-2"></i>เพิ่มอาคารใหม่
+            </h3>
+            <button onclick="closeBuildingModal()" class="w-8 h-8 bg-red-500/20 hover:bg-red-500/40 rounded-lg flex items-center justify-center transition-colors">
+                <i class="fas fa-times text-red-400"></i>
+            </button>
+        </div>
+
+        <form id="buildingForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-2">รหัสอาคาร *</label>
+                <input type="text" id="buildingCode" name="code" required maxlength="10"
+                    class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                    placeholder="เช่น A, B, C หรือ BUILD01">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium mb-2">ชื่ออาคาร *</label>
+                <input type="text" id="buildingName" name="name" required maxlength="100"
+                    class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                    placeholder="เช่น อาคารเรียนรวม A">
+            </div>
+
+            <div class="flex space-x-3 pt-4">
+                <button type="button" onclick="closeBuildingModal()" 
+                    class="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl transition-colors font-semibold">
+                    <i class="fas fa-times mr-2"></i>ยกเลิก
+                </button>
+                <button type="submit" 
+                    class="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-xl transition-all font-semibold">
+                    <i class="fas fa-plus mr-2"></i><span id="buildingSubmitText">เพิ่มอาคาร</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Room Modal -->
+<div id="roomModal" class="modal fixed inset-0 hidden z-50 flex items-center justify-center p-4">
+    <div class="modal-content rounded-2xl p-6 max-w-md w-full">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gradient flex items-center">
+                <i class="fas fa-door-open mr-2"></i>เพิ่มห้องสอบใหม่
+            </h3>
+            <button onclick="closeRoomModal()" class="w-8 h-8 bg-red-500/20 hover:bg-red-500/40 rounded-lg flex items-center justify-center transition-colors">
+                <i class="fas fa-times text-red-400"></i>
+            </button>
+        </div>
+
+        <form id="roomForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-2">เลือกอาคาร *</label>
+                <select id="roomBuilding" name="building_id" required
+                    class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl focus:border-blue-500 focus:outline-none transition-colors">
+                    <option value="">เลือกอาคาร</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium mb-2">ชื่อห้อง *</label>
+                <input type="text" id="roomName" name="name" required maxlength="50"
+                    class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                    placeholder="เช่น 101, A-201, Lab1">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium mb-2">ความจุ (จำนวนที่นั่ง) *</label>
+                <input type="number" id="roomCapacity" name="capacity" required min="1" max="500"
+                    class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                    placeholder="เช่น 30, 50, 100">
+            </div>
+
+            <div class="flex space-x-3 pt-4">
+                <button type="button" onclick="closeRoomModal()" 
+                    class="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl transition-colors font-semibold">
+                    <i class="fas fa-times mr-2"></i>ยกเลิก
+                </button>
+                <button type="submit" 
+                    class="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-xl transition-all font-semibold">
+                    <i class="fas fa-plus mr-2"></i><span id="roomSubmitText">เพิ่มห้อง</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal fixed inset-0 hidden z-50 flex items-center justify-center p-4">
+    <div class="modal-content rounded-2xl p-6 max-w-md w-full">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-red-400 flex items-center">
+                <i class="fas fa-exclamation-triangle mr-2"></i>ยืนยันการลบ
+            </h3>
+            <button onclick="closeDeleteModal()" class="w-8 h-8 bg-red-500/20 hover:bg-red-500/40 rounded-lg flex items-center justify-center transition-colors">
+                <i class="fas fa-times text-red-400"></i>
+            </button>
+        </div>
+
+        <div class="mb-6">
+            <p class="text-slate-300" id="deleteMessage">คุณแน่ใจหรือไม่ที่จะลบรายการนี้?</p>
+        </div>
+
+        <div class="flex space-x-3">
+            <button onclick="closeDeleteModal()" 
+                class="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl transition-colors font-semibold">
+                <i class="fas fa-times mr-2"></i>ยกเลิก
+            </button>
+            <button id="confirmDeleteBtn" onclick="confirmDelete()" 
+                class="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 rounded-xl transition-all font-semibold">
+                <i class="fas fa-trash mr-2"></i>ลบ
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+// Global variables
+let buildingsData = [];
+let currentDeleteId = null;
+let currentDeleteType = null;
+let isEditMode = false;
+let currentEditId = null;
+
+// Initialize page
+function initializePage() {
+    console.log('Manage Rooms page initialized');
+    loadRoomStatistics();
+    loadRoomsData();
+    loadBuildingsForSelect();
+    
+    // Setup form handlers
+    setupFormHandlers();
+    
+    // Setup search
+    document.getElementById('searchInput').addEventListener('input', searchRooms);
+}
+
+// Load room statistics
+function loadRoomStatistics() {
+    fetch('/ajax/rooms/statistics/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateStatistics(data.statistics);
+            } else {
+                showNotification('ไม่สามารถโหลดสถิติได้', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading statistics:', error);
+            showNotification('เกิดข้อผิดพลาดในการโหลดสถิติ', 'error');
+        });
+}
+
+// Update statistics display
+function updateStatistics(stats) {
+    document.getElementById('totalBuildings').textContent = stats.total_buildings;
+    document.getElementById('totalRooms').textContent = stats.total_rooms;
+    document.getElementById('totalCapacity').textContent = stats.total_capacity;
+    document.getElementById('roomsInUse').textContent = stats.rooms_in_use_today;
+}
+
+// Load rooms data
+function loadRoomsData() {
+    document.getElementById('loadingState').classList.remove('hidden');
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('buildingsList').innerHTML = '';
+    
+    fetch('/ajax/buildings/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                buildingsData = data.buildings;
+                displayBuildings(buildingsData);
+            } else {
+                showNotification('ไม่สามารถโหลดข้อมูลได้', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading buildings:', error);
+            showNotification('เกิดข้อผิดพลาดในการโหลดข้อมูล', 'error');
+        })
+        .finally(() => {
+            document.getElementById('loadingState').classList.add('hidden');
+        });
+}
+
+// Display buildings
+function displayBuildings(buildings) {
+    const buildingsList = document.getElementById('buildingsList');
+    
+    if (buildings.length === 0) {
+        document.getElementById('emptyState').classList.remove('hidden');
+        return;
+    }
+    
+    buildingsList.innerHTML = buildings.map(building => `
+        <div class="building-card rounded-2xl p-6 border border-white/10">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex-1">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-building text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-bold text-white">${building.name}</h4>
+                            <p class="text-slate-400">รหัส: ${building.code}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4 text-sm">
+                        <span class="flex items-center">
+                            <i class="fas fa-door-open mr-1 text-green-400"></i>
+                            ${building.room_count} ห้อง
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fas fa-users mr-1 text-blue-400"></i>
+                            ความจุรวม ${building.total_capacity}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-2">
+                    <button onclick="editBuilding(${building.id}, '${building.code}', '${building.name}')" 
+                        class="px-3 py-2 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 rounded-lg transition-colors" 
+                        title="แก้ไขอาคาร">
+                        <i class="fas fa-edit text-sm"></i>
+                    </button>
+                    <button onclick="addRoomToBuilding(${building.id})" 
+                        class="px-3 py-2 bg-green-500/20 hover:bg-green-500/40 text-green-400 rounded-lg transition-colors" 
+                        title="เพิ่มห้อง">
+                        <i class="fas fa-plus text-sm"></i>
+                    </button>
+                    <button onclick="deleteBuilding(${building.id}, '${building.name}')" 
+                        class="px-3 py-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-lg transition-colors" 
+                        title="ลบอาคาร">
+                        <i class="fas fa-trash text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="border-t border-white/10 pt-4">
+                <h5 class="text-sm font-semibold text-slate-300 mb-3 flex items-center">
+                    <i class="fas fa-list mr-2"></i>รายการห้อง
+                </h5>
+                
+                ${building.rooms.length > 0 ? `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        ${building.rooms.map(room => `
+                            <div class="room-item rounded-lg p-3">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-2 mb-2">
+                                            <h6 class="font-semibold text-white">ห้อง ${room.name}</h6>
+                                            <span class="capacity-badge px-2 py-1 rounded-full text-xs font-medium">
+                                                ${room.capacity} คน
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="flex space-x-1">
+                                        <button onclick="editRoom(${room.id}, ${building.id}, '${room.name}', ${room.capacity})" 
+                                            class="px-2 py-1 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 rounded transition-colors" 
+                                            title="แก้ไขห้อง">
+                                            <i class="fas fa-edit text-xs"></i>
+                                        </button>
+                                        <button onclick="deleteRoom(${room.id}, '${building.name}', '${room.name}')" 
+                                            class="px-2 py-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded transition-colors" 
+                                            title="ลบห้อง">
+                                            <i class="fas fa-times text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="text-center py-4">
+                        <p class="text-slate-400 text-sm">ยังไม่มีห้องในอาคารนี้</p>
+                        <button onclick="addRoomToBuilding(${building.id})" 
+                            class="mt-2 px-3 py-1 bg-green-500/20 hover:bg-green-500/40 text-green-400 rounded text-sm transition-colors">
+                            <i class="fas fa-plus mr-1"></i>เพิ่มห้องแรก
+                        </button>
+                    </div>
+                `}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Search rooms
+function searchRooms() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    
+    if (!searchTerm) {
+        displayBuildings(buildingsData);
+        return;
+    }
+    
+    const filteredBuildings = buildingsData.filter(building => {
+        const buildingMatch = building.name.toLowerCase().includes(searchTerm) ||
+                             building.code.toLowerCase().includes(searchTerm);
+        
+        const roomMatch = building.rooms.some(room =>
+            room.name.toLowerCase().includes(searchTerm)
+        );
+        
+        return buildingMatch || roomMatch;
+    }).map(building => ({
+        ...building,
+        rooms: building.rooms.filter(room =>
+            room.name.toLowerCase().includes(searchTerm) ||
+            building.name.toLowerCase().includes(searchTerm) ||
+            building.code.toLowerCase().includes(searchTerm)
+        )
+    }));
+    
+    displayBuildings(filteredBuildings);
+}
+
+// Load buildings for select dropdown
+function loadBuildingsForSelect() {
+    fetch('/ajax/buildings/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('roomBuilding');
+                select.innerHTML = '<option value="">เลือกอาคาร</option>';
+                
+                data.buildings.forEach(building => {
+                    select.innerHTML += `<option value="${building.id}">${building.name} (${building.code})</option>`;
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading buildings for select:', error);
+        });
+}
+
+// Modal functions
+function openBuildingModal() {
+    document.getElementById('buildingModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('buildingCode').focus();
+}
+
+function closeBuildingModal() {
+    document.getElementById('buildingModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    document.getElementById('buildingForm').reset();
+    
+    // รีเซ็ตสถานะแก้ไข
+    isEditMode = false;
+    currentEditId = null;
+    document.querySelector('#buildingModal h3').innerHTML = 
+        '<i class="fas fa-building mr-2"></i>เพิ่มอาคารใหม่';
+    document.getElementById('buildingSubmitText').textContent = 'เพิ่มอาคาร';
+}
+
+function openRoomModal() {
+    document.getElementById('roomModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    loadBuildingsForSelect();
+    document.getElementById('roomBuilding').focus();
+}
+
+function closeRoomModal() {
+    document.getElementById('roomModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    document.getElementById('roomForm').reset();
+    
+    // รีเซ็ตสถานะแก้ไข
+    isEditMode = false;
+    currentEditId = null;
+    document.querySelector('#roomModal h3').innerHTML = 
+        '<i class="fas fa-door-open mr-2"></i>เพิ่มห้องสอบใหม่';
+    document.getElementById('roomSubmitText').textContent = 'เพิ่มห้อง';
+}
+
+function addRoomToBuilding(buildingId) {
+    openRoomModal();
+    setTimeout(() => {
+        document.getElementById('roomBuilding').value = buildingId;
+    }, 100);
+}
+
+// Edit functions
+function editBuilding(buildingId, buildingCode, buildingName) {
+    isEditMode = true;
+    currentEditId = buildingId;
+    
+    // เปลี่ยนหัวข้อ modal
+    document.querySelector('#buildingModal h3').innerHTML = 
+        '<i class="fas fa-edit mr-2"></i>แก้ไขอาคาร';
+    
+    // เปลี่ยนข้อความปุ่ม
+    document.getElementById('buildingSubmitText').textContent = 'บันทึกการแก้ไข';
+    
+    // ใส่ข้อมูลเดิม
+    document.getElementById('buildingCode').value = buildingCode;
+    document.getElementById('buildingName').value = buildingName;
+    
+    // เปิด modal
+    document.getElementById('buildingModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('buildingCode').focus();
+}
+
+function editRoom(roomId, buildingId, roomName, roomCapacity) {
+    isEditMode = true;
+    currentEditId = roomId;
+    
+    // เปลี่ยนหัวข้อ modal
+    document.querySelector('#roomModal h3').innerHTML = 
+        '<i class="fas fa-edit mr-2"></i>แก้ไขห้องสอบ';
+    
+    // เปลี่ยนข้อความปุ่ม
+    document.getElementById('roomSubmitText').textContent = 'บันทึกการแก้ไข';
+    
+    // โหลดรายการอาคาร
+    loadBuildingsForSelect();
+    
+    // รอให้โหลดเสร็จแล้วใส่ข้อมูล
+    setTimeout(() => {
+        document.getElementById('roomBuilding').value = buildingId;
+        document.getElementById('roomName').value = roomName;
+        document.getElementById('roomCapacity').value = roomCapacity;
+    }, 100);
+    
+    // เปิด modal
+    document.getElementById('roomModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+// Delete functions
+function deleteBuilding(buildingId, buildingName) {
+    currentDeleteId = buildingId;
+    currentDeleteType = 'building';
+    
+    document.getElementById('deleteMessage').textContent = 
+        `คุณแน่ใจหรือไม่ที่จะลบอาคาร "${buildingName}"? การลบอาคารจะลบห้องทั้งหมดในอาคารด้วย`;
+    
+    document.getElementById('deleteModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function deleteRoom(roomId, buildingName, roomName) {
+    currentDeleteId = roomId;
+    currentDeleteType = 'room';
+    
+    document.getElementById('deleteMessage').textContent = 
+        `คุณแน่ใจหรือไม่ที่จะลบห้อง "${roomName}" ในอาคาร "${buildingName}"?`;
+    
+    document.getElementById('deleteModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    currentDeleteId = null;
+    currentDeleteType = null;
+}
+
+function confirmDelete() {
+    if (!currentDeleteId || !currentDeleteType) return;
+    
+    const url = currentDeleteType === 'building' 
+        ? `/ajax/buildings/${currentDeleteId}/delete/`
+        : `/ajax/rooms/${currentDeleteId}/delete/`;
+    
+    showLoading();
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || `HTTP ${response.status}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            closeDeleteModal();
+            loadRoomsData();
+            loadRoomStatistics();
+        } else {
+            showNotification(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting:', error);
+        showNotification('เกิดข้อผิดพลาดในการลบ: ' + error.message, 'error');
+    })
+    .finally(() => {
+        hideLoading();
+    });
+}
+
+// Form handlers
+function setupFormHandlers() {
+    // Building form
+    document.getElementById('buildingForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData();
+        formData.append('code', document.getElementById('buildingCode').value.trim());
+        formData.append('name', document.getElementById('buildingName').value.trim());
+        
+        if (!formData.get('code') || !formData.get('name')) {
+            showNotification('กรุณากรอกรหัสอาคารและชื่ออาคาร', 'warning');
+            return;
+        }
+        
+        showLoading();
+        
+        const url = isEditMode ? `/ajax/buildings/${currentEditId}/edit/` : '/ajax/buildings/add/';
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                closeBuildingModal();
+                loadRoomsData();
+                loadRoomStatistics();
+                loadBuildingsForSelect();
+            } else {
+                showNotification(data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error with building:', error);
+            showNotification('เกิดข้อผิดพลาดในการดำเนินการ: ' + error.message, 'error');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+    });
+    
+    // Room form
+    document.getElementById('roomForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData();
+        formData.append('building_id', document.getElementById('roomBuilding').value);
+        formData.append('name', document.getElementById('roomName').value.trim());
+        formData.append('capacity', document.getElementById('roomCapacity').value);
+        
+        if (!formData.get('building_id') || !formData.get('name') || !formData.get('capacity')) {
+            showNotification('กรุณากรอกข้อมูลให้ครบถ้วน', 'warning');
+            return;
+        }
+        
+        const capacity = parseInt(formData.get('capacity'));
+        if (capacity <= 0 || isNaN(capacity)) {
+            showNotification('ความจุต้องมากกว่า 0', 'warning');
+            return;
+        }
+        
+        showLoading();
+        
+        const url = isEditMode ? `/ajax/rooms/${currentEditId}/edit/` : '/ajax/rooms/add/';
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                closeRoomModal();
+                loadRoomsData();
+                loadRoomStatistics();
+            } else {
+                showNotification(data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error with room:', error);
+            showNotification('เกิดข้อผิดพลาดในการดำเนินการ: ' + error.message, 'error');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+    });
+}
+
+// Utility function to get CSRF cookie
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Close modals when clicking outside
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal')) {
+        if (e.target.id === 'buildingModal') closeBuildingModal();
+        if (e.target.id === 'roomModal') closeRoomModal();
+        if (e.target.id === 'deleteModal') closeDeleteModal();
+    }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        if (!document.getElementById('buildingModal').classList.contains('hidden')) {
+            closeBuildingModal();
+        } else if (!document.getElementById('roomModal').classList.contains('hidden')) {
+            closeRoomModal();
+        } else if (!document.getElementById('deleteModal').classList.contains('hidden')) {
+            closeDeleteModal();
+        }
+    }
+    
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        openBuildingModal();
+    }
+    
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        loadRoomsData();
+        loadRoomStatistics();
+    }
+});
+
+// Auto-uppercase building code
+document.addEventListener('DOMContentLoaded', function() {
+    const buildingCodeInput = document.getElementById('buildingCode');
+    if (buildingCodeInput) {
+        buildingCodeInput.addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+    }
+
+    const roomCapacityInput = document.getElementById('roomCapacity');
+    if (roomCapacityInput) {
+        roomCapacityInput.addEventListener('input', function(e) {
+            const value = parseInt(e.target.value);
+            if (value < 1) {
+                e.target.value = 1;
+            } else if (value > 500) {
+                e.target.value = 500;
+            }
+        });
+    }
+
+    initializePage();
+});
+{% endblock %}

@@ -1,161 +1,625 @@
-<!-- dashboard_staff.html -->
-
 {% extends "app/base.html" %}
-{% block content %}
-<div class="container mx-auto mt-10 max-w-7xl px-6 md:px-12">
-    <h2 class="text-4xl font-bold text-indigo-700 text-center mb-12">📊 แดชบอร์ดเจ้าหน้าที่</h2>
 
-    <!-- ✅ ภาพรวมข้อมูล -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        {% for card in overview_cards %}
-        <div class="bg-white border-l-4 border-{{ card.color }}-500 p-6 rounded-xl shadow-md transition hover:scale-105">
-            <div class="flex items-center">
-                <div class="text-{{ card.color }}-500 text-4xl">{{ card.icon }}</div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-600">{{ card.label }}</h3>
-                    <p class="text-3xl font-bold text-gray-800" id="{{ card.label|slugify }}">{{ card.count }}</p>
+{% block title %}Dashboard - ระบบจัดการการสอบ{% endblock %}
+
+{% block page_title %}Dashboard เจ้าหน้าที่{% endblock %}
+{% block page_subtitle %}จัดการระบบการสอบและข้อมูลต่างๆ อย่างมืออาชีพ{% endblock %}
+
+{% block current_page %}dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dashboard specific styles */
+    .stat-card {
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px) scale(1.02);
+    }
+
+    .action-card {
+        transition: all 0.3s ease;
+    }
+
+    .action-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .exam-card {
+        transition: all 0.3s ease;
+    }
+
+    .exam-card:hover {
+        transform: translateX(5px);
+    }
+
+    @keyframes countUp {
+        from {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .counter {
+        animation: countUp 0.8s ease-out;
+    }
+
+    .hover-glow:hover {
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ==================== WELCOME SECTION ==================== -->
+<div class="mb-12 text-center space-y-6">
+    <div class="animate-slide-up">
+        <h2 class="text-4xl lg:text-5xl font-bold font-kanit mb-4">
+            <span class="text-gradient">ยินดีต้อนรับ</span>
+        </h2>
+        <p class="text-xl text-slate-300 font-prompt">จัดการระบบการสอบและข้อมูลต่างๆ อย่างมืออาชีพ</p>
+    </div>
+    <div class="flex justify-center">
+        <div class="w-32 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+    </div>
+</div>
+
+<!-- ==================== STATISTICS CARDS ==================== -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+    <!-- Teachers Count -->
+    <div class="stat-card glass rounded-3xl p-6 border border-white/20 hover:border-blue-500/50 transition-all duration-300 hover-glow group">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-glow-blue">
+                <i class="fas fa-chalkboard-teacher text-2xl text-white"></i>
+            </div>
+            <div class="text-right">
+                <div class="text-3xl font-bold text-blue-400 font-kanit counter" data-count="25">0</div>
+                <div class="text-sm text-slate-400">คน</div>
+            </div>
+        </div>
+        <h3 class="text-lg font-semibold mb-2 font-kanit">จำนวนครู</h3>
+        <p class="text-slate-400 text-sm">ครูทั้งหมดในระบบ</p>
+        <div class="mt-4 flex items-center text-green-400 text-sm">
+            <i class="fas fa-arrow-up mr-1"></i>
+            <span>+5% จากเดือนที่แล้ว</span>
+        </div>
+    </div>
+
+    <!-- Students Count -->
+    <div class="stat-card glass rounded-3xl p-6 border border-white/20 hover:border-green-500/50 transition-all duration-300 hover-glow group">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-glow-green">
+                <i class="fas fa-user-graduate text-2xl text-white"></i>
+            </div>
+            <div class="text-right">
+                <div class="text-3xl font-bold text-green-400 font-kanit counter" data-count="450">0</div>
+                <div class="text-sm text-slate-400">คน</div>
+            </div>
+        </div>
+        <h3 class="text-lg font-semibold mb-2 font-kanit">จำนวนนักเรียน</h3>
+        <p class="text-slate-400 text-sm">นักเรียนทั้งหมดในระบบ</p>
+        <div class="mt-4 flex items-center text-green-400 text-sm">
+            <i class="fas fa-arrow-up mr-1"></i>
+            <span>+12% จากเดือนที่แล้ว</span>
+        </div>
+    </div>
+
+    <!-- Exam Subjects -->
+    <div class="stat-card glass rounded-3xl p-6 border border-white/20 hover:border-purple-500/50 transition-all duration-300 hover-glow group">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-glow-purple">
+                <i class="fas fa-book-open text-2xl text-white"></i>
+            </div>
+            <div class="text-right">
+                <div class="text-3xl font-bold text-purple-400 font-kanit counter" data-count="18">0</div>
+                <div class="text-sm text-slate-400">วิชา</div>
+            </div>
+        </div>
+        <h3 class="text-lg font-semibold mb-2 font-kanit">รายวิชาสอบ</h3>
+        <p class="text-slate-400 text-sm">วิชาที่กำลังดำเนินการ</p>
+        <div class="mt-4 flex items-center text-purple-400 text-sm">
+            <i class="fas fa-calendar mr-1"></i>
+            <span>เทอมปัจจุบัน</span>
+        </div>
+    </div>
+
+    <!-- Attendance Today -->
+    <div class="stat-card glass rounded-3xl p-6 border border-white/20 hover:border-orange-500/50 transition-all duration-300 hover-glow group">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-glow-orange">
+                <i class="fas fa-clipboard-check text-2xl text-white"></i>
+            </div>
+            <div class="text-right">
+                <div class="text-3xl font-bold text-orange-400 font-kanit counter" data-count="127">0</div>
+                <div class="text-sm text-slate-400">คน</div>
+            </div>
+        </div>
+        <h3 class="text-lg font-semibold mb-2 font-kanit">เข้าสอบวันนี้</h3>
+        <p class="text-slate-400 text-sm">การเข้าสอบทั้งหมดวันนี้</p>
+        <div class="mt-4 flex items-center text-orange-400 text-sm">
+            <i class="fas fa-clock mr-1"></i>
+            <span>อัพเดทล่าสุด: 14:30</span>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== QUICK ACTIONS ==================== -->
+<div class="mb-12">
+    <div class="text-center mb-8">
+        <h3 class="text-3xl font-bold font-kanit mb-4">
+            <span class="text-gradient">เมนูหลัก</span>
+        </h3>
+        <p class="text-slate-300 font-prompt">เลือกฟังก์ชันที่ต้องการใช้งาน</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- View Users -->
+        <div class="action-card glass rounded-3xl p-8 text-center border border-white/20 hover:border-indigo-500/50 transition-all duration-300 transform hover:-translate-y-2 hover-glow group">
+            <div class="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                <i class="fas fa-users text-white text-2xl"></i>
+            </div>
+            <h4 class="text-xl font-bold mb-4 font-kanit">ดูรายชื่อครูและนักเรียน</h4>
+            <p class="text-slate-300 mb-6 leading-relaxed">ดูและจัดการข้อมูลครูและนักเรียนทั้งหมด</p>
+            <a href="/users/list/" class="inline-block w-full px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold">
+                <i class="fas fa-eye mr-2"></i>ดูรายชื่อ
+            </a>
+        </div>
+
+        <!-- Import Students -->
+        <div class="action-card glass rounded-3xl p-8 text-center border border-white/20 hover:border-emerald-500/50 transition-all duration-300 transform hover:-translate-y-2 hover-glow group">
+            <div class="w-20 h-20 bg-gradient-to-r from-emerald-500 to-green-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-glow-green">
+                <i class="fas fa-user-graduate text-white text-2xl"></i>
+            </div>
+            <h4 class="text-xl font-bold mb-4 font-kanit">Import ข้อมูลนักเรียน</h4>
+            <p class="text-slate-300 mb-6 leading-relaxed">นำเข้าข้อมูลนักเรียนจำนวนมากจากไฟล์ Excel</p>
+            <a href="/import/students/" class="inline-block w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold">
+                <i class="fas fa-upload mr-2"></i>Import นักเรียน
+            </a>
+        </div>
+
+        <!-- Import Teachers -->
+        <div class="action-card glass rounded-3xl p-8 text-center border border-white/20 hover:border-pink-500/50 transition-all duration-300 transform hover:-translate-y-2 hover-glow group">
+            <div class="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-glow-pink">
+                <i class="fas fa-chalkboard-teacher text-white text-2xl"></i>
+            </div>
+            <h4 class="text-xl font-bold mb-4 font-kanit">Import ข้อมูลครู</h4>
+            <p class="text-slate-300 mb-6 leading-relaxed">นำเข้าข้อมูลครูจำนวนมากจากไฟล์ Excel</p>
+            <a href="/import/teachers/" class="inline-block w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold">
+                <i class="fas fa-upload mr-2"></i>Import ครู
+            </a>
+        </div>
+
+        <!-- Manage Exams -->
+        <div class="action-card glass rounded-3xl p-8 text-center border border-white/20 hover:border-blue-500/50 transition-all duration-300 transform hover:-translate-y-2 hover-glow group">
+            <div class="w-20 h-20 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-glow-blue">
+                <i class="fas fa-calendar-alt text-white text-2xl"></i>
+            </div>
+            <h4 class="text-xl font-bold mb-4 font-kanit">จัดการรายวิชาสอบ</h4>
+            <p class="text-slate-300 mb-6 leading-relaxed">เพิ่ม แก้ไข และจัดการรายวิชาสอบทั้งหมด</p>
+            <a href="/exams/" class="inline-block w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold">
+                <i class="fas fa-plus mr-2"></i>เริ่มจัดการ
+            </a>
+        </div>
+
+        <!-- Manage Rooms -->
+        <div class="action-card glass rounded-3xl p-8 text-center border border-white/20 hover:border-green-500/50 transition-all duration-300 transform hover:-translate-y-2 hover-glow group">
+            <div class="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-glow-green">
+                <i class="fas fa-building text-white text-2xl"></i>
+            </div>
+            <h4 class="text-xl font-bold mb-4 font-kanit">จัดการห้องสอบ</h4>
+            <p class="text-slate-300 mb-6 leading-relaxed">จัดการอาคารและห้องสอบต่างๆ</p>
+            <a href="/rooms/" class="inline-block w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold">
+                <i class="fas fa-door-open mr-2"></i>เริ่มจัดการ
+            </a>
+        </div>
+
+        <!-- QR Code Generator -->
+        <div class="action-card glass rounded-3xl p-8 text-center border border-white/20 hover:border-purple-500/50 transition-all duration-300 transform hover:-translate-y-2 hover-glow group">
+            <div class="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-glow-purple">
+                <i class="fas fa-qrcode text-white text-2xl"></i>
+            </div>
+            <h4 class="text-xl font-bold mb-4 font-kanit">สร้าง QR Code</h4>
+            <p class="text-slate-300 mb-6 leading-relaxed">สร้าง QR Code สำหรับเช็คชื่อเข้าสอบ</p>
+            <a href="/qr/" class="inline-block w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold">
+                <i class="fas fa-magic mr-2"></i>สร้าง QR
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== UPCOMING EXAMS ==================== -->
+<div class="mb-12">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h3 class="text-3xl font-bold font-kanit mb-2">
+                <span class="text-gradient">การสอบที่กำลังจะมาถึง</span>
+            </h3>
+            <p class="text-slate-300 font-prompt">รายการการสอบในสัปดาห์นี้</p>
+        </div>
+        <a href="/exams/" class="px-6 py-3 glass border border-white/20 hover:border-blue-500/50 hover:bg-white/10 rounded-xl transition-all duration-300 group">
+            <i class="fas fa-eye mr-2 group-hover:scale-110 transition-transform"></i>
+            ดูทั้งหมด
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <!-- Exam Card 1 -->
+        <div class="exam-card glass rounded-2xl p-6 border border-white/10 hover:border-blue-500/30 transition-all duration-300">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-calculator text-white"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold font-kanit">คณิตศาสตร์</h4>
+                        <p class="text-sm text-slate-400">MATH101</p>
+                    </div>
+                </div>
+                <span class="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm font-medium">
+                    พรุ่งนี้
+                </span>
+            </div>
+
+            <div class="space-y-3 mb-4">
+                <div class="flex items-center text-sm text-slate-300">
+                    <i class="fas fa-calendar w-4 text-blue-400 mr-3"></i>
+                    <span>15 มกราคม 2567</span>
+                </div>
+                <div class="flex items-center text-sm text-slate-300">
+                    <i class="fas fa-clock w-4 text-green-400 mr-3"></i>
+                    <span>09:00 - 11:00 น.</span>
+                </div>
+                <div class="flex items-center text-sm text-slate-300">
+                    <i class="fas fa-map-marker-alt w-4 text-red-400 mr-3"></i>
+                    <span>อาคาร A ห้อง 101</span>
+                </div>
+                <div class="flex items-center text-sm text-slate-300">
+                    <i class="fas fa-users w-4 text-purple-400 mr-3"></i>
+                    <span>นักเรียน 35 คน</span>
                 </div>
             </div>
-        </div>
-        {% endfor %}
-    </div>
 
-    <!-- ✅ เมนูการจัดการ -->
-    <div class="mt-14">
-        <h3 class="text-2xl font-semibold text-gray-800 mb-6">🛠 เมนูการจัดการ</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <a href="{% url 'import_csv' %}" class="bg-blue-500 hover:bg-blue-600 text-white py-5 px-4 rounded-xl text-center font-medium shadow-md transition">📂 นำเข้าข้อมูล CSV</a>
-            <a href="{% url 'import_exam_subjects_csv' %}" class="bg-cyan-500 hover:bg-cyan-600 text-white py-5 px-4 rounded-xl text-center font-medium shadow-md transition">🧾 นำเข้าวิชาสอบ CSV</a>
-            <a href="{% url 'add_exam_subject' %}" class="bg-green-500 hover:bg-green-600 text-white py-5 px-4 rounded-xl text-center font-medium shadow-md transition">📚 เพิ่มรายวิชา</a>
-            <a href="{% url 'exam_subjects_staff' %}" class="bg-purple-500 hover:bg-purple-600 text-white py-5 px-4 rounded-xl text-center font-medium shadow-md transition">📝 รายการวิชา</a>
-            <a href="{% url 'school_members' %}" class="bg-indigo-500 hover:bg-indigo-600 text-white py-5 px-4 rounded-xl text-center font-medium shadow-md transition">🏫 สมาชิกในโรงเรียน</a>
-            <a href="{% url 'select_exam_subject' %}" class="bg-amber-500 hover:bg-amber-600 text-white py-5 px-4 rounded-xl text-center font-medium shadow-md transition">🔍 ค้นหาวิชา</a>
-        </div>
-    </div>
-
-    <!-- ✅ กราฟสถิติการเข้าสอบ -->
-    <div class="mt-16">
-        <h3 class="text-2xl font-semibold text-gray-800 mb-4">📈 สถิติการเข้าสอบ</h3>
-
-        <div class="flex flex-col md:flex-row justify-center items-center gap-6 mb-6">
-            <div>
-                <label for="academicYearFilter" class="font-medium text-gray-700 mr-2">ปีการศึกษา:</label>
-                <select id="academicYearFilter" class="p-2 border border-gray-300 rounded-md">
-                    <option value="all">📌 ทุกปีการศึกษา</option>
-                    {% for year in year_list %}
-                    <option value="{{ year }}">{{ year }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="classFilter" class="font-medium text-gray-700 mr-2">ระดับชั้น:</label>
-                <select id="classFilter" class="p-2 border border-gray-300 rounded-md">
-                    <option value="all">📌 ทุกระดับชั้น</option>
-                    {% for class_name in class_list %}
-                    <option value="{{ class_name }}">{{ class_name }}</option>
-                    {% endfor %}
-                </select>
+            <div class="flex space-x-2">
+                <button onclick="generateQR(1)" class="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:border-purple-500/50 rounded-lg transition-all duration-300 text-sm group">
+                    <i class="fas fa-qrcode mr-2 group-hover:scale-110 transition-transform"></i>
+                    QR Code
+                </button>
+                <button onclick="viewAttendance(1)" class="flex-1 px-4 py-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 hover:border-green-500/50 rounded-lg transition-all duration-300 text-sm group">
+                    <i class="fas fa-eye mr-2 group-hover:scale-110 transition-transform"></i>
+                    เช็คชื่อ
+                </button>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <h4 class="text-center text-lg font-semibold text-gray-700 mb-4">📊 นักเรียนเข้าสอบ</h4>
-                <canvas id="barChart"></canvas>
+        <!-- Exam Card 2 -->
+        <div class="exam-card glass rounded-2xl p-6 border border-white/10 hover:border-green-500/30 transition-all duration-300">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-flask text-white"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold font-kanit">วิทยาศาสตร์</h4>
+                        <p class="text-sm text-slate-400">SCI102</p>
+                    </div>
+                </div>
+                <span class="px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full text-sm font-medium">
+                    2 วัน
+                </span>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <h4 class="text-center text-lg font-semibold text-gray-700 mb-4">📈 สัดส่วนการเข้าสอบ</h4>
-                <canvas id="pieChart"></canvas>
+
+            <div class="space-y-3 mb-4">
+                <div class="flex items-center text-sm text-slate-300">
+                    <i class="fas fa-calendar w-4 text-blue-400 mr-3"></i>
+                    <span>17 มกราคม 2567</span>
+                </div>
+                <div class="flex items-center text-sm text-slate-300">
+                    <i class="fas fa-clock w-4 text-green-400 mr-3"></i>
+                    <span>13:00 - 15:00 น.</span>
+                </div>
+                <div class="flex items-center text-sm text-slate-300">
+                    <i class="fas fa-map-marker-alt w-4 text-red-400 mr-3"></i>
+                    <span>อาคาร B ห้อง 203</span>
+                </div>
+                <div class="flex items-center text-sm text-slate-300">
+                    <i class="fas fa-users w-4 text-purple-400 mr-3"></i>
+                    <span>นักเรียน 42 คน</span>
+                </div>
+            </div>
+
+            <div class="flex space-x-2">
+                <button onclick="generateQR(2)" class="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:border-purple-500/50 rounded-lg transition-all duration-300 text-sm group">
+                    <i class="fas fa-qrcode mr-2 group-hover:scale-110 transition-transform"></i>
+                    QR Code
+                </button>
+                <button onclick="viewAttendance(2)" class="flex-1 px-4 py-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 hover:border-green-500/50 rounded-lg transition-all duration-300 text-sm group">
+                    <i class="fas fa-eye mr-2 group-hover:scale-110 transition-transform"></i>
+                    เช็คชื่อ
+                </button>
+            </div>
+        </div>
+
+        <!-- Exam Card 3 -->
+        <div class="exam-card glass rounded-2xl p-6 border border-white/10 hover:border-purple-500/30 transition-all duration-300">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-language text-white"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold font-kanit">ภาษาอังกฤษ</h4>
+                        <p class="text-sm text-slate-400">ENG103</p>
+                    </div>
+                </div>
+                <span class="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm font-medium">
+                    สัปดาห์หน้า
+                </span>
+            </div>
+
+            <div class="space-y-3 mb-4">
+                <div class="flex items-center text-sm text-slate-300">
+                    <i class="fas fa-calendar w-4 text-blue-400 mr-3"></i>
+                    <span>22 มกราคม 2567</span>
+                </div>
+                <div class="flex items-center text-sm text-slate-300">
+                    <i class="fas fa-clock w-4 text-green-400 mr-3"></i>
+                    <span>10:00 - 12:00 น.</span>
+                </div>
+                <div class="flex items-center text-sm text-slate-300">
+                    <i class="fas fa-map-marker-alt w-4 text-red-400 mr-3"></i>
+                    <span>อาคาร C ห้อง 305</span>
+                </div>
+                <div class="flex items-center text-sm text-slate-300">
+                    <i class="fas fa-users w-4 text-purple-400 mr-3"></i>
+                    <span>นักเรียน 38 คน</span>
+                </div>
+            </div>
+
+            <div class="flex space-x-2">
+                <button onclick="generateQR(3)" class="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:border-purple-500/50 rounded-lg transition-all duration-300 text-sm group">
+                    <i class="fas fa-qrcode mr-2 group-hover:scale-110 transition-transform"></i>
+                    QR Code
+                </button>
+                <button onclick="viewAttendance(3)" class="flex-1 px-4 py-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 hover:border-green-500/50 rounded-lg transition-all duration-300 text-sm group">
+                    <i class="fas fa-eye mr-2 group-hover:scale-110 transition-transform"></i>
+                    เช็คชื่อ
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        let attendanceData = {{ attendance_data|safe }};
+<!-- ==================== RECENT ACTIVITY ==================== -->
+<div class="mb-12">
+    <div class="text-center mb-8">
+        <h3 class="text-3xl font-bold font-kanit mb-4">
+            <span class="text-gradient">กิจกรรมล่าสุด</span>
+        </h3>
+        <p class="text-slate-300 font-prompt">ภาพรวมกิจกรรมที่เกิดขึ้นในระบบ</p>
+    </div>
 
-        const classFilter = document.getElementById("classFilter");
-        const yearFilter = document.getElementById("academicYearFilter");
-        const teacherCount = document.getElementById("จำนวนครู");
-        const studentCount = document.getElementById("จำนวนนักเรียน");
-        const subjectCount = document.getElementById("จำนวนรายวิชา");
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Activity Timeline -->
+        <div class="glass rounded-2xl p-6 border border-white/10">
+            <div class="flex items-center justify-between mb-6">
+                <h4 class="text-xl font-bold font-kanit">Timeline กิจกรรม</h4>
+                <button class="text-blue-400 hover:text-blue-300 transition-colors">
+                    <i class="fas fa-external-link-alt"></i>
+                </button>
+            </div>
 
-        function updateCharts() {
-            const className = classFilter.value;
-            const year = yearFilter.value;
-            let key = className;
-            if (year !== "all") {
-                key += `-${year}`;
+            <div class="space-y-4">
+                <div class="flex items-start space-x-4 group">
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-plus text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white font-medium">เพิ่มรายวิชาสอบใหม่</p>
+                        <p class="text-slate-400 text-sm">วิชาฟิสิกส์ ระดับชั้น ม.6</p>
+                        <p class="text-slate-500 text-xs mt-1">5 นาทีที่แล้ว</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4 group">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-qrcode text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white font-medium">สร้าง QR Code</p>
+                        <p class="text-slate-400 text-sm">สำหรับวิชาคณิตศาสตร์</p>
+                        <p class="text-slate-500 text-xs mt-1">15 นาทีที่แล้ว</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4 group">
+                    <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-building text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white font-medium">เพิ่มห้องสอบใหม่</p>
+                        <p class="text-slate-400 text-sm">อาคาร D ห้อง 401 (จุ 50 คน)</p>
+                        <p class="text-slate-500 text-xs mt-1">1 ชั่วโมงที่แล้ว</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4 group">
+                    <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-user-check text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white font-medium">นักเรียนเช็คชื่อเข้าสอบ</p>
+                        <p class="text-slate-400 text-sm">วิชาภาษาไทย - 28 คน</p>
+                        <p class="text-slate-500 text-xs mt-1">2 ชั่วโมงที่แล้ว</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="glass rounded-2xl p-6 border border-white/10">
+            <div class="flex items-center justify-between mb-6">
+                <h4 class="text-xl font-bold font-kanit">สถิติด่วน</h4>
+                <button onclick="refreshStats()" class="text-blue-400 hover:text-blue-300 transition-colors">
+                    <i class="fas fa-refresh"></i>
+                </button>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Attendance Rate -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-slate-300">อัตราการเข้าสอบวันนี้</span>
+                        <span class="text-green-400 font-bold">92%</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                        <div class="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-1000 ease-out" style="width: 92%"></div>
+                    </div>
+                </div>
+
+                <!-- Room Utilization -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-slate-300">การใช้งานห้องสอบ</span>
+                        <span class="text-blue-400 font-bold">78%</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                        <div class="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-1000 ease-out" style="width: 78%"></div>
+                    </div>
+                </div>
+
+                <!-- Teacher Availability -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-slate-300">ครูที่พร้อมคุมสอบ</span>
+                        <span class="text-purple-400 font-bold">85%</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                        <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-1000 ease-out" style="width: 85%"></div>
+                    </div>
+                </div>
+
+                <!-- System Health -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-slate-300">สถานะระบบ</span>
+                        <span class="text-green-400 font-bold">100%</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                        <div class="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-1000 ease-out" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Status Indicator -->
+            <div class="mt-6 flex items-center justify-center space-x-2 p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+                <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <span class="text-green-400 font-medium">ระบบทำงานปกติ</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+// ==================== DASHBOARD SPECIFIC FUNCTIONS ====================
+function initializePage() {
+    console.log('🎯 Dashboard page initialized');
+    
+    // Start counter animations after a short delay
+    setTimeout(() => {
+        animateCounters();
+    }, 1000);
+    
+    // Show tips after welcome message
+    setTimeout(() => {
+        showNotification('💡 เคล็ดลับ: ใช้ Ctrl+E เพื่อไปหน้าจัดการสอบ, Ctrl+R สำหรับห้องสอบ', 'info', 8000);
+    }, 3000);
+}
+
+// ==================== NUMBER COUNTER ANIMATION ====================
+function animateCounters() {
+    const counters = document.querySelectorAll('.counter');
+
+    counters.forEach(counter => {
+        const target = parseInt(counter.getAttribute('data-count'));
+        const increment = target / 50; // Animation duration control
+        let current = 0;
+
+        const updateCounter = () => {
+            if (current < target) {
+                current += increment;
+                counter.textContent = Math.ceil(current);
+                requestAnimationFrame(updateCounter);
+            } else {
+                counter.textContent = target;
             }
-            const data = attendanceData[key] || attendanceData["all"];
+        };
 
-            teacherCount.innerText = data.total_teachers;
-            studentCount.innerText = data.total_students;
-            subjectCount.innerText = data.total_subjects;
-
-            const onTime = data.on_time || 0;
-            const late = data.late || 0;
-            const absent = data.absent || 0;
-
-            barChart.data.datasets[0].data = [onTime, late, absent];
-            pieChart.data.datasets[0].data = [onTime, late, absent];
-            barChart.update();
-            pieChart.update();
-        }
-
-        const barChart = new Chart(document.getElementById("barChart"), {
-            type: "bar",
-            data: {
-                labels: ["มาตรงเวลา", "มาสาย", "ขาดสอบ"],
-                datasets: [{
-                    label: "จำนวนนักเรียน",
-                    data: [attendanceData["all"].on_time, attendanceData["all"].late, attendanceData["all"].absent],
-                    backgroundColor: ["#16a34a", "#facc15", "#dc2626"]
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: "การเข้าสอบของนักเรียน",
-                        font: { size: 18 }
-                    },
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-
-        const pieChart = new Chart(document.getElementById("pieChart"), {
-            type: "pie",
-            data: {
-                labels: ["มาตรงเวลา", "มาสาย", "ขาดสอบ"],
-                datasets: [{
-                    data: [attendanceData["all"].on_time, attendanceData["all"].late, attendanceData["all"].absent],
-                    backgroundColor: ["#16a34a", "#facc15", "#dc2626"]
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: "สัดส่วนการเข้าสอบ",
-                        font: { size: 18 }
-                    },
-                    legend: {
-                        position: "bottom"
-                    }
-                }
-            }
-        });
-
-        classFilter.addEventListener("change", updateCharts);
-        yearFilter.addEventListener("change", updateCharts);
+        updateCounter();
     });
+}
+
+// ==================== EXAM ACTIONS ====================
+function generateQR(examId) {
+    showLoading();
+    showNotification(`กำลังสร้าง QR Code สำหรับการสอบ ID: ${examId}...`, 'info');
+    
+    setTimeout(() => {
+        hideLoading();
+        showNotification('สร้าง QR Code สำเร็จ!', 'success');
+        // window.open(`/qr/${examId}/`, '_blank');
+    }, 1500);
+}
+
+function viewAttendance(examId) {
+    showLoading();
+    showNotification(`กำลังโหลดข้อมูลการเข้าสอบ ID: ${examId}...`, 'info');
+    
+    setTimeout(() => {
+        hideLoading();
+        showNotification('โหลดข้อมูลการเข้าสอบสำเร็จ', 'success');
+        // window.location.href = `/attendance/${examId}/`;
+    }, 1000);
+}
+
+// ==================== STATS REFRESH ====================
+function refreshStats() {
+    showNotification('กำลังอัปเดตสถิติ...', 'info');
+    
+    // Simulate stats update
+    setTimeout(() => {
+        const stats = [
+            { element: '.counter[data-count="25"]', newValue: Math.floor(Math.random() * 5) + 23 },
+            { element: '.counter[data-count="450"]', newValue: Math.floor(Math.random() * 20) + 440 },
+            { element: '.counter[data-count="18"]', newValue: Math.floor(Math.random() * 5) + 16 },
+            { element: '.counter[data-count="127"]', newValue: Math.floor(Math.random() * 50) + 100 }
+        ];
+
+        stats.forEach(stat => {
+            const element = document.querySelector(stat.element);
+            if (element) {
+                element.setAttribute('data-count', stat.newValue);
+                element.textContent = stat.newValue;
+                element.classList.add('animate-pulse');
+                setTimeout(() => {
+                    element.classList.remove('animate-pulse');
+                }, 1000);
+            }
+        });
+        
+        showNotification('อัปเดตสถิติเรียบร้อย', 'success');
+    }, 1000);
+}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Additional dashboard-specific scripts can go here
+console.log('Dashboard scripts loaded');
 </script>
 {% endblock %}

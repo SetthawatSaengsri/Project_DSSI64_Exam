@@ -1,74 +1,108 @@
-#urls.py
-
 from django.urls import path
 from . import views
 
-
 urlpatterns = [
-    
-    path('', views.index_view, name='index_view'),  
+    # ========================= หน้าหลักและ Authentication =========================
+    path("", views.index_view, name="index_view"),
+    path("login/", views.login_user, name="login_user"),
+    path("logout/", views.logout_user, name="logout_user"),
 
-    # Register and login URLs
-    path('register_staff/', views.register_staff, name='register_staff'),
-    path('login/', views.login_user, name='login_user'),
-    path('logout/', views.logout_user, name='logout_user'),
-    path("update_attendance_status/", views.update_attendance_status, name="update_attendance_status"),
-    path("scanner/teacher/", views.scanner, name="scanner"),
-    
-    # Admin paths
-    path('dashboard/admin/', views.dashboard_admin, name='dashboard_admin'),
-    path('verify_staff/', views.verify_staff_registration, name='verify_staff_registration'),
-    path('cancel_staff_registration/<int:staff_id>/', views.cancel_staff_registration, name='cancel_staff_registration'),
-    path('manage_users/', views.manage_users, name='manage_users'),
-    path('manage_users/edit/<int:user_id>/', views.edit_user, name='edit_user'),
-    path('manage_users/delete/<int:user_id>/', views.delete_user, name='delete_user'),
+    # ========================= Dashboards =========================
+    path("admin/", views.dashboard_admin, name="dashboard_admin"),
+    path("staff/", views.dashboard_staff, name="dashboard_staff"),
+    path("teacher/", views.dashboard_teacher, name="dashboard_teacher"),
+    path("student/", views.dashboard_student, name="dashboard_student"),
 
-    # Student paths
-    path('dashboard/student/', views.dashboard_student, name='dashboard_student'),
-    path('exam_schedule/', views.exam_schedule, name='exam_schedule'),
-    path('exam_history/', views.exam_history, name='exam_history'),
-    path('update_profile/', views.update_profile, name='update_profile'),
-    
-    # Teacher paths
-    path('dashboard/teacher/', views.dashboard_teacher, name='dashboard_teacher'),
-    path('exam_subjects_teacher/', views.exam_subjects_teacher, name='exam_subjects_teacher'),
-    path('teacher_check_student/', views.teacher_check_student, name='teacher_check_student'),
-    path("exam/confirm_exam_entry_teacher/", views.confirm_exam_entry_teacher, name="confirm_exam_entry_teacher"),
-    path("manual_teacher_checkin/", views.manual_teacher_checkin, name="manual_teacher_checkin"),
+    # ========================= การจัดการผู้ใช้ (Admin) =========================
+    path("admin/users/", views.manage_users, name="manage_users"),
+    path("users/list/", views.user_list, name="user_list"),
 
-    # Staff paths 
-    path('dashboard_staff/', views.dashboard_staff, name='dashboard_staff'),
-    path('import_csv/', views.import_csv, name='import_csv'),
-    path('import_exam_subjects/', views.import_exam_subjects_csv, name='import_exam_subjects_csv'),
-    path('staff/school_members/', views.school_members, name='school_members'),
-    
-    #ส่วนเพิ่มรายวิชา
-    # path('add_exam_subject/', views.add_exam_subject_auto_room, name='add_exam_subject'),
-    path('exam_subjects_staff/', views.exam_subjects_staff, name='exam_subjects_staff'),
-    path('edit_exam_subject/<int:subject_id>/', views.edit_exam_subject, name='edit_exam_subject'),
-    path('delete_exam_subject/<int:subject_id>/', views.delete_exam_subject, name='delete_exam_subject'),
-    path('select_exam_subject/', views.select_exam_subject, name='select_exam_subject'),
-    path('exam_detail/<int:subject_id>/', views.exam_detail, name='exam_detail'),
-    path('add-exam-subject/', views.add_exam_subject_enhanced, name='add_exam_subject'),
-    path('add-exam-subject/enhanced/', views.add_exam_subject_enhanced, name='add_exam_subject_enhanced'),
-    path('get_rooms_by_building/', views.get_rooms_by_building, name='get_rooms_by_building'),
-    
-    path('exam_rooms/add/', views.add_exam_room, name='add_exam_room'),
-    path('exam_rooms/', views.list_exam_rooms, name='list_exam_rooms'),
-    path('building/<int:building_id>/', views.building_detail, name='building_detail'),
-    path('building/<int:building_id>/edit/', views.edit_building, name='edit_building'),
-    path('building/<int:building_id>/delete/', views.delete_building, name='delete_building'),
-    path('room/<int:room_id>/edit/', views.edit_exam_room, name='edit_exam_room'),
-    path('room/<int:room_id>/delete/', views.delete_exam_room, name='delete_exam_room'),
+    # ========================= การจัดการรายวิชาสอบ =========================
+    path("exams/", views.exam_subjects, name="exam_subjects"),
+    path("exams/add/", views.add_exam_subject, name="add_exam_subject"),
+    path("exams/<int:pk>/edit/", views.edit_exam_subject, name="edit_exam_subject"),
+    path("exams/<int:pk>/delete/", views.delete_exam_subject, name="delete_exam_subject"),
 
-    # QR code generation paths
-    path('exam/confirm_exam_entry/', views.confirm_exam_entry, name='confirm_exam_entry'),
-    path('exam_subjects/qr/<int:subject_id>/', views.generate_qr_code, name='generate_qr_code'),
-    path("confirm_exam_checkin/", views.confirm_exam_checkin, name="confirm_exam_checkin"),
+    path('exam-subjects/enhanced/', views.exam_subjects_enhanced, name='exam_subjects_enhanced'),
+    path('exam-subjects/<int:subject_id>/edit/', views.edit_exam_subject_ajax, name='edit_exam_subject_ajax'),
+    path('exam-subjects/<int:subject_id>/delete/', views.delete_exam_subject_ajax, name='delete_exam_subject_ajax'),
+    path('exam-subjects/bulk-delete/', views.bulk_delete_exam_subjects, name='bulk_delete_exam_subjects'),
+    path('exam-subjects/<int:subject_id>/detail/', views.get_exam_subject_detail, name='get_exam_subject_detail'),
+    path('exam-subjects/statistics/', views.get_exam_statistics, name='get_exam_statistics'),
+    path('exam-subjects/export/', views.export_exam_subjects, name='export_exam_subjects'),
 
-    # Exam attendance status and manual check-in
-    path('exam/select_subject/', views.select_exam_subject, name='select_exam_subject'),
-    path('exam/<int:subject_id>/attendance/', views.exam_attendance_status, name='exam_attendance_status'),
-    path("manual_checkin/", views.manual_checkin, name="manual_checkin"),
-    path("teacher_checkin/", views.teacher_checkin, name="teacher_checkin"),
+    # ========================= หน้าฟังก์ชันระหว่างสอบ =========================
+    path("exams/<int:pk>/attendance/", views.exam_attendance, name="exam_attendance"),
+    path("exams/<int:pk>/seating/", views.exam_seating_view, name="exam_seating_view"),
+    path('exams/<int:pk>/bulk-attendance/', views.bulk_attendance_update, name='bulk_attendance_update'),
+
+    # ========================= การจัดการห้องสอบ/อาคาร =========================
+    path("rooms/", views.manage_rooms, name="manage_rooms"),
+    path("rooms/add-building/", views.add_building, name="add_building"),
+    path("rooms/add-room/", views.add_room, name="add_room"),
+
+    # ========================= Seating Chart & Real-time Updates =========================
+    path('exams/<int:subject_id>/seating/', views.exam_seating_view, name='exam_seating_view'),
+    path('exams/<int:subject_id>/seating-data/', views.exam_seating_data, name='exam_seating_data'),
+
+    # ========================= Manual Check-in =========================  
+    path('ajax/manual-checkin-student/', views.manual_checkin_student, name='manual_checkin_student'),
+
+    # ========================= ระบบ QR/Check-in (alias ไปหน้าเช็คชื่อ) =========================
+    path('checkin/<int:pk>/', views.checkin_exam, name='checkin_exam'),
+    path("exams/<int:pk>/qr/", views.generate_qr_code, name="generate_qr_code"),
+
+    # ========================= ฟังก์ชัน Import/Export =========================
+    path("import/students/", views.import_students, name="import_students"),
+    path("import/teachers/", views.import_teachers, name="import_teachers"),
+    path("import/subjects/", views.import_exam_subjects, name="import_exam_subjects"),
+    
+    path("export/users/<str:user_type>/", views.export_users, name="export_users"),
+    path("export/rooms/", views.export_rooms_data, name="export_rooms_data"),
+    # path("export/subjects/", views.export_subjects_data, name="export_subjects_data"),
+
+    # เทมเพลตดาวน์โหลดไฟล์ตัวอย่าง
+    path("download/template/<str:template_type>/", views.download_template, name="download_template"),
+    path("download/template/subject/", views.download_subject_template, name="download_subject_template"),
+
+
+    # ========================= AJAX: การจัดการผู้ใช้ =========================
+    path("ajax/user-detail/<str:user_type>/<int:user_id>/", views.ajax_user_detail, name="ajax_user_detail"),
+    path("ajax/search-users/", views.ajax_search_users, name="ajax_search_users"),
+    path("ajax/class-students-count/", views.get_class_students_count, name="get_class_students_count"),
+
+    # ========================= AJAX: อาคาร/ห้อง =========================
+    path("ajax/buildings/", views.get_buildings_data, name="get_buildings_data"),
+    path("ajax/buildings/add/", views.add_building_ajax, name="add_building_ajax"),
+    path("ajax/buildings/<int:building_id>/edit/", views.edit_building_ajax, name="edit_building_ajax"),
+    path("ajax/buildings/<int:building_id>/delete/", views.delete_building_ajax, name="delete_building_ajax"),
+
+    path("ajax/rooms/", views.get_rooms_by_building, name="get_rooms_by_building"),
+    path("ajax/rooms/add/", views.add_room_ajax, name="add_room_ajax"),
+    path("ajax/rooms/<int:room_id>/edit/", views.edit_room_ajax, name="edit_room_ajax"),
+    path("ajax/rooms/<int:room_id>/delete/", views.delete_room_ajax, name="delete_room_ajax"),
+    path("ajax/rooms/statistics/", views.get_room_statistics, name="get_room_statistics"),
+
+    # ========================= AJAX: รายวิชาสอบ/ทรัพยากร =========================
+    path("ajax/check-teacher-conflicts/", views.check_teacher_conflicts, name="check_teacher_conflicts"),
+    path("ajax/get-available-teachers/", views.get_available_teachers, name="get_available_teachers"),
+    path("ajax/check-room-availability/", views.check_room_availability, name="check_room_availability"),
+
+    path("ajax/auto-assign-room/", views.auto_assign_room, name="auto_assign_room"),
+    path("ajax/auto-assign-teachers/", views.auto_assign_teachers, name="auto_assign_teachers"),
+    path("ajax/bulk-auto-assign/", views.bulk_auto_assign, name="bulk_auto_assign"),
+
+    path("ajax/assign-room-manual/<int:subject_id>/", views.assign_room_manual, name="assign_room_manual"),
+    path("ajax/assign-teachers-manual/<int:subject_id>/", views.assign_teachers_manual, name="assign_teachers_manual"),
+    path("ajax/get-available-resources/", views.get_available_resources_for_manual_assignment, name="get_available_resources_for_manual_assignment"),
+
+    # ========================= AJAX: เช็คชื่อ =========================
+    path("ajax/manual-checkin/", views.manual_checkin, name="manual_checkin"),
+    path("ajax/manual-attendance-update/",views.manual_checkin,name="manual_attendance_update"),
+
+    # ========================= AJAX: การจัดการห้องสอบสำหรับ manual selection =========================
+    path("ajax/rooms/", views.get_rooms_by_building, name="get_rooms_by_building"),
+
+    # ========================= AJAX: ตรวจสอบความเหมาะสมของห้อง =========================
+    path("ajax/check-room-suitability/", views.check_room_suitability, name="check_room_suitability"),
 ]

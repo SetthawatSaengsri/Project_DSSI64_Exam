@@ -1,167 +1,684 @@
-#models.py
-
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
+from datetime import datetime, timedelta
 
 
 class User(AbstractUser):
-    username = models.CharField(max_length=150)
+    """ผู้ใช้งานระบบ - ขยายจาก AbstractUser"""
+    username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
-    is_student = models.BooleanField(default=False)
-    is_teacher = models.BooleanField(default=False)
-    is_staff = models.BooleanField(default=False)
-    school_name = models.CharField(max_length=100, blank=True, null=True)
+    is_student = models.BooleanField(default=False, verbose_name="นักเรียน")
+    is_teacher = models.BooleanField(default=False, verbose_name="ครู")
+    is_staff = models.BooleanField(default=False, verbose_name="เจ้าหน้าที่")
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['username', 'school_name'], name='unique_username_per_school')
-        ]
+        verbose_name = "ผู้ใช้งาน"
+        verbose_name_plural = "ผู้ใช้งาน"
 
     def __str__(self):
-        return self.email
+        return f"{self.get_full_name()} ({self.email})"
+
+    def get_role(self):
+        """ดึงบทบาทของผู้ใช้"""
+        if self.is_superuser:
+            return "ผู้ดูแลระบบ"
+        elif self.is_teacher:
+            return "ครู"
+        elif self.is_student:
+            return "นักเรียน"
+        elif self.is_staff:
+            return "เจ้าหน้าที่"
+        return "ผู้ใช้ทั่วไป"
 
 
 class StudentProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='studentprofile')
-    student_id = models.CharField(max_length=10)
-    no_student = models.CharField(max_length=10)
-    student_class = models.CharField(max_length=20)
+    """โปรไฟล์นักเรียน"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
+    student_id = models.CharField(max_length=20, unique=True, verbose_name="รหัสนักเรียน")
+    student_number = models.CharField(max_length=10, verbose_name="เลขที่")  # เปลี่ยนเป็น CharField
+    student_class = models.CharField(max_length=20, verbose_name="ระดับชั้น")
+    created_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name="วันที่สร้าง")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="วันที่แก้ไข")
 
+    
     class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['student_id', 'user'], name='unique_student_per_user')
-        ]
+        verbose_name = "โปรไฟล์นักเรียน"
+        verbose_name_plural = "โปรไฟล์นักเรียน"
+        unique_together = ['student_class', 'student_number']
+        ordering = ['student_class', 'student_number']
 
     def __str__(self):
-        return self.student_class
+        return f"{self.student_id} - {self.user.get_full_name()} ({self.student_class})"
 
 
 class TeacherProfile(models.Model):
+    """โปรไฟล์ครู"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher_profile')
-    teacher_id = models.CharField(max_length=10)
-    school_name = models.CharField(max_length=100, null=True, blank=True)
+    teacher_id = models.CharField(max_length=20, unique=True, verbose_name="รหัสครู")
+    department = models.CharField(max_length=100, blank=True, verbose_name="แผนก/กลุ่มสาระ")
+    created_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name="วันที่สร้าง")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="วันที่แก้ไข")
 
+    
     class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['teacher_id', 'school_name'], name='unique_teacher_per_school')
-        ]
+        verbose_name = "โปรไฟล์ครู"
+        verbose_name_plural = "โปรไฟล์ครู"
+        ordering = ['user__first_name', 'user__last_name']
 
     def __str__(self):
-        return f"{self.user.first_name} {self.user.last_name}"
+        return f"{self.teacher_id} - {self.user.get_full_name()}"
 
 
 class StaffProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    school_name = models.CharField(max_length=100)
-    id_card = models.FileField(upload_to='id_cards/', null=True, blank=True)
+    """โปรไฟล์เจ้าหน้าที่"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='staff_profile')
+    staff_id = models.CharField(max_length=20, unique=True, blank=True, verbose_name="รหัสเจ้าหน้าที่")
+    position = models.CharField(max_length=50, default='เจ้าหน้าที่', verbose_name="ตำแหน่ง")
+    department = models.CharField(max_length=100, blank=True, verbose_name="แผนก")
+    id_card = models.FileField(upload_to='staff_documents/', null=True, blank=True, verbose_name="เอกสารประกอบ")
+    created_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name="วันที่สร้าง")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="วันที่แก้ไข")
+
+    
+    class Meta:
+        verbose_name = "โปรไฟล์เจ้าหน้าที่"
+        verbose_name_plural = "โปรไฟล์เจ้าหน้าที่"
 
     def __str__(self):
-        return f"Profile for {self.user.username}"
+        return f"{self.staff_id} - {self.user.get_full_name()} ({self.position})"
+
 
 class Building(models.Model):
-    code = models.CharField(max_length=10, unique=True)
-    name = models.CharField(max_length=100)
+    """อาคาร"""
+    code = models.CharField(max_length=10, unique=True, verbose_name="รหัสอาคาร")
+    name = models.CharField(max_length=100, verbose_name="ชื่ออาคาร")
+    description = models.TextField(blank=True, verbose_name="รายละเอียด")
+    created_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name="วันที่สร้าง")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="วันที่แก้ไข")
+
+    
+    class Meta:
+        verbose_name = "อาคาร"
+        verbose_name_plural = "อาคาร"
+        ordering = ['code']
 
     def __str__(self):
-        return f"{self.name} ({self.code})"
+        return f"{self.code} - {self.name}"
+
+    def get_total_capacity(self):
+        """ความจุรวมของอาคาร"""
+        return self.rooms.aggregate(
+            total=models.Sum('capacity')
+        )['total'] or 0
+
+    def get_room_count(self):
+        """จำนวนห้องทั้งหมด"""
+        return self.rooms.count()
+
 
 class ExamRoom(models.Model):
-    building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name='rooms', null=True)
-    name = models.CharField(max_length=50)
-    capacity = models.PositiveIntegerField()
+    """ห้องสอบ"""
+    building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name='rooms', verbose_name="อาคาร")
+    name = models.CharField(max_length=50, verbose_name="ชื่อห้อง")
+    capacity = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(200)],
+        verbose_name="ความจุ"
+    )
+    has_projector = models.BooleanField(default=False, verbose_name="มีโปรเจคเตอร์")
+    has_aircon = models.BooleanField(default=False, verbose_name="มีแอร์")
+    is_active = models.BooleanField(default=True, verbose_name="ใช้งานได้")
+    notes = models.TextField(blank=True, verbose_name="หมายเหตุ")
+    created_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name="วันที่สร้าง")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="วันที่แก้ไข")
 
     class Meta:
+        verbose_name = "ห้องสอบ"
+        verbose_name_plural = "ห้องสอบ"
         unique_together = ('building', 'name')
+        ordering = ['building__code', 'name']
 
     def __str__(self):
-        building_name = self.building.name if self.building else "ไม่ระบุอาคาร"
-        return f"{building_name} ห้อง {self.name} (จุ {self.capacity} คน)"
+        return f"{self.building.name} ห้อง {self.name} (จุ {self.capacity} คน)"
+
+    def get_full_name(self):
+        """ชื่อเต็มของห้อง"""
+        return f"{self.building.name} ห้อง {self.name}"
+
 
 class ExamSubject(models.Model):
-    subject_name = models.CharField(max_length=100)
-    subject_code = models.CharField(max_length=20)
-    academic_year = models.CharField(max_length=5)
-    exam_date = models.DateField()
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-    school_name = models.CharField(max_length=100, null=True, blank=True)
-
+    """รายวิชาสอบ"""
     TERM_CHOICES = [
         ("1", "เทอม 1"),
-        ("2", "เทอม 2"),
+        ("2", "เทอม 2"), 
         ("3", "เทอม 3"),
     ]
-    term = models.CharField(max_length=1, choices=TERM_CHOICES, default="1")
-
+    
+    subject_name = models.CharField(max_length=200, verbose_name="ชื่อวิชา")
+    subject_code = models.CharField(max_length=20, verbose_name="รหัสวิชา")
+    academic_year = models.CharField(max_length=10, verbose_name="ปีการศึกษา")
+    term = models.CharField(max_length=1, choices=TERM_CHOICES, default="1", verbose_name="ภาคเรียน")
+    
+    exam_date = models.DateField(verbose_name="วันสอบ")
+    start_time = models.TimeField(verbose_name="เวลาเริ่มสอบ")
+    end_time = models.TimeField(verbose_name="เวลาสิ้นสุดสอบ")
+    
     room = models.ForeignKey(
         ExamRoom,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        related_name='exam_subjects',
         verbose_name="ห้องสอบ"
     )
-
+    
     invigilator = models.ForeignKey(
         TeacherProfile,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='invigilated_exams',
-        verbose_name="ผู้คุมสอบหลัก"
+        related_name='primary_exam_subjects',
+        verbose_name="ครูคุมสอบหลัก"
     )
-
+    
     secondary_invigilator = models.ForeignKey(
         TeacherProfile,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='secondary_invigilated_exams',
-        verbose_name="ผู้คุมสอบสำรอง"
+        related_name='secondary_exam_subjects',
+        verbose_name="ครูคุมสอบสำรอง"
     )
-
-    invigilator_checkin = models.BooleanField(default=False)
-    invigilator_checkin_time = models.DateTimeField(null=True, blank=True)
-    secondary_invigilator_checkin = models.BooleanField(default=False)
-    secondary_invigilator_checkin_time = models.DateTimeField(null=True, blank=True)
-
-    qr_expiration = models.TimeField(null=True, blank=True, help_text="เวลาที่ QR Code หมดอายุ")
-
+    
+    # สถานะการเช็คชื่อของครู
+    invigilator_checkin = models.BooleanField(default=False, verbose_name="ครูหลักเช็คชื่อแล้ว")
+    invigilator_checkin_time = models.DateTimeField(null=True, blank=True, verbose_name="เวลาเช็คชื่อครูหลัก")
+    secondary_invigilator_checkin = models.BooleanField(default=False, verbose_name="ครูสำรองเช็คชื่อแล้ว")
+    secondary_invigilator_checkin_time = models.DateTimeField(null=True, blank=True, verbose_name="เวลาเช็คชื่อครูสำรอง")
+    
     students = models.ManyToManyField(
         StudentProfile,
         blank=True,
         related_name='exam_subjects',
         verbose_name="นักเรียน"
     )
-
+    
+    # ข้อมูลเพิ่มเติม
+    instructions = models.TextField(blank=True, verbose_name="คำแนะนำพิเศษ")
+    is_active = models.BooleanField(default=True, verbose_name="เปิดใช้งาน")
+    
+    # ข้อมูลการสร้าง
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="สร้างโดย")
+    created_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name="วันที่สร้าง")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="วันที่แก้ไข")
+    
     class Meta:
+        verbose_name = "รายวิชาสอบ"
+        verbose_name_plural = "รายวิชาสอบ"
         constraints = [
             models.UniqueConstraint(
-                fields=['subject_code', 'school_name', 'academic_year', 'term'],
-                name='unique_subject_per_school_year_term'
+                fields=['subject_code', 'academic_year', 'term'],
+                name='unique_subject_per_year_term'
             )
         ]
+        ordering = ['exam_date', 'start_time']
 
     def __str__(self):
-        room_name = self.room.room_name if self.room else "ไม่ระบุห้อง"
-        return f"{self.subject_name} ({self.subject_code}) ห้อง {room_name}"
+        room_name = f"ห้อง {self.room.get_full_name()}" if self.room else "ไม่ระบุห้อง"
+        return f"{self.subject_name} ({self.subject_code}) - {room_name}"
+    
+    def get_duration(self):
+        """ระยะเวลาสอบ (นาที)"""
+        start_datetime = datetime.combine(timezone.now().date(), self.start_time)
+        end_datetime = datetime.combine(timezone.now().date(), self.end_time)
+        duration = end_datetime - start_datetime
+        return int(duration.total_seconds() / 60)
+
+    def get_student_count(self):
+        """จำนวนนักเรียนที่สอบ"""
+        return self.students.count()
+    
+    def is_upcoming(self):
+        """ตรวจสอบว่าการสอบจะมาถึงหรือไม่"""
+        exam_datetime = datetime.combine(self.exam_date, self.start_time)
+        exam_datetime = timezone.make_aware(exam_datetime)
+        return exam_datetime > timezone.now()
+    
+    def is_ongoing(self):
+        """ตรวจสอบว่าการสอบกำลังดำเนินการอยู่หรือไม่"""
+        now = timezone.now()
+        exam_start = datetime.combine(self.exam_date, self.start_time)
+        exam_end = datetime.combine(self.exam_date, self.end_time)
+        exam_start = timezone.make_aware(exam_start)
+        exam_end = timezone.make_aware(exam_end)
+        return exam_start <= now <= exam_end
+    
+    def is_finished(self):
+        """ตรวจสอบว่าการสอบสิ้นสุดแล้วหรือไม่"""
+        exam_end = datetime.combine(self.exam_date, self.end_time)
+        exam_end = timezone.make_aware(exam_end)
+        return exam_end < timezone.now()
+    
+    def get_status(self):
+        """สถานะการสอบ"""
+        if self.is_finished():
+            return "สิ้นสุดแล้ว"
+        elif self.is_ongoing():
+            return "กำลังสอบ"
+        elif self.is_upcoming():
+            return "จะมาถึง"
+        return "ไม่ทราบสถานะ"
+    
+    def can_checkin(self):
+        """ตรวจสอบว่าสามารถเช็คชื่อได้หรือไม่ (ก่อนเวลาสอบ 30 นาที)"""
+        exam_start = datetime.combine(self.exam_date, self.start_time)
+        exam_start = timezone.make_aware(exam_start)
+        checkin_start = exam_start - timedelta(minutes=30)
+        now = timezone.now()
+        return checkin_start <= now <= exam_start
+
+    @property
+    def student_count(self):
+        """จำนวนนักเรียนที่ลงทะเบียน - Property สำหรับ compatibility"""
+        return self.get_student_count()
+    
+    @property
+    def attendance_summary(self):
+        """สรุปการเข้าสอบ"""
+        total = self.get_student_count()
+        present = self.attendances.filter(status__in=['on_time', 'late']).count()
+        absent = total - present
+        return {
+            'total': total,
+            'present': present,
+            'absent': absent,
+            'percentage': round((present/total*100) if total > 0 else 0, 1)
+        }
 
 
 class Attendance(models.Model):
+    """การเข้าสอบ - เพิ่มสถานะทุจริต"""
     STATUS_CHOICES = [
         ("on_time", "มาตรงเวลา"),
         ("late", "มาสาย"),
         ("absent", "ขาดสอบ"),
+        ("excused", "ลาป่วย/ลากิจ"),
+        ("cheating", "ทุจริต"),  # เพิ่มสถานะใหม่
     ]
 
-    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
-    subject = models.ForeignKey(ExamSubject, on_delete=models.CASCADE)
-    checkin_time = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="absent")
+    student = models.ForeignKey(
+        StudentProfile, 
+        on_delete=models.CASCADE, 
+        related_name='attendances',
+        verbose_name="นักเรียน"
+    )
+    subject = models.ForeignKey(
+        ExamSubject, 
+        on_delete=models.CASCADE, 
+        related_name='attendances',
+        verbose_name="รายวิชา"
+    )
+    checkin_time = models.DateTimeField(null=True, blank=True, verbose_name="เวลาเช็คชื่อ")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="absent", verbose_name="สถานะ")
+    note = models.TextField(blank=True, verbose_name="หมายเหตุ")
+    
+    # ข้อมูลการบันทึก
+    recorded_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        verbose_name="บันทึกโดย"
+    )
+    
+    # ฟิลด์วันที่ - แก้ไขให้รองรับข้อมูลเก่า
+    created_at = models.DateTimeField(null=True, blank=True, verbose_name="วันที่สร้าง")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="วันที่แก้ไข")
+    
+    class Meta:
+        verbose_name = "การเข้าสอบ"
+        verbose_name_plural = "การเข้าสอบ"
+        unique_together = ('student', 'subject')
+        ordering = ['-checkin_time']
+
+    def save(self, *args, **kwargs):
+        # ตั้งค่า created_at ถ้ายังไม่มี
+        if not self.created_at:
+            self.created_at = timezone.now()
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.student.user.first_name} - {self.subject.subject_name} ({self.status})"
+        return f"{self.student.user.get_full_name()} - {self.subject.subject_name} ({self.get_status_display()})"
+
+    def is_late(self):
+        """ตรวจสอบว่ามาสายหรือไม่"""
+        if not self.checkin_time:
+            return False
+        
+        exam_start = datetime.combine(self.subject.exam_date, self.subject.start_time)
+        exam_start = timezone.make_aware(exam_start)
+        return self.checkin_time > exam_start
+    
+    def get_minutes_late(self):
+        """จำนวนนาทีที่มาสาย"""
+        if not self.is_late() or not self.checkin_time:
+            return 0
+        
+        exam_start = datetime.combine(self.subject.exam_date, self.subject.start_time)
+        exam_start = timezone.make_aware(exam_start)
+        late_duration = self.checkin_time - exam_start
+        return int(late_duration.total_seconds() / 60)
+
+
+class CheatingReport(models.Model):
+    """รายงานทุจริตในการสอบ"""
+    CHEATING_TYPE_CHOICES = [
+        ('copying', 'ลอกข้อสอบ'),
+        ('communication', 'สื่อสารกับผู้อื่น'),
+        ('materials', 'นำสื่อการสอนเข้าห้องสอบ'),
+        ('technology', 'ใช้อุปกรณ์อิเล็กทรอนิกส์'),
+        ('impersonation', 'สอบแทนกัน'),
+        ('other', 'อื่นๆ'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('reported', 'รายงานแล้ว'),
+        ('investigating', 'กำลังสอบสวน'),
+        ('confirmed', 'ยืนยันทุจริต'),
+        ('dismissed', 'ยกเลิกข้อหา'),
+        ('resolved', 'ดำเนินการเสร็จสิ้น'),
+    ]
+    
+    attendance = models.OneToOneField(
+        Attendance,
+        on_delete=models.CASCADE,
+        related_name='cheating_report',
+        verbose_name="การเข้าสอบ"
+    )
+    
+    reported_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='reported_cheating_cases',
+        verbose_name="รายงานโดย"
+    )
+    
+    cheating_type = models.CharField(
+        max_length=20,
+        choices=CHEATING_TYPE_CHOICES,
+        verbose_name="ประเภทการทุจริต"
+    )
+    
+    description = models.TextField(
+        verbose_name="รายละเอียดการทุจริต"
+    )
+    
+    action_taken = models.TextField(
+        verbose_name="มาตรการที่ดำเนินการ"
+    )
+    
+    witness = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="พยาน"
+    )
+    
+    status = models.CharField(
+        max_length=15,
+        choices=STATUS_CHOICES,
+        default='reported',
+        verbose_name="สถานะการดำเนินการ"
+    )
+    
+    # ข้อมูลการติดตาม
+    investigation_notes = models.TextField(
+        blank=True,
+        verbose_name="หมายเหตุการสอบสวน"
+    )
+    
+    final_decision = models.TextField(
+        blank=True,
+        verbose_name="คำตัดสินสุดท้าย"
+    )
+    
+    penalty = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="โทษที่ได้รับ"
+    )
+    
+    # เอกสารประกอบ
+    evidence_files = models.FileField(
+        upload_to='cheating_evidence/',
+        blank=True,
+        null=True,
+        verbose_name="เอกสารหลักฐาน"
+    )
+    
+    # ข้อมูลการติดตาม
+    resolved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_cheating_cases',
+        verbose_name="ดำเนินการโดย"
+    )
+    
+    resolved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="วันที่ดำเนินการเสร็จ"
+    )
+    
+    created_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name="วันที่รายงาน")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="วันที่แก้ไข")
+
+    
+    class Meta:
+        verbose_name = "รายงานทุจริต"
+        verbose_name_plural = "รายงานทุจริต"
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"ทุจริต: {self.attendance.student.user.get_full_name()} - {self.attendance.subject.subject_name}"
+    
+    def get_student_name(self):
+        """ชื่อนักเรียน"""
+        return self.attendance.student.user.get_full_name()
+    
+    def get_subject_name(self):
+        """ชื่อวิชา"""
+        return self.attendance.subject.subject_name
+    
+    def is_resolved(self):
+        """ตรวจสอบว่าดำเนินการเสร็จสิ้นแล้วหรือไม่"""
+        return self.status == 'resolved'
+    
+    def get_days_since_report(self):
+        """จำนวนวันนับตั้งแต่รายงาน"""
+        return (timezone.now() - self.created_at).days
+    
+    def save(self, *args, **kwargs):
+        # ตั้งค่าวันที่ดำเนินการเสร็จเมื่อเปลี่ยนสถานะเป็น resolved
+        if self.status == 'resolved' and not self.resolved_at:
+            self.resolved_at = timezone.now()
+        
+        super().save(*args, **kwargs)
+
+
+class ExamSession(models.Model):
+    """เซสชันการสอบ (สำหรับเก็บข้อมูลการดำเนินการสอบ)"""
+    subject = models.OneToOneField(
+        ExamSubject, 
+        on_delete=models.CASCADE, 
+        related_name='session',
+        verbose_name="วิชาสอบ"
+    )
+    
+    started_at = models.DateTimeField(null=True, blank=True, verbose_name="เริ่มสอบเมื่อ")
+    ended_at = models.DateTimeField(null=True, blank=True, verbose_name="จบสอบเมื่อ")
+    
+    total_students = models.PositiveIntegerField(default=0, verbose_name="จำนวนนักเรียนทั้งหมด")
+    present_students = models.PositiveIntegerField(default=0, verbose_name="จำนวนนักเรียนที่มา")
+    absent_students = models.PositiveIntegerField(default=0, verbose_name="จำนวนนักเรียนที่ขาด")
+    
+    notes = models.TextField(blank=True, verbose_name="หมายเหตุการสอบ")
+    
+    created_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name="วันที่สร้าง")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="วันที่แก้ไข")
+
+    class Meta:
+        verbose_name = "เซสชันการสอบ"
+        verbose_name_plural = "เซสชันการสอบ"
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"เซสชัน {self.subject.subject_name} - {self.subject.exam_date}"
+    
+    def get_attendance_rate(self):
+        """คำนวดอัตราการเข้าสอบ"""
+        if self.total_students == 0:
+            return 0
+        return (self.present_students / self.total_students) * 100
+    
+    def update_statistics(self):
+        """อัพเดทสถิติการเข้าสอบ"""
+        self.total_students = self.subject.get_student_count()
+        
+        attendances = self.subject.attendances.all()
+        self.present_students = attendances.exclude(status='absent').count()
+        self.absent_students = attendances.filter(status='absent').count()
+        
+        self.save()
+
+
+class CheatingStatistics(models.Model):
+    """สถิติการทุจริตรายเดือน/ปี"""
+    year = models.IntegerField(verbose_name="ปี")
+    month = models.IntegerField(verbose_name="เดือน")
+    total_cases = models.PositiveIntegerField(default=0, verbose_name="จำนวนคดีทั้งหมด")
+    resolved_cases = models.PositiveIntegerField(default=0, verbose_name="คดีที่ดำเนินการเสร็จ")
+    confirmed_cases = models.PositiveIntegerField(default=0, verbose_name="คดีที่ยืนยันทุจริต")
+    dismissed_cases = models.PositiveIntegerField(default=0, verbose_name="คดีที่ยกเลิก")
+    
+    created_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name="วันที่สร้าง")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="วันที่อัพเดท")
+
+    
+    class Meta:
+        verbose_name = "สถิติการทุจริต"
+        verbose_name_plural = "สถิติการทุจริต"
+        unique_together = ('year', 'month')
+        ordering = ['-year', '-month']
+    
+    def __str__(self):
+        return f"สถิติทุจริต {self.month:02d}/{self.year} ({self.total_cases} คดี)"
+    
+    def get_resolution_rate(self):
+        """อัตราการดำเนินการเสร็จ"""
+        if self.total_cases == 0:
+            return 0
+        return round((self.resolved_cases / self.total_cases) * 100, 1)
+    
+    def get_confirmation_rate(self):
+        """อัตราการยืนยันทุจริต"""
+        if self.total_cases == 0:
+            return 0
+        return round((self.confirmed_cases / self.total_cases) * 100, 1)
+
+
+# ==================== SIGNALS FOR AUTO-UPDATE ====================
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+
+@receiver(post_save, sender=Attendance)
+def update_exam_session_on_attendance_save(sender, instance, **kwargs):
+    """อัพเดทเซสชันเมื่อมีการบันทึกการเข้าสอบ"""
+    try:
+        session, created = ExamSession.objects.get_or_create(subject=instance.subject)
+        session.update_statistics()
+    except Exception as e:
+        print(f"Error updating exam session: {str(e)}")
+
+@receiver(post_delete, sender=Attendance)
+def update_exam_session_on_attendance_delete(sender, instance, **kwargs):
+    """อัพเดทเซสชันเมื่อมีการลบการเข้าสอบ"""
+    try:
+        session = ExamSession.objects.get(subject=instance.subject)
+        session.update_statistics()
+    except ExamSession.DoesNotExist:
+        pass
+    except Exception as e:
+        print(f"Error updating exam session: {str(e)}")
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """สร้างโปรไฟล์อัตโนมัติเมื่อสร้างผู้ใช้ใหม่"""
+    if created:
+        # โปรไฟล์จะต้องสร้างด้วยตนเองเพราะมีฟิลด์ที่จำเป็น
+        # เช่น student_id, teacher_id เป็นต้น
+        pass
+
+@receiver(post_save, sender=CheatingReport)
+def update_cheating_statistics(sender, instance, created, **kwargs):
+    """อัพเดทสถิติทุจริตเมื่อมีรายงานใหม่"""
+    try:
+        report_date = instance.created_at
+        year = report_date.year
+        month = report_date.month
+        
+        stats, created_stats = CheatingStatistics.objects.get_or_create(
+            year=year,
+            month=month,
+            defaults={
+                'total_cases': 0,
+                'resolved_cases': 0,
+                'confirmed_cases': 0,
+                'dismissed_cases': 0,
+            }
+        )
+        
+        # นับรายงานทั้งหมดในเดือนนี้
+        month_reports = CheatingReport.objects.filter(
+            created_at__year=year,
+            created_at__month=month
+        )
+        
+        stats.total_cases = month_reports.count()
+        stats.resolved_cases = month_reports.filter(status='resolved').count()
+        stats.confirmed_cases = month_reports.filter(status='confirmed').count()
+        stats.dismissed_cases = month_reports.filter(status='dismissed').count()
+        
+        stats.save()
+        
+    except Exception as e:
+        print(f"Error updating cheating statistics: {str(e)}")
+
+
+# ==================== CUSTOM MANAGERS ====================
+class ActiveExamSubjectManager(models.Manager):
+    """Manager สำหรับ ExamSubject ที่ยังใช้งานได้"""
+    def get_queryset(self):
+        return super().get_queryset().filter(is_active=True)
+
+class UpcomingExamSubjectManager(models.Manager):
+    """Manager สำหรับ ExamSubject ที่จะมาถึง"""
+    def get_queryset(self):
+        now = timezone.now()
+        return super().get_queryset().filter(
+            exam_date__gte=now.date(),
+            is_active=True
+        ).order_by('exam_date', 'start_time')
+
+# เพิ่ม managers ให้กับ ExamSubject
+ExamSubject.add_to_class('objects', models.Manager())
+ExamSubject.add_to_class('active', ActiveExamSubjectManager())
+ExamSubject.add_to_class('upcoming', UpcomingExamSubjectManager())
+
 

@@ -1,0 +1,795 @@
+{% extends 'app/base.html' %}
+{% load extras %}
+{% load static %}
+
+{% block title %}แผนผังที่นั่งสอบ - {{ subject.subject_name }}{% endblock %}
+
+{% block page_title %}แผนผังที่นั่งสอบ{% endblock %}
+{% block page_subtitle %}{{ subject.subject_name }} - {{ subject.exam_date|date:"d/m/Y" }} {{
+subject.start_time|time:"H:i" }}-{{ subject.end_time|time:"H:i" }}{% endblock %}
+
+{% block current_page %}exam-seating{% endblock %}
+
+{% block extra_css %}
+<style>
+    .seat {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .seat:hover {
+        transform: scale(1.1);
+        z-index: 10;
+    }
+
+    .seat-present {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        animation: pulse-green 2s infinite;
+    }
+
+    .seat-late {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+        box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+        animation: pulse-yellow 2s infinite;
+    }
+
+    .seat-absent {
+        background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+        animation: pulse-red 2s infinite;
+    }
+
+    .seat-empty {
+        background: rgba(100, 116, 139, 0.3);
+        border: 2px dashed rgba(148, 163, 184, 0.5);
+    }
+
+    .seat-not-checked {
+        background: rgba(71, 85, 105, 0.5);
+        border: 2px solid rgba(148, 163, 184, 0.3);
+    }
+
+    @keyframes pulse-green {
+
+        0%,
+        100% {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+
+        50% {
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.8);
+        }
+    }
+
+    @keyframes pulse-yellow {
+
+        0%,
+        100% {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+        }
+
+        50% {
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.8);
+        }
+    }
+
+    @keyframes pulse-red {
+
+        0%,
+        100% {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+        }
+
+        50% {
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.8);
+        }
+    }
+
+    .attendance-legend {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .legend-color {
+        width: 1rem;
+        height: 1rem;
+        border-radius: 0.25rem;
+        flex-shrink: 0;
+    }
+
+    .seating-grid {
+        display: grid;
+        gap: 0.5rem;
+        justify-content: center;
+        padding: 2rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 1rem;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .seating-row {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .row-number {
+        width: 2rem;
+        height: 2rem;
+        background: rgba(59, 130, 246, 0.2);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 0.5rem;
+        display: flex;
+        items-center: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #60a5fa;
+        margin-right: 1rem;
+    }
+
+    .room-layout {
+        position: relative;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .teacher-desk {
+        background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+        border: 2px solid rgba(139, 92, 246, 0.5);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        text-align: center;
+        margin-bottom: 2rem;
+        box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+    }
+
+    .student-info-tooltip {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        z-index: 50;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+    }
+
+    .student-info-tooltip.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .refresh-indicator {
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .refresh-indicator:hover {
+        background: rgba(16, 185, 129, 0.2);
+        transform: scale(1.1);
+    }
+
+    .refresh-indicator.refreshing {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .stats-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 500;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .action-button {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #2563eb, #1e40af);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: linear-gradient(135deg, #059669, #047857);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-secondary {
+        background: rgba(100, 116, 139, 0.2);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(100, 116, 139, 0.3);
+        transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+        .seating-grid {
+            padding: 1rem;
+        }
+
+        .seat {
+            width: 2.5rem;
+            height: 2.5rem;
+            font-size: 0.75rem;
+        }
+
+        .stats-summary {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .action-buttons {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header Information -->
+    <div class="glass-dark rounded-2xl p-6 border border-white/20">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gradient mb-2">{{ subject.subject_name }}</h1>
+                <div class="flex flex-wrap gap-4 text-sm text-slate-300">
+                    <span><i class="fas fa-calendar mr-2"></i>{{ subject.exam_date|date:"l, d F Y" }}</span>
+                    <span><i class="fas fa-clock mr-2"></i>{{ subject.start_time|time:"H:i" }} - {{
+                        subject.end_time|time:"H:i" }}</span>
+                    <span><i class="fas fa-code mr-2"></i>{{ subject.subject_code }}</span>
+                    {% if subject.room %}
+                    <span><i class="fas fa-map-marker-alt mr-2"></i>{{ subject.room.building.name }} ห้อง {{
+                        subject.room.name }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="refreshSeatingChart()" class="action-button btn-secondary">
+                    <i class="fas fa-sync-alt"></i>
+                    รีเฟรช
+                </button>
+                <a href="{% url 'exam_attendance' subject.id %}" class="action-button btn-primary">
+                    <i class="fas fa-list-check"></i>
+                    รายการเช็คชื่อ
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Summary -->
+    <div class="stats-summary">
+        <div class="stat-card">
+            <div class="stat-number text-blue-400">{{ students.count }}</div>
+            <div class="stat-label">นักเรียนทั้งหมด</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number text-green-400">
+                {{ attendance_dict.values|length }}
+            </div>
+            <div class="stat-label">เข้าสอบแล้ว</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number text-red-400">
+                {% widthratio students.count attendance_dict.values|length 1 as absent_count %}
+                {{ absent_count }}
+            </div>
+            <div class="stat-label">ยังไม่เข้าสอบ</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number text-purple-400">
+                {% if subject.room %}{{ subject.room.capacity }}{% else %}0{% endif %}
+            </div>
+            <div class="stat-label">ความจุห้อง</div>
+        </div>
+    </div>
+
+    <!-- Attendance Legend -->
+    <div class="glass-dark rounded-xl p-4 border border-white/20">
+        <h3 class="text-lg font-semibold mb-3 text-white">สัญลักษณ์สถานะ</h3>
+        <div class="attendance-legend">
+            <div class="legend-item">
+                <div class="legend-color seat-present"></div>
+                <span class="text-sm text-white">เข้าสอบตรงเวลา</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color seat-late"></div>
+                <span class="text-sm text-white">เข้าสอบสาย</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color seat-absent"></div>
+                <span class="text-sm text-white">ขาดสอบ</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color seat-not-checked"></div>
+                <span class="text-sm text-white">ยังไม่เช็คชื่อ</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color seat-empty"></div>
+                <span class="text-sm text-white">ที่นั่งว่าง</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seating Chart -->
+    <div class="glass-dark rounded-2xl p-6 border border-white/20">
+        <div class="room-layout">
+            <!-- Teacher's Desk -->
+            <div class="teacher-desk">
+                <i class="fas fa-chalkboard-teacher text-xl mb-2"></i>
+                <div class="text-white font-semibold">โต๊ะครู</div>
+                <div class="text-sm text-purple-200 mt-1">
+                    {% if subject.invigilator %}
+                    {{ subject.invigilator.user.get_full_name }}
+                    {% endif %}
+                    {% if subject.secondary_invigilator %}
+                    {% if subject.invigilator %}, {% endif %}
+                    {{ subject.secondary_invigilator.user.get_full_name }}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Seating Grid -->
+            {% if seating_chart %}
+            <div class="seating-grid">
+                {% for row in seating_chart %}
+                <div class="seating-row">
+                    <div class="row-number">{{ forloop.counter }}</div>
+                    {% for seat in row %}
+                    {% if seat %}
+                    <div class="seat w-12 h-12 rounded-lg flex items-center justify-center text-xs font-bold text-white relative
+                            {% if seat.attendance %}
+                                {% if seat.attendance.status == 'on_time' %}seat-present
+                                {% elif seat.attendance.status == 'late' %}seat-late
+                                {% elif seat.attendance.status == 'absent' %}seat-absent
+                                {% else %}seat-not-checked{% endif %}
+                            {% else %}seat-not-checked{% endif %}" data-student-id="{{ seat.student.id }}"
+                        data-student-name="{{ seat.student.user.get_full_name }}"
+                        data-student-number="{{ seat.student.student_number }}"
+                        data-student-class="{{ seat.student.student_class }}"
+                        data-attendance-status="{% if seat.attendance %}{{ seat.attendance.status }}{% else %}not_checked{% endif %}"
+                        data-checkin-time="{% if seat.attendance %}{{ seat.attendance.checkin_time|date:'H:i' }}{% endif %}"
+                        onmouseenter="showStudentTooltip(event, this)" onmouseleave="hideStudentTooltip()">
+                        {{ seat.seat_number }}
+                    </div>
+                    {% else %}
+                    <div class="seat seat-empty w-12 h-12 rounded-lg"></div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <!-- No Room Layout - Simple List View -->
+            <div class="text-center py-8">
+                <div class="glass-dark rounded-xl p-6 border border-white/20">
+                    <i class="fas fa-exclamation-triangle text-yellow-400 text-3xl mb-4"></i>
+                    <h3 class="text-xl font-semibold text-white mb-2">ไม่สามารถแสดงแผนผังที่นั่งได้</h3>
+                    <p class="text-slate-400 mb-4">ยังไม่ได้กำหนดห้องสอบสำหรับรายวิชานี้</p>
+
+                    <!-- Alternative: Student Grid View -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 mt-6">
+                        {% for student in students %}
+                            {% with att=attendance_dict|lookup:student.id %}
+                            <div class="seat w-12 h-12 rounded-lg flex items-center justify-center text-xs font-bold text-white
+                            {% if att %}
+                                {% if att.status == 'on_time' %}seat-present
+                                {% elif att.status == 'late' %}seat-late
+                                {% elif att.status == 'absent' %}seat-absent
+                                {% else %}seat-not-checked{% endif %}
+                            {% else %}seat-not-checked{% endif %}" data-student-id="{{ student.id }}"
+                            data-student-name="{{ student.user.get_full_name }}"
+                            data-student-number="{{ student.student_number }}"
+                            data-student-class="{{ student.student_class }}"
+                            data-attendance-status="{% if att %}{{ att.status }}{% else %}not_checked{% endif %}"
+                            data-checkin-time="{% if att and att.checkin_time %}{{ att.checkin_time|date:'H:i' }}{% endif %}">
+                            {{ student.student_number }}
+                        </div>
+                        {% endwith %}
+                    {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        {% if user.is_staff or user.teacher_profile == subject.invigilator %}
+        <a href="{% url 'generate_qr_code' subject.id %}" class="action-button btn-success">
+            <i class="fas fa-qrcode"></i>
+            แสดง QR Code เช็คชื่อ
+        </a>
+        {% endif %}
+
+        <a href="{% url 'exam_attendance' subject.id %}" class="action-button btn-primary">
+            <i class="fas fa-clipboard-check"></i>
+            จัดการเช็คชื่อ
+        </a>
+
+        <button onclick="exportSeatingChart()" class="action-button btn-secondary">
+            <i class="fas fa-download"></i>
+            Export แผนผัง
+        </button>
+
+        <a href="{% url 'exam_subjects' %}" class="action-button btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            กลับสู่รายการสอบ
+        </a>
+    </div>
+</div>
+
+<!-- Student Info Tooltip -->
+<div id="studentTooltip" class="student-info-tooltip">
+    <div id="tooltipContent"></div>
+</div>
+
+<!-- Refresh Indicator -->
+<div id="refreshIndicator" class="refresh-indicator" onclick="refreshSeatingChart()">
+    <i class="fas fa-sync-alt text-green-400"></i>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh functionality
+    let refreshInterval;
+    let isRefreshing = false;
+
+    function startAutoRefresh() {
+        refreshInterval = setInterval(refreshSeatingChart, 30000); // Refresh every 30 seconds
+    }
+
+    function stopAutoRefresh() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+        }
+    }
+
+    function refreshSeatingChart() {
+        if (isRefreshing) return;
+
+        isRefreshing = true;
+        const indicator = document.getElementById('refreshIndicator');
+        indicator.classList.add('refreshing');
+
+        // Simulate AJAX call to refresh data
+        fetch(`/exams/{{ subject.id }}/seating-data/`)
+            .then(response => response.json())
+            .then(data => {
+                updateSeatingChart(data);
+                showNotification('อัปเดตแผนผังที่นั่งแล้ว', 'success');
+            })
+            .catch(error => {
+                console.error('Error refreshing seating chart:', error);
+                showNotification('เกิดข้อผิดพลาดในการอัปเดตข้อมูล', 'error');
+            })
+            .finally(() => {
+                isRefreshing = false;
+                indicator.classList.remove('refreshing');
+            });
+    }
+
+    function updateSeatingChart(data) {
+        // Update seat statuses based on new attendance data
+        document.querySelectorAll('.seat[data-student-id]').forEach(seat => {
+            const studentId = seat.getAttribute('data-student-id');
+            const attendance = data.attendance[studentId];
+
+            // Remove existing status classes
+            seat.classList.remove('seat-present', 'seat-late', 'seat-absent', 'seat-not-checked');
+
+            // Add new status class
+            if (attendance) {
+                switch (attendance.status) {
+                    case 'on_time':
+                        seat.classList.add('seat-present');
+                        break;
+                    case 'late':
+                        seat.classList.add('seat-late');
+                        break;
+                    case 'absent':
+                        seat.classList.add('seat-absent');
+                        break;
+                    default:
+                        seat.classList.add('seat-not-checked');
+                }
+                seat.setAttribute('data-attendance-status', attendance.status);
+                seat.setAttribute('data-checkin-time', attendance.checkin_time);
+            } else {
+                seat.classList.add('seat-not-checked');
+                seat.setAttribute('data-attendance-status', 'not_checked');
+                seat.removeAttribute('data-checkin-time');
+            }
+        });
+
+        // Update statistics
+        updateStatistics(data.stats);
+    }
+
+    function updateStatistics(stats) {
+        const statCards = document.querySelectorAll('.stat-card .stat-number');
+        if (statCards.length >= 3) {
+            statCards[1].textContent = stats.checked_in;
+            statCards[2].textContent = stats.not_checked;
+        }
+    }
+
+    // Tooltip functionality
+    let tooltipElement = null;
+
+    function showStudentTooltip(event, seatElement) {
+        if (!tooltipElement) {
+            tooltipElement = document.getElementById('studentTooltip');
+        }
+
+        const studentName = seatElement.getAttribute('data-student-name');
+        const studentNumber = seatElement.getAttribute('data-student-number');
+        const studentClass = seatElement.getAttribute('data-student-class');
+        const attendanceStatus = seatElement.getAttribute('data-attendance-status');
+        const checkinTime = seatElement.getAttribute('data-checkin-time');
+
+        const statusText = {
+            'on_time': 'เข้าสอบตรงเวลา',
+            'late': 'เข้าสอบสาย',
+            'absent': 'ขาดสอบ',
+            'not_checked': 'ยังไม่เช็คชื่อ'
+        };
+
+        const statusColor = {
+            'on_time': 'text-green-400',
+            'late': 'text-yellow-400',
+            'absent': 'text-red-400',
+            'not_checked': 'text-slate-400'
+        };
+
+        let tooltipContent = `
+        <div class="font-semibold text-white mb-1">${studentName}</div>
+        <div class="text-sm text-slate-300 mb-1">เลขที่: ${studentNumber} | ชั้น: ${studentClass}</div>
+        <div class="text-sm ${statusColor[attendanceStatus]}">${statusText[attendanceStatus]}</div>
+    `;
+
+        if (checkinTime) {
+            tooltipContent += `<div class="text-xs text-slate-400 mt-1">เวลาเช็คชื่อ: ${checkinTime}</div>`;
+        }
+
+        document.getElementById('tooltipContent').innerHTML = tooltipContent;
+
+        // Position tooltip
+        const rect = seatElement.getBoundingClientRect();
+        tooltipElement.style.left = (rect.left + rect.width / 2 - tooltipElement.offsetWidth / 2) + 'px';
+        tooltipElement.style.top = (rect.top - tooltipElement.offsetHeight - 10) + 'px';
+
+        // Show tooltip
+        tooltipElement.classList.add('show');
+    }
+
+    function hideStudentTooltip() {
+        if (tooltipElement) {
+            tooltipElement.classList.remove('show');
+        }
+    }
+
+    // Export functionality
+    function exportSeatingChart() {
+        showLoading();
+
+        // Create export data
+        const exportData = {
+            subject: '{{ subject.subject_name }}',
+            date: '{{ subject.exam_date|date:"d/m/Y" }}',
+            time: '{{ subject.start_time|time:"H:i" }} - {{ subject.end_time|time:"H:i" }}',
+            room: '{% if subject.room %}{{ subject.room.building.name }} ห้อง {{ subject.room.name }}{% else %}ไม่ระบุห้อง{% endif %}',
+            students: []
+        };
+
+        // Collect student data
+        document.querySelectorAll('.seat[data-student-id]').forEach(seat => {
+            const studentData = {
+                name: seat.getAttribute('data-student-name'),
+                number: seat.getAttribute('data-student-number'),
+                class: seat.getAttribute('data-student-class'),
+                status: seat.getAttribute('data-attendance-status'),
+                checkin_time: seat.getAttribute('data-checkin-time') || 'ไม่ได้เช็คชื่อ'
+            };
+            exportData.students.push(studentData);
+        });
+
+        // Simulate export process
+        setTimeout(() => {
+            hideLoading();
+            showNotification('Export แผนผังที่นั่งสำเร็จ', 'success');
+
+            // In real implementation, this would trigger actual file download
+            console.log('Export data:', exportData);
+        }, 2000);
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'r' && e.ctrlKey) {
+            e.preventDefault();
+            refreshSeatingChart();
+        }
+
+        if (e.key === 'q' && e.ctrlKey) {
+            e.preventDefault();
+            window.location.href = "{% url 'generate_qr_code' subject.id %}";
+        }
+    });
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('Seating chart initialized');
+
+        // Start auto-refresh
+        startAutoRefresh();
+
+        // Initial notification
+        showNotification('แผนผังที่นั่งโหลดสมบูรณ์', 'success', 3000);
+
+        // Add click handlers for seats
+        document.querySelectorAll('.seat[data-student-id]').forEach(seat => {
+            seat.addEventListener('click', function () {
+                const studentName = this.getAttribute('data-student-name');
+                const status = this.getAttribute('data-attendance-status');
+
+                if (status === 'not_checked') {
+                    // Option to manually check-in
+                    showConfirmModal(
+                        `ต้องการเช็คชื่อ ${studentName} หรือไม่?`,
+                        () => manualCheckin(this.getAttribute('data-student-id'))
+                    );
+                }
+            });
+        });
+    });
+
+    function manualCheckin(studentId) {
+        showLoading();
+
+        fetch('/ajax/manual-checkin/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                student_id: studentId,
+                subject_id: {{ subject.id }},
+            status: 'on_time'
+        })
+    })
+    .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.status === 'success') {
+                showNotification('เช็คชื่อสำเร็จ', 'success');
+                refreshSeatingChart();
+            } else {
+                showNotification('เกิดข้อผิดพลาด: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showNotification('เกิดข้อผิดพลาดในการเช็คชื่อ', 'error');
+            console.error('Error:', error);
+        });
+}
+
+    // Handle visibility change (refresh when page becomes visible)
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) {
+            refreshSeatingChart();
+        }
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function () {
+        stopAutoRefresh();
+    });

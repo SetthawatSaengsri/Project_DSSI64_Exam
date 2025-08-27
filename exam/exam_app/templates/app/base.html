@@ -1,274 +1,1291 @@
-<!-- app/base.html -->
-
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="th" class="scroll-smooth">
 
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" href="https://www.webrongrean.in.th/html/frontend/img/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ระบบจัดการการสอบ{% endblock %}</title>
+
+    <!-- External CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="//unpkg.com/alpinejs" defer></script>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'kanit': ['Kanit', 'sans-serif'],
+                        'prompt': ['Prompt', 'sans-serif'],
+                    },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'slide-up': 'slideUp 0.8s ease-out forwards',
+                        'slide-in': 'slideIn 0.5s ease-out forwards',
+                        'bounce-slow': 'bounce 3s infinite',
+                        'pulse-slow': 'pulse 3s infinite',
+                        'spin-slow': 'spin 3s linear infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+                    },
+                    boxShadow: {
+                        'glow-blue': '0 0 20px rgba(59, 130, 246, 0.5)',
+                        'glow-purple': '0 0 20px rgba(147, 51, 234, 0.5)',
+                        'glow-pink': '0 0 20px rgba(236, 72, 153, 0.5)',
+                        'glow-green': '0 0 20px rgba(34, 197, 94, 0.5)',
+                        'glow-orange': '0 0 20px rgba(249, 115, 22, 0.5)',
+                        'inner-glow': 'inset 0 0 20px rgba(255, 255, 255, 0.1)',
+                    },
+                }
+            }
+        }
+    </script>
+
+    <!-- Base Styles -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Prompt', sans-serif;
         }
 
-        /* เพิ่มเอฟเฟกต์ขยายเมื่อโฮเวอร์สำหรับปุ่มและลิงก์ */
-        button,
-        a {
-            transition: transform 0.2s ease-in-out;
+        /* ==================== ANIMATIONS ==================== */
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
         }
 
-        button:hover,
-        a:hover {
-            transform: scale(1.05);
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            }
+
+            to {
+                box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
+            }
         }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes wiggle {
+
+            0%,
+            100% {
+                transform: rotate(-3deg);
+            }
+
+            50% {
+                transform: rotate(3deg);
+            }
+        }
+
+        /* ==================== GLASS EFFECTS ==================== */
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-dark {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* ==================== TEXT EFFECTS ==================== */
+        .text-gradient {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .text-gradient-green {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .text-gradient-orange {
+            background: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fdba74 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .text-gradient-purple {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 50%, #c4b5fd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ==================== BACKGROUND PATTERNS ==================== */
+        .bg-mesh {
+            background-image:
+                radial-gradient(at 40% 20%, hsla(228, 100%, 74%, 1) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 1) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, hsla(355, 100%, 93%, 1) 0px, transparent 50%),
+                radial-gradient(at 80% 50%, hsla(340, 100%, 76%, 1) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, hsla(22, 100%, 77%, 1) 0px, transparent 50%),
+                radial-gradient(at 80% 100%, hsla(242, 100%, 70%, 1) 0px, transparent 50%),
+                radial-gradient(at 0% 0%, hsla(343, 100%, 76%, 1) 0px, transparent 50%);
+        }
+
+        .pattern-dots {
+            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .pattern-grid {
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* ==================== SIDEBAR ==================== */
+        .sidebar {
+            width: 280px;
+            transition: all 0.3s ease;
+            z-index: 40;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar-item {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            margin: 4px 8px;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateX(5px);
+        }
+
+        .sidebar-item.active {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .sidebar-text {
+            transition: all 0.3s ease;
+        }
+
+        .sidebar.collapsed .sidebar-text {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .sidebar.collapsed .sidebar-item {
+            justify-content: center;
+        }
+
+        /* ==================== MAIN CONTENT ==================== */
+        .main-content {
+            margin-left: 280px;
+            transition: all 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .main-content.sidebar-collapsed {
+            margin-left: 80px;
+        }
+
+        /* ==================== MOBILE RESPONSIVE ==================== */
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                height: 100vh;
+                z-index: 50;
+            }
+
+            .sidebar.mobile-open {
+                left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .main-content.sidebar-collapsed {
+                margin-left: 0;
+            }
+        }
+
+        /* ==================== SCROLLBAR ==================== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+        }
+
+        /* ==================== CUSTOM COMPONENTS ==================== */
+        .loading-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
 
-<body class="bg-gray-100 h-screen flex flex-col">
-    <div x-data="{ sidebarOpen: false }" class="flex flex-1">
-        <!-- Sidebar -->
-        <div :class="sidebarOpen ? 'block' : 'hidden'" class="fixed inset-0 bg-black opacity-50 z-20 lg:hidden"
-            @click="sidebarOpen = false"></div>
-        <div :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-            class="fixed inset-y-0 left-0 z-30 w-64 bg-indigo-700 text-white lg:translate-x-0 transition-transform lg:static lg:inset-auto lg:opacity-100">
-            <div class="flex items-center justify-center h-20 border-b border-indigo-600">
-                <span class="text-xl font-bold">Dashboard</span>
+<body class="bg-slate-900 text-white overflow-x-hidden">
+    <!-- ==================== BACKGROUND ELEMENTS ==================== -->
+    <div class="fixed inset-0 bg-mesh opacity-40 pointer-events-none"></div>
+    <div class="fixed inset-0 pattern-grid pointer-events-none"></div>
+
+    <!-- ==================== MOBILE OVERLAY ==================== -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden lg:hidden"></div>
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside id="sidebar" class="sidebar fixed left-0 top-0 h-full glass-dark border-r border-white/20 flex flex-col">
+        <!-- Sidebar Header -->
+        <div class="p-6 border-b border-white/10">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div
+                        class="w-12 h-12 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-glow-blue animate-glow">
+                        <i class="fas fa-graduation-cap text-white text-xl"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <h1 class="text-lg font-bold font-kanit text-gradient">ระบบจัดการการสอบ</h1>
+                        <p class="text-xs text-slate-400 font-prompt">Exam Management System</p>
+                    </div>
+                </div>
+                <button id="sidebarToggle"
+                    class="w-8 h-8 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg flex items-center justify-center transition-colors lg:flex hidden">
+                    <i class="fas fa-bars text-slate-400"></i>
+                </button>
             </div>
-            <nav class="px-4 py-4 space-y-2">
+        </div>
+
+        <!-- Sidebar Navigation -->
+        <nav class="flex-1 p-4 overflow-y-auto">
+            <div class="space-y-2">
                 {% if user.is_authenticated %}
-
                 {% if user.is_superuser %}
-
-                <a href="{% url 'dashboard_admin' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
-                    </svg>
-                    Dashboard Admin
-                </a>
-                
-                <a href="{% url 'verify_staff_registration' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
-                    </svg>
-                    ตรวจสอบสมัคร
+                <!-- ADMIN MENU -->
+                <a href="{% url 'dashboard_admin' %}" class="sidebar-item flex items-center p-3 group"
+                    data-page="dashboard">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-tachometer-alt text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">Dashboard แอดมิน</span>
+                        <p class="text-xs text-slate-400">Admin Dashboard</p>
+                    </div>
                 </a>
 
-                <a href="{% url 'manage_users' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
-                    </svg>
-                    manage_users
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">จัดการระบบ</p>
+                </div>
+
+                <a href="{% url 'manage_users' %}" class="sidebar-item flex items-center p-3 group" data-page="users">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-users-cog text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">จัดการผู้ใช้</span>
+                        <p class="text-xs text-slate-400">User Management</p>
+                    </div>
+                </a>
+
+                <a href="{% url 'exam_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="exams">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-calendar-alt text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">จัดการการสอบ</span>
+                        <p class="text-xs text-slate-400">Exam Management</p>
+                    </div>
+                </a>
+
+                <a href="{% url 'manage_rooms' %}" class="sidebar-item flex items-center p-3 group" data-page="rooms">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-building text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">จัดการห้องสอบ</span>
+                        <p class="text-xs text-slate-400">Room Management</p>
+                    </div>
                 </a>
 
                 {% elif user.is_staff %}
-
-                <a href="{% url 'dashboard_staff' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M3 10h11M9 21H3v-5a2 2 0 012-2h2m0-4h4m2-2a2 2 0 11-4 0m0 0V5a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4m0 0v4m-4 4v-4">
-                        </path>
-                    </svg>
-                    Dashboard Staff
+                <!-- STAFF MENU -->
+                <a href="{% url 'dashboard_staff' %}" class="sidebar-item flex items-center p-3 group"
+                    data-page="dashboard">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-tachometer-alt text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">หน้าหลัก</span>
+                        <p class="text-xs text-slate-400">Dashboard</p>
+                    </div>
                 </a>
 
-                <a href="{% url 'school_members' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M8 4H5a2 2 0 00-2 2v14l7-3 7 3V6a2 2 0 00-2-2h-3m-2-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V4a2 2 0 012-2z">
-                        </path>
-                    </svg>
-                    รายชื่อนักเรียน
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">จัดการการสอบ</p>
+                </div>
+
+                <a href="{% url 'exam_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="exams">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-calendar-alt text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">จัดการการสอบ</span>
+                        <p class="text-xs text-slate-400">Exam Management</p>
+                    </div>
                 </a>
 
-                 <a href="{% url 'exam_subjects_staff' %}"
-                    class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M3 10h11M9 21H3v-5a2 2 0 012-2h2m0-4h4m2-2a2 2 0 11-4 0m0 0V5a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4m0 0v4m-4 4v-4">
-                        </path>
-                    </svg>
-                    รายวิชาที่ทำการสอบ
+                <a href="{% url 'add_exam_subject' %}" class="sidebar-item flex items-center p-3 group"
+                    data-page="add-exam">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-plus-circle text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">เพิ่มรายวิชาสอบ</span>
+                        <p class="text-xs text-slate-400">Add Exam Subject</p>
+                    </div>
                 </a>
 
-                <a href="{% url 'list_exam_rooms' %}"
-                    class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M3 10h11M9 21H3v-5a2 2 0 012-2h2m0-4h4m2-2a2 2 0 11-4 0m0 0V5a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4m0 0v4m-4 4v-4">
-                        </path>
-                    </svg>
-                    รายชื่อห้องสอบ
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">จัดการผู้ใช้</p>
+                </div>
+
+                <a href="{% url 'user_list' %}" class="sidebar-item flex items-center p-3 group" data-page="users">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-users text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">รายชื่อผู้ใช้</span>
+                        <p class="text-xs text-slate-400">User List</p>
+                    </div>
+                </a>
+
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2 mt-4">นำเข้าข้อมูล
+                    </p>
+                </div>
+
+                <a href="{% url 'import_teachers' %}" class="sidebar-item flex items-center p-3 group"
+                    data-page="import-teachers">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-chalkboard-teacher text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">Import ครู</span>
+                        <p class="text-xs text-slate-400">Teacher Import</p>
+                    </div>
+                </a>
+
+                <a href="{% url 'import_students' %}" class="sidebar-item flex items-center p-3 group"
+                    data-page="import-students">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-user-graduate text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">Import นักเรียน</span>
+                        <p class="text-xs text-slate-400">Student Import</p>
+                    </div>
+                </a>
+
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">จัดการระบบ</p>
+                </div>
+
+                <a href="{% url 'manage_rooms' %}" class="sidebar-item flex items-center p-3 group" data-page="rooms">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-building text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">จัดการห้องสอบ</span>
+                        <p class="text-xs text-slate-400">Room Management</p>
+                    </div>
                 </a>
 
                 {% elif user.is_teacher %}
-
-                <a href="{% url 'dashboard_teacher' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
-                    </svg>
-                    Dashboard Teacher
+                <!-- TEACHER MENU -->
+                <a href="{% url 'dashboard_teacher' %}" class="sidebar-item flex items-center p-3 group"
+                    data-page="dashboard">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-tachometer-alt text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">หน้าหลัก</span>
+                        <p class="text-xs text-slate-400">Dashboard</p>
+                    </div>
                 </a>
 
-                <a href="{% url 'scanner' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
-                    </svg>
-                    สแกน QR Code
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">การสอบของฉัน</p>
+                </div>
+
+                <a href="{% url 'exam_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="exams">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-calendar-check text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">การสอบที่คุมสอบ</span>
+                        <p class="text-xs text-slate-400">My Exams</p>
+                    </div>
                 </a>
 
-                <a href="{% url 'exam_subjects_teacher' %}"
-                    class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
-                    </svg>
-                    ดูวิชาที่คุมสอบ
-                </a>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2 mt-4">เครื่องมือ
+                    </p>
+                </div>
 
-                <a href="{% url 'teacher_check_student' %}"
-                    class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M3 10h18M9 21H3v-5a2 2 0 012-2h12a2 2 0 012 2v5h-6"></path>
-                    </svg>
-                    เช็คชื่อนักเรียน
+                <a href="#" class="sidebar-item flex items-center p-3 group" data-page="attendance">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-clipboard-check text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">เช็คชื่อเข้าสอบ</span>
+                        <p class="text-xs text-slate-400">Attendance Check</p>
+                    </div>
                 </a>
 
                 {% elif user.is_student %}
-                <a href="{% url 'dashboard_student' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
-                    </svg>
-                    Dashboard นักเรียน
+                <!-- STUDENT MENU -->
+                <a href="{% url 'dashboard_student' %}" class="sidebar-item flex items-center p-3 group"
+                    data-page="dashboard">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-tachometer-alt text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">หน้าหลัก</span>
+                        <p class="text-xs text-slate-400">Dashboard</p>
+                    </div>
                 </a>
 
-                <a href="{% url 'scanner' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
-                    </svg>
-                    สแกน QR Code
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">การสอบของฉัน</p>
+                </div>
+
+                <a href="#" class="sidebar-item flex items-center p-3 group"
+                    data-page="schedule">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-calendar text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">ตารางสอบ</span>
+                        <p class="text-xs text-slate-400">Exam Schedule</p>
+                    </div>
                 </a>
 
-                <a href="{% url 'exam_schedule' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
-                    </svg>
-                    ตารางสอบ
+                <a href="#"class="sidebar-item flex items-center p-3 group"
+                    data-page="history">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-history text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">ประวัติการสอบ</span>
+                        <p class="text-xs text-slate-400">Exam History</p>
+                    </div>
                 </a>
 
-                <a href="{% url 'exam_history' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
-                    </svg>
-                    ประวัติการเข้าสอบ
-                </a>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2 mt-4">เครื่องมือ
+                    </p>
+                </div>
 
-                <a href="{% url 'update_profile' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 5a7 7 0 016 0m3 3a7 7 0 01-6 0M9 15a7 7 0 016 0m3-3a7 7 0 01-6 0"></path>
-                    </svg>
-                    แก้ไขข้อมูลส่วนตัว
+                <a href="#" class="sidebar-item flex items-center p-3 group" data-page="qr-scan">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-qrcode text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">สแกน QR เข้าสอบ</span>
+                        <p class="text-xs text-slate-400">QR Scanner</p>
+                    </div>
                 </a>
-
                 {% endif %}
-                <a href="{% url 'logout_user' %}" class="flex items-center px-4 py-2 rounded hover:bg-red-600">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M15 10l4 4m0 0l-4 4m4-4H9m6 0H3"></path>
-                    </svg>
-                    ออกจากระบบ
-                </a>
-                {% else %}
-                <a href="{% url 'login_user' %}" class="flex items-center px-4 py-2 rounded hover:bg-indigo-800">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    เข้าสู่ระบบ
-                </a>
                 {% endif %}
-            </nav>
+            </div>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="p-4 border-t border-white/10">
+            <div class="sidebar-item flex items-center p-3 cursor-pointer group" onclick="confirmLogout()">
+                <div
+                    class="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <i class="fas fa-sign-out-alt text-white"></i>
+                </div>
+                <div class="sidebar-text">
+                    <span class="font-semibold">ออกจากระบบ</span>
+                    <p class="text-xs text-slate-400">Logout</p>
+                </div>
+            </div>
         </div>
+    </aside>
 
-        <!-- Main Content -->
-        <div class="flex-1 flex flex-col">
-            <!-- Header -->
-            <header class="flex justify-between items-center bg-white px-4 lg:px-6 py-4 shadow">
+    <!-- ==================== MAIN CONTENT AREA ==================== -->
+    <div id="mainContent" class="main-content">
+        <!-- Top Bar -->
+        <header class="sticky top-0 z-30 glass-dark border-b border-white/10 backdrop-blur-sm">
+            <div class="flex items-center justify-between h-16 px-6">
+                <!-- Mobile Menu Button -->
+                <button id="mobileSidebarToggle"
+                    class="lg:hidden w-10 h-10 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg flex items-center justify-center transition-colors">
+                    <i class="fas fa-bars text-slate-400"></i>
+                </button>
+
+                <!-- Page Title -->
+                <div class="flex-1 lg:ml-0 ml-4">
+                    <h1 class="text-xl font-bold font-kanit text-gradient">{% block page_title %}Dashboard{% endblock %}
+                    </h1>
+                    <p class="text-sm text-slate-400 font-prompt">{% block page_subtitle %}ระบบจัดการการสอบ{% endblock%}</p>
+                </div>
+
+                <!-- Top Bar Actions -->
                 <div class="flex items-center space-x-4">
-                    <button @click="sidebarOpen = !sidebarOpen" class="text-indigo-700 lg:hidden">
-                        ☰
-                    </button>
-                </div>
-
-                <!-- Search Bar -->
-                <div class="relative flex-1 max-w-md mx-4">
-                    <input type="text" placeholder="🔍 ค้นหา..."
-                        class="w-full pl-4 pr-12 py-2 text-gray-700 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                    <button
-                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-indigo-600 transition">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                            <path
-                                d="M23 21l-5.2-5.2c1.2-1.6 2-3.7 2-6a10 10 0 1 0-10 10c2.3 0 4.4-.8 6-2l5.2 5.2 1.4-1.4zM10 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z">
-                            </path>
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="flex items-center space-x-4 lg:space-x-6">
+                    <!-- User Profile -->
                     {% if user.is_authenticated %}
-                    <!-- Avatar -->
-                    <div class="relative">
-                        <span
-                            class="bg-indigo-600 text-white w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center font-bold text-lg lg:text-xl">
-                            {{ user.username|slice:":1" }}
-                        </span>
-                        <span
-                            class="absolute bottom-0 right-0 bg-green-500 w-3 h-3 lg:w-4 lg:h-4 rounded-full border-2 border-white"></span>
-                    </div>
-
-                    <!-- User Info -->
-                    <div class="hidden lg:block text-gray-700">
-                        <p class="text-lg font-semibold">{{ user.first_name }}</p>
-                        <p class="text-sm text-gray-500">{{ user.school_name }}</p>
-                    </div>
-                    {% else %}
-                    <div class="bg-gray-100 px-4 lg:px-6 py-2 lg:py-3 rounded-lg shadow-md border border-gray-300">
-                        <p class="text-gray-600">🔑 ยังไม่ได้เข้าสู่ระบบ</p>
+                    <div class="flex items-center space-x-3 glass px-4 py-2 rounded-full border border-white/20">
+                        <div
+                            class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-white text-sm"></i>
+                        </div>
+                        <div class="hidden md:block">
+                            <p class="text-sm font-medium">{{ user.get_full_name|default:user.username }}</p>
+                            <p class="text-xs text-slate-400">
+                                {% if user.is_superuser %}
+                                แอดมินระบบ (Administrator)
+                                {% elif user.is_staff %}
+                                เจ้าหน้าที่ (Staff Member)
+                                {% elif user.is_teacher %}
+                                ครู (Teacher)
+                                {% elif user.is_student %}
+                                นักเรียน (Student)
+                                {% else %}
+                                ผู้ใช้ทั่วไป (User)
+                                {% endif %}
+                            </p>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
-            </header>
+            </div>
+        </header>
 
-            <!-- Content -->
-            <main class="flex-1 overflow-y-auto p-4 lg:p-6 w-full h-screen">
-                <div class="w-full h-full bg-white shadow rounded-lg p-4 lg:p-6">
-                    {% block content %}
-                    {% endblock %}
+        <!-- Page Content -->
+        <main class="p-6">
+            {% block content %}
+            <!-- Default content -->
+            <div class="text-center py-16">
+                <div class="glass rounded-3xl p-12 border border-white/20 max-w-md mx-auto">
+                    <i class="fas fa-home text-6xl text-slate-400 mb-6"></i>
+                    <h3 class="text-2xl font-bold mb-4">ยินดีต้อนรับ</h3>
+                    <p class="text-slate-400">สู่ระบบจัดการการสอบออนไลน์</p>
                 </div>
-            </main>
+            </div>
+            {% endblock %}
+        </main>
+    </div>
+
+    <!-- ==================== NOTIFICATION SYSTEM ==================== -->
+    <div id="notifications" class="fixed top-20 right-6 z-50 space-y-3 max-w-sm"></div>
+
+    <!-- ==================== LOADING OVERLAY ==================== -->
+    <div id="loadingOverlay"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="glass rounded-2xl p-8 text-center">
+            <div
+                class="w-16 h-16 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-spin-slow">
+                <i class="fas fa-graduation-cap text-white text-2xl"></i>
+            </div>
+            <p class="text-white font-medium">กำลังโหลด...</p>
         </div>
     </div>
+
+    <!-- ==================== CONFIRMATION MODAL ==================== -->
+    <div id="confirmModal"
+        class="fixed inset-0 hidden bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div
+            class="modal-content glass-dark rounded-3xl p-8 w-full max-w-md border border-white/20 transform scale-75 opacity-0 transition-all duration-300">
+            <div class="text-center mb-6">
+                <div
+                    class="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-exclamation-triangle text-2xl text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold font-kanit mb-2">ยืนยันการดำเนินการ</h3>
+                <p class="text-slate-400 font-prompt" id="confirmMessage">คุณแน่ใจหรือไม่ที่จะดำเนินการนี้?</p>
+            </div>
+
+            <div class="flex space-x-4">
+                <button onclick="closeConfirmModal()"
+                    class="flex-1 px-6 py-3 glass border border-white/20 hover:border-white/40 rounded-xl transition-all duration-300">
+                    <i class="fas fa-times mr-2"></i>ยกเลิก
+                </button>
+                <button id="confirmAction"
+                    class="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 rounded-xl transition-all duration-300">
+                    <i class="fas fa-check mr-2"></i>ยืนยัน
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== BASE JAVASCRIPT ==================== -->
+    <script>
+        // Global notification system
+        let notificationContainer = null;
+        let loadingOverlay = null;
+
+        // Initialize notification system when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeNotificationSystem();
+        });
+
+        function initializeNotificationSystem() {
+            // Create notification container
+            if (!notificationContainer) {
+                notificationContainer = document.createElement('div');
+                notificationContainer.id = 'notification-container';
+                notificationContainer.className = 'fixed top-4 right-4 z-50 space-y-3';
+                notificationContainer.style.maxWidth = '400px';
+                document.body.appendChild(notificationContainer);
+            }
+
+            // Create loading overlay
+            if (!loadingOverlay) {
+                loadingOverlay = document.createElement('div');
+                loadingOverlay.id = 'loading-overlay';
+                loadingOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                loadingOverlay.style.display = 'none';
+                loadingOverlay.innerHTML = `
+            <div class="glass rounded-2xl p-8 text-center border border-white/20">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p class="text-white text-lg font-prompt">กำลังประมวลผล...</p>
+                <p class="text-slate-300 text-sm">กรุณารอสักครู่</p>
+            </div>
+        `;
+                document.body.appendChild(loadingOverlay);
+            }
+        }
+
+        function showNotification(message, type = 'info', duration = 5000) {
+            if (!notificationContainer) {
+                initializeNotificationSystem();
+            }
+
+            const notification = document.createElement('div');
+            notification.className = `
+        notification glass rounded-xl p-4 border transition-all duration-300 transform translate-x-full opacity-0
+        ${getNotificationClasses(type)}
+    `;
+
+            notification.innerHTML = `
+        <div class="flex items-start space-x-3">
+            <div class="flex-shrink-0">
+                ${getNotificationIcon(type)}
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-white">${message}</p>
+            </div>
+            <div class="flex-shrink-0 ml-4">
+                <button type="button" class="inline-flex text-white hover:text-gray-300 focus:outline-none transition-colors duration-200" onclick="closeNotification(this)">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+        </div>
+    `;
+
+            notificationContainer.appendChild(notification);
+
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full', 'opacity-0');
+            }, 100);
+
+            // Auto remove
+            if (duration > 0) {
+                setTimeout(() => {
+                    removeNotification(notification);
+                }, duration);
+            }
+
+            return notification;
+        }
+
+        function getNotificationClasses(type) {
+            switch (type) {
+                case 'success':
+                    return 'border-green-500/30 bg-green-500/10';
+                case 'error':
+                    return 'border-red-500/30 bg-red-500/10';
+                case 'warning':
+                    return 'border-yellow-500/30 bg-yellow-500/10';
+                case 'info':
+                default:
+                    return 'border-blue-500/30 bg-blue-500/10';
+            }
+        }
+
+        function getNotificationIcon(type) {
+            const iconClasses = 'w-5 h-5';
+            switch (type) {
+                case 'success':
+                    return `<i class="fas fa-check-circle ${iconClasses} text-green-400"></i>`;
+                case 'error':
+                    return `<i class="fas fa-exclamation-triangle ${iconClasses} text-red-400"></i>`;
+                case 'warning':
+                    return `<i class="fas fa-exclamation-circle ${iconClasses} text-yellow-400"></i>`;
+                case 'info':
+                default:
+                    return `<i class="fas fa-info-circle ${iconClasses} text-blue-400"></i>`;
+            }
+        }
+
+        function closeNotification(button) {
+            const notification = button.closest('.notification');
+            removeNotification(notification);
+        }
+
+        function removeNotification(notification) {
+            if (notification && notification.parentNode) {
+                notification.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }
+        }
+
+        function showLoading() {
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function hideLoading() {
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        // ==================== FORM HELPERS ====================
+        function validateForm(formId) {
+            const form = document.getElementById(formId);
+            if (!form) return false;
+
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('border-red-500');
+                    isValid = false;
+                } else {
+                    field.classList.remove('border-red-500');
+                }
+            });
+
+            return isValid;
+        }
+
+        function resetForm(formId) {
+            const form = document.getElementById(formId);
+            if (form) {
+                form.reset();
+                // Remove validation classes
+                form.querySelectorAll('.border-red-500').forEach(field => {
+                    field.classList.remove('border-red-500');
+                });
+            }
+        }
+
+        // ==================== AJAX HELPERS ====================
+        function makeAjaxRequest(url, options = {}) {
+            const defaultOptions = {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin'
+            };
+
+            // Add CSRF token for POST requests
+            if (options.method === 'POST') {
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+                if (csrfToken) {
+                    defaultOptions.headers['X-CSRFToken'] = csrfToken.value;
+                }
+            }
+
+            const finalOptions = { ...defaultOptions, ...options };
+
+            return fetch(url, finalOptions)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .catch(error => {
+                    console.error('AJAX Error:', error);
+                    showNotification('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+                    throw error;
+                });
+        }
+
+        // ==================== UTILITY FUNCTIONS ====================
+        function formatThaiDate(dateString) {
+            const date = new Date(dateString);
+            const thaiMonths = [
+                'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+            ];
+
+            const day = date.getDate();
+            const month = thaiMonths[date.getMonth()];
+            const year = date.getFullYear() + 543; // Convert to Buddhist Era
+
+            return `${day} ${month} ${year}`;
+        }
+
+        function formatTime(timeString) {
+            const time = new Date(`1970-01-01T${timeString}`);
+            return time.toLocaleTimeString('th-TH', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // ==================== AUTO-SAVE FUNCTIONALITY ====================
+        function enableAutoSave(formId, saveFunction, interval = 30000) {
+            const form = document.getElementById(formId);
+            if (!form) return;
+
+            let autoSaveTimer;
+            let hasChanges = false;
+
+            // Track changes
+            form.addEventListener('input', function () {
+                hasChanges = true;
+                clearTimeout(autoSaveTimer);
+                autoSaveTimer = setTimeout(() => {
+                    if (hasChanges) {
+                        saveFunction();
+                        hasChanges = false;
+                    }
+                }, interval);
+            });
+
+            // Clear timer on form submit
+            form.addEventListener('submit', function () {
+                clearTimeout(autoSaveTimer);
+                hasChanges = false;
+            });
+        }
+
+        // ==================== KEYBOARD SHORTCUTS ====================
+        document.addEventListener('keydown', function (e) {
+            // Ctrl + S to save (prevent default browser save)
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                const submitBtn = document.querySelector('button[type="submit"]');
+                if (submitBtn && !submitBtn.disabled) {
+                    submitBtn.click();
+                }
+            }
+
+            // Escape to close modals
+            if (e.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal:not([style*="display: none"])');
+                modals.forEach(modal => {
+                    if (modal.style.display !== 'none') {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        // ==================== INITIALIZATION ====================
+        console.log('🚀 Notification system loaded successfully!');
+
+        // ==================== GLOBAL VARIABLES ====================
+        let sidebarCollapsed = false;
+        let isMobile = window.innerWidth < 1024;
+
+        // ==================== SIDEBAR MANAGEMENT ====================
+        function initializeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+            const mobileOverlay = document.getElementById('mobileOverlay');
+
+            // Desktop sidebar toggle
+            sidebarToggle?.addEventListener('click', function () {
+                toggleSidebar();
+            });
+
+            // Mobile sidebar toggle
+            mobileSidebarToggle?.addEventListener('click', function () {
+                toggleMobileSidebar();
+            });
+
+            // Close mobile sidebar when clicking overlay
+            mobileOverlay?.addEventListener('click', function () {
+                closeMobileSidebar();
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', function () {
+                const newIsMobile = window.innerWidth < 1024;
+                if (newIsMobile !== isMobile) {
+                    isMobile = newIsMobile;
+                    if (!isMobile) {
+                        closeMobileSidebar();
+                    }
+                }
+            });
+
+            // Set active menu item
+            setActiveMenuItem();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+
+            sidebarCollapsed = !sidebarCollapsed;
+
+            if (sidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('sidebar-collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('sidebar-collapsed');
+            }
+
+            // Save state to localStorage
+            localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
+        }
+
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('hidden');
+
+            if (sidebar.classList.contains('mobile-open')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function setActiveMenuItem() {
+            const currentPage = '{% block current_page %}{% endblock %}';
+            const menuItems = document.querySelectorAll('.sidebar-item[data-page]');
+
+            menuItems.forEach(item => {
+                const page = item.getAttribute('data-page');
+                if (page === currentPage) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        // ==================== NOTIFICATION SYSTEM ====================
+        function showNotification(message, type = 'info', duration = 5000) {
+            const notificationsContainer = document.getElementById('notifications');
+            const notification = document.createElement('div');
+
+            notification.className = `notification glass-dark rounded-xl p-4 border-l-4 transform translate-x-full opacity-0 transition-all duration-500 ${type === 'success' ? 'border-green-400' :
+                    type === 'error' ? 'border-red-400' :
+                        type === 'warning' ? 'border-yellow-400' : 'border-blue-400'
+                }`;
+
+            notification.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 mt-0.5">
+                        <div class="w-6 h-6 ${type === 'success' ? 'bg-green-500' :
+                    type === 'error' ? 'bg-red-500' :
+                        type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+                } rounded-full flex items-center justify-center">
+                            <i class="fas ${type === 'success' ? 'fa-check' :
+                    type === 'error' ? 'fa-times' :
+                        type === 'warning' ? 'fa-exclamation' : 'fa-info'
+                } text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white">${message}</p>
+                    </div>
+                    <button onclick="removeNotification(this)" class="flex-shrink-0 text-slate-400 hover:text-white transition-colors">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `;
+
+            notificationsContainer.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+                notification.style.opacity = '1';
+            }, 100);
+
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    removeNotification(notification.querySelector('button'));
+                }
+            }, duration);
+        }
+
+        function removeNotification(button) {
+            const notification = button.closest('.notification');
+            notification.style.transform = 'translateX(100%)';
+            notification.style.opacity = '0';
+
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+
+        // ==================== LOADING FUNCTIONS ====================
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        // ==================== MODAL FUNCTIONS ====================
+        function showConfirmModal(message, callback) {
+            const modal = document.getElementById('confirmModal');
+            const modalContent = modal.querySelector('.modal-content');
+            const messageElement = document.getElementById('confirmMessage');
+            const confirmButton = document.getElementById('confirmAction');
+
+            messageElement.textContent = message;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+
+            setTimeout(() => {
+                modalContent.style.transform = 'scale(1)';
+                modalContent.style.opacity = '1';
+            }, 10);
+
+            confirmButton.onclick = () => {
+                closeConfirmModal();
+                callback();
+            };
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirmModal');
+            const modalContent = modal.querySelector('.modal-content');
+
+            modalContent.style.transform = 'scale(0.75)';
+            modalContent.style.opacity = '0';
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }, 300);
+        }
+
+        // ==================== USER ACTIONS ====================
+        function confirmLogout() {
+            showConfirmModal('คุณแน่ใจหรือไม่ที่จะออกจากระบบ?', () => {
+                showLoading();
+                showNotification('กำลังออกจากระบบ...', 'info');
+
+                setTimeout(() => {
+                    window.location.href = '{% url "logout_user" %}';
+                }, 1000);
+            });
+        }
+
+        // ==================== KEYBOARD SHORTCUTS ====================
+        document.addEventListener('keydown', function (e) {
+            // ESC key closes modals and mobile sidebar
+            if (e.key === 'Escape') {
+                if (!document.getElementById('confirmModal').classList.contains('hidden')) {
+                    closeConfirmModal();
+                } else if (document.getElementById('sidebar').classList.contains('mobile-open')) {
+                    closeMobileSidebar();
+                }
+            }
+
+            // Ctrl/Cmd + B toggles sidebar
+            if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                e.preventDefault();
+                if (isMobile) {
+                    toggleMobileSidebar();
+                } else {
+                    toggleSidebar();
+                }
+            }
+        });
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('🚀 Base Template loaded successfully!');
+
+            // Initialize components
+            initializeSidebar();
+
+            // Restore sidebar state
+            const savedState = localStorage.getItem('sidebarCollapsed');
+            if (savedState === 'true' && !isMobile) {
+                toggleSidebar();
+            }
+
+            // Page-specific initialization
+            if (typeof initializePage === 'function') {
+                initializePage();
+            }
+
+            // Show welcome message
+            setTimeout(() => {
+                showNotification('ยินดีต้อนรับสู่ระบบจัดการการสอบ', 'success');
+            }, 500);
+        });
+
+        // ==================== ERROR HANDLING ====================
+        window.addEventListener('error', function (e) {
+            console.error('JavaScript error:', e.error);
+            showNotification('เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง', 'error');
+            hideLoading();
+        });
+
+        // ==================== CLOSE MODALS ON OUTSIDE CLICK ====================
+        document.addEventListener('click', function (e) {
+            if (e.target.classList.contains('modal-overlay') || e.target.id === 'confirmModal') {
+                closeConfirmModal();
+            }
+        });
+
+        // ==================== PAGE SPECIFIC FUNCTIONS ====================
+        {% block extra_js %} {% endblock %}
+    </script>
+
+    <!-- Page specific scripts -->
+    {% block scripts %}{% endblock %}
 </body>
 
 </html>

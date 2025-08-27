@@ -1,0 +1,891 @@
+{% extends "app/base.html" %}
+
+{% block title %}เช็คชื่อเข้าสอบ - {{ subject.subject_name }} - ระบบจัดการการสอบ{% endblock %}
+
+{% block current_page %}checkin{% endblock %}
+
+{% block page_title %}เช็คชื่อเข้าสอบ{% endblock %}
+{% block page_subtitle %}{{ subject.subject_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --gradient-warning: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        --gradient-error: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+        --gradient-accent: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    }
+    
+    .floating-card {
+        background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .floating-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 
+            0 12px 40px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .hero-avatar {
+        background: var(--gradient-primary);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-avatar::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: spin 3s linear infinite;
+    }
+
+    .hero-avatar::after {
+        content: '';
+        position: absolute;
+        inset: 2px;
+        background: inherit;
+        border-radius: inherit;
+        z-index: 1;
+    }
+
+    .hero-avatar i {
+        position: relative;
+        z-index: 2;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .text-shimmer {
+        background: linear-gradient(
+            90deg,
+            #60a5fa,
+            #a78bfa,
+            #f472b6,
+            #fb7185,
+            #60a5fa
+        );
+        background-size: 300% 100%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+
+    .status-badge {
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+
+    .status-badge::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: inherit;
+        opacity: 0.1;
+        border-radius: inherit;
+    }
+
+    .status-success {
+        background: var(--gradient-success);
+        color: white;
+    }
+
+    .status-warning {
+        background: var(--gradient-warning);
+        color: white;
+    }
+
+    .status-pending {
+        background: var(--gradient-accent);
+        color: #1e293b;
+    }
+
+    .btn-checkin {
+        background: var(--gradient-success);
+        position: relative;
+        overflow: hidden;
+        transform: perspective(1000px) rotateX(0deg);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-checkin::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.6s;
+    }
+
+    .btn-checkin:hover::before {
+        transform: translateX(100%);
+    }
+
+    .btn-checkin:hover {
+        transform: perspective(1000px) rotateX(-2deg) translateY(-2px);
+        box-shadow: 0 15px 35px rgba(79, 172, 254, 0.4);
+    }
+
+    .btn-checkin:active {
+        transform: perspective(1000px) rotateX(2deg) translateY(1px);
+    }
+
+    .btn-checkin:disabled {
+        background: linear-gradient(135deg, #6b7280, #4b5563);
+        transform: none;
+        cursor: not-allowed;
+    }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+
+    .detail-item {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 12px;
+        padding: 16px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .detail-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: var(--gradient-primary);
+    }
+
+    .detail-item:hover {
+        border-color: rgba(59, 130, 246, 0.4);
+        transform: translateY(-1px);
+    }
+
+    .detail-label {
+        font-size: 0.875rem;
+        color: #94a3b8;
+        font-weight: 500;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .detail-value {
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .pulse-ring {
+        position: absolute;
+        border: 4px solid rgba(59, 130, 246, 0.3);
+        border-radius: 50%;
+        animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse-ring {
+        0% {
+            transform: scale(0.33);
+            opacity: 1;
+        }
+        80%, 100% {
+            transform: scale(1.33);
+            opacity: 0;
+        }
+    }
+
+    .instruction-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .instruction-item {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .instruction-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateX(4px);
+    }
+
+    .loading-spinner {
+        position: relative;
+        width: 40px;
+        height: 40px;
+    }
+
+    .loading-spinner::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border: 3px solid rgba(59, 130, 246, 0.3);
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    .floating-particles {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .particle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: rgba(59, 130, 246, 0.6);
+        border-radius: 50%;
+        animation: float-particle 6s linear infinite;
+    }
+
+    @keyframes float-particle {
+        0% {
+            transform: translateY(100vh) scale(0);
+            opacity: 0;
+        }
+        10% {
+            opacity: 1;
+        }
+        90% {
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(-100vh) scale(1);
+            opacity: 0;
+        }
+    }
+
+    .countdown-timer {
+        font-family: 'JetBrains Mono', monospace;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        padding: 8px 12px;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="floating-particles">
+    <div class="particle" style="left: 10%; animation-delay: 0s;"></div>
+    <div class="particle" style="left: 20%; animation-delay: 1s;"></div>
+    <div class="particle" style="left: 30%; animation-delay: 2s;"></div>
+    <div class="particle" style="left: 40%; animation-delay: 3s;"></div>
+    <div class="particle" style="left: 50%; animation-delay: 4s;"></div>
+    <div class="particle" style="left: 60%; animation-delay: 5s;"></div>
+    <div class="particle" style="left: 70%; animation-delay: 0.5s;"></div>
+    <div class="particle" style="left: 80%; animation-delay: 1.5s;"></div>
+    <div class="particle" style="left: 90%; animation-delay: 2.5s;"></div>
+</div>
+
+<div class="max-w-4xl mx-auto space-y-8">
+    
+    <!-- Hero Section -->
+    <div class="text-center relative">
+        <div class="hero-avatar w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+            <div class="pulse-ring w-24 h-24"></div>
+            {% if user_type == 'student' %}
+                <i class="fas fa-user-graduate text-white text-3xl"></i>
+            {% elif user_type == 'teacher' %}
+                <i class="fas fa-chalkboard-user text-white text-3xl"></i>
+            {% else %}
+                <i class="fas fa-clipboard-check text-white text-3xl"></i>
+            {% endif %}
+        </div>
+        <h1 class="text-4xl font-bold text-shimmer mb-3">เช็คชื่อเข้าสอบ</h1>
+        <p class="text-xl text-slate-300 mb-2">{{ subject.subject_name }}</p>
+        <p class="text-sm text-slate-400">{{ subject.subject_code }}</p>
+        
+        <!-- Current Time Display -->
+        <div class="mt-4 flex justify-center">
+            <div class="countdown-timer">
+                <span class="text-blue-400">เวลาปัจจุบัน:</span>
+                <span id="currentTime" class="text-white font-mono ml-2"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Banner -->
+    <div class="flex justify-center">
+        {% if already_checked %}
+            <div class="status-badge status-success rounded-full px-8 py-4 flex items-center space-x-3">
+                <i class="fas fa-check-circle text-2xl"></i>
+                <div>
+                    <p class="font-bold text-lg">เช็คชื่อสำเร็จ</p>
+                    <p class="text-sm opacity-90">เวลา {{ checkin_time|time:"H:i" }} น.</p>
+                </div>
+            </div>
+        {% elif can_checkin %}
+            <div class="status-badge status-pending rounded-full px-8 py-4 flex items-center space-x-3">
+                <div class="loading-spinner"></div>
+                <div>
+                    <p class="font-bold text-lg">พร้อมเช็คชื่อ</p>
+                    <p class="text-sm opacity-90">กดปุ่มด้านล่างเพื่อเช็คชื่อ</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="status-badge status-warning rounded-full px-8 py-4 flex items-center space-x-3">
+                <i class="fas fa-exclamation-triangle text-2xl"></i>
+                <div>
+                    <p class="font-bold text-lg">ไม่สามารถเช็คชื่อได้</p>
+                    <p class="text-sm opacity-90">นอกช่วงเวลาหรือไม่มีสิทธิ์</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Exam Details -->
+    <div class="floating-card rounded-2xl p-8">
+        <h3 class="text-2xl font-bold text-white mb-6 flex items-center">
+            <i class="fas fa-info-circle text-blue-400 mr-3"></i>
+            รายละเอียดการสอบ
+        </h3>
+        
+        <div class="detail-grid">
+            <div class="detail-item">
+                <div class="detail-label">
+                    <i class="fas fa-calendar text-blue-400"></i>
+                    วันที่สอบ
+                </div>
+                <div class="detail-value">{{ subject.exam_date|date:"d/m/Y" }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">
+                    <i class="fas fa-clock text-green-400"></i>
+                    เวลาสอบ
+                </div>
+                <div class="detail-value">{{ subject.start_time|time:"H:i" }}—{{ subject.end_time|time:"H:i" }} น.</div>
+            </div>
+
+            {% if user_type == 'student' and profile %}
+            <div class="detail-item">
+                <div class="detail-label">
+                    <i class="fas fa-users text-purple-400"></i>
+                    ระดับชั้น
+                </div>
+                <div class="detail-value">{{ profile.student_class }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="detail-label">
+                    <i class="fas fa-hashtag text-pink-400"></i>
+                    เลขที่นั่ง
+                </div>
+                <div class="detail-value">{{ profile.student_number }}</div>
+            </div>
+            {% endif %}
+            
+            {% if subject.room %}
+            <div class="detail-item">
+                <div class="detail-label">
+                    <i class="fas fa-door-open text-orange-400"></i>
+                    ห้องสอบ
+                </div>
+                <div class="detail-value">{{ subject.room.building.name }} ห้อง {{ subject.room.name }}</div>
+            </div>
+            {% endif %}
+            
+            {% if subject.invigilator %}
+            <div class="detail-item">
+                <div class="detail-label">
+                    <i class="fas fa-user-tie text-indigo-400"></i>
+                    ครูผู้คุมสอบ
+                </div>
+                <div class="detail-value">{{ subject.invigilator.user.get_full_name }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- User Profile Card -->
+    <div class="floating-card rounded-2xl p-6">
+        <div class="flex items-center space-x-4">
+            <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                {% if user_type == 'student' %}
+                    <i class="fas fa-id-card text-white text-xl"></i>
+                {% elif user_type == 'teacher' %}
+                    <i class="fas fa-user-tie text-white text-xl"></i>
+                {% else %}
+                    <i class="fas fa-user-shield text-white text-xl"></i>
+                {% endif %}
+            </div>
+            <div class="flex-1">
+                <h3 class="text-xl font-bold text-white">{{ request.user.get_full_name }}</h3>
+                {% if user_type == 'student' %}
+                    <p class="text-blue-300 font-medium">{{ profile.student_id }}</p>
+                    <p class="text-slate-400 text-sm">นักเรียน {{ profile.student_class }}</p>
+                {% elif user_type == 'teacher' %}
+                    <p class="text-blue-300 font-medium">{{ profile.teacher_id }}</p>
+                    <p class="text-slate-400 text-sm">ครูผู้สอน</p>
+                {% else %}
+                    <p class="text-blue-300 font-medium">เจ้าหน้าที่</p>
+                    <p class="text-slate-400 text-sm">Staff Member</p>
+                {% endif %}
+            </div>
+            <div class="text-right">
+                <div class="text-sm text-slate-400">สถานะ</div>
+                <div class="text-green-400 font-bold">
+                    {% if already_checked %}
+                        <i class="fas fa-check-circle mr-1"></i>เช็คชื่อแล้ว
+                    {% elif can_checkin %}
+                        <i class="fas fa-clock mr-1"></i>พร้อมเช็คชื่อ
+                    {% else %}
+                        <i class="fas fa-times-circle mr-1"></i>ไม่สามารถเช็คชื่อ
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Check-in Action -->
+    <div class="space-y-6">
+        {% if can_checkin and not already_checked %}
+            <button id="checkinBtn" onclick="performCheckin()" 
+                    class="w-full py-6 btn-checkin rounded-2xl text-white font-bold text-xl shadow-xl relative overflow-hidden group">
+                <div class="flex items-center justify-center space-x-4">
+                    <i class="fas fa-check text-2xl group-hover:scale-110 transition-transform"></i>
+                    <span>เช็คชื่อเข้าสอบ</span>
+                </div>
+            </button>
+        {% else %}
+            <button disabled 
+                    class="w-full py-6 btn-checkin rounded-2xl text-white font-bold text-xl shadow-xl opacity-50 cursor-not-allowed">
+                <div class="flex items-center justify-center space-x-4">
+                    <i class="fas fa-check text-2xl"></i>
+                    <span>
+                        {% if already_checked %}เช็คชื่อเรียบร้อยแล้ว{% else %}ไม่สามารถเช็คชื่อได้{% endif %}
+                    </span>
+                </div>
+            </button>
+        {% endif %}
+        
+        <!-- Back Button -->
+        <div class="text-center">
+            <a href="{% url 'exam_subjects' %}" 
+               class="inline-flex items-center space-x-2 px-6 py-3 bg-slate-700/50 hover:bg-slate-600/50 rounded-xl text-slate-300 hover:text-white transition-all group">
+                <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+                <span>กลับหน้ารายการสอบ</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Instructions -->
+    <div class="instruction-card floating-card rounded-2xl p-8">
+        <h3 class="text-xl font-bold text-white mb-6 flex items-center">
+            <i class="fas fa-lightbulb text-yellow-400 mr-3"></i>
+            คำแนะนำการใช้งาน
+        </h3>
+        
+        <div class="grid md:grid-cols-2 gap-4">
+            {% if user_type == 'student' %}
+                <div class="instruction-item">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check text-green-400"></i>
+                        <span class="text-slate-200">กดปุ่มเช็คชื่อเมื่อถึงเวลาสอบ</span>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check text-green-400"></i>
+                        <span class="text-slate-200">ตรวจสอบข้อมูลวิชาให้ถูกต้อง</span>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check text-green-400"></i>
+                        <span class="text-slate-200">หากมีปัญหาให้ติดต่อครูผู้คุมสอบ</span>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check text-green-400"></i>
+                        <span class="text-slate-200">มาถึงห้องสอบก่อนเวลา 15 นาที</span>
+                    </div>
+                </div>
+            {% elif user_type == 'teacher' %}
+                <div class="instruction-item">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check text-green-400"></i>
+                        <span class="text-slate-200">เช็คชื่อก่อนเข้าห้องสอบ</span>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check text-green-400"></i>
+                        <span class="text-slate-200">ตรวจสอบความพร้อมของห้องสอบ</span>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check text-green-400"></i>
+                        <span class="text-slate-200">ดูแลนักเรียนในระหว่างการสอบ</span>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check text-green-400"></i>
+                        <span class="text-slate-200">บันทึกเหตุการณ์ที่เกิดขึ้น</span>
+                    </div>
+                </div>
+            {% else %}
+                <div class="instruction-item">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check text-green-400"></i>
+                        <span class="text-slate-200">ตรวจสอบระบบก่อนเริ่มสอบ</span>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check text-green-400"></i>
+                        <span class="text-slate-200">ประสานงานกับครูผู้คุมสอบ</span>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check text-green-400"></i>
+                        <span class="text-slate-200">แก้ไขปัญหาที่เกิดขึ้น</span>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check text-green-400"></i>
+                        <span class="text-slate-200">บันทึกข้อมูลการสอบ</span>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Loading Overlay -->
+<div id="loadingOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50" style="display: none;">
+    <div class="floating-card rounded-3xl p-8 text-center">
+        <div class="loading-spinner mx-auto mb-4"></div>
+        <h3 class="text-xl font-bold text-white mb-2">กำลังเช็คชื่อ</h3>
+        <p class="text-slate-400">กรุณารอสักครู่...</p>
+        <div class="mt-4 w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update current time
+function updateCurrentTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('th-TH', { 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    document.getElementById('currentTime').textContent = timeString;
+}
+
+// Update time every second
+setInterval(updateCurrentTime, 1000);
+updateCurrentTime(); // Initial call
+
+// CSRF Token
+function getCsrfToken() {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'csrftoken') {
+            return value;
+        }
+    }
+    return '';
+}
+
+// Enhanced loading functions
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// Enhanced notification with better animation
+function showEnhancedNotification(message, type = 'info', duration = 5000) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 max-w-md transform translate-x-full`;
+    
+    const bgClass = {
+        'success': 'bg-gradient-to-r from-green-500 to-emerald-500',
+        'error': 'bg-gradient-to-r from-red-500 to-pink-500',
+        'warning': 'bg-gradient-to-r from-yellow-500 to-orange-500',
+        'info': 'bg-gradient-to-r from-blue-500 to-purple-500'
+    }[type];
+    
+    const icon = {
+        'success': 'fa-check-circle',
+        'error': 'fa-exclamation-triangle',
+        'warning': 'fa-exclamation-circle',
+        'info': 'fa-info-circle'
+    }[type];
+    
+    notification.innerHTML = `
+        <div class="${bgClass} text-white p-4 rounded-xl shadow-2xl backdrop-blur-sm border border-white/20">
+            <div class="flex items-center space-x-3">
+                <i class="fas ${icon} text-xl"></i>
+                <div class="flex-1">
+                    <p class="font-medium">${message}</p>
+                </div>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                        class="text-white/80 hover:text-white transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+        notification.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+    }, 100);
+    
+    // Auto remove
+    if (duration > 0) {
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => notification.remove(), 300);
+        }, duration);
+    }
+}
+
+// Enhanced check-in function
+async function performCheckin() {
+    const btn = document.getElementById('checkinBtn');
+    
+    try {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <div class="flex items-center justify-center space-x-4">
+                <div class="loading-spinner w-6 h-6"></div>
+                <span>กำลังเช็คชื่อ...</span>
+            </div>
+        `;
+        showLoading();
+        
+        const response = await fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                action: 'checkin'
+            })
+        });
+        
+        const data = await response.json();
+        hideLoading();
+        
+        if (data.status === 'success') {
+            showEnhancedNotification(data.message, 'success');
+            
+            // Animate success
+            btn.innerHTML = `
+                <div class="flex items-center justify-center space-x-4">
+                    <i class="fas fa-check text-2xl animate-bounce"></i>
+                    <span>เช็คชื่อสำเร็จ!</span>
+                </div>
+            `;
+            btn.className = btn.className.replace('btn-checkin', 'bg-green-500');
+            
+            // Update UI after delay
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+            
+        } else if (data.status === 'info') {
+            showEnhancedNotification(data.message, 'warning');
+            
+            // Reset button
+            btn.innerHTML = `
+                <div class="flex items-center justify-center space-x-4">
+                    <i class="fas fa-info-circle text-2xl"></i>
+                    <span>ได้เช็คชื่อแล้ว</span>
+                </div>
+            `;
+            btn.className = btn.className.replace('btn-checkin', 'bg-yellow-500');
+            
+        } else {
+            showEnhancedNotification(data.message || 'เกิดข้อผิดพลาดในการเช็คชื่อ', 'error');
+            
+            // Reset button
+            resetCheckinButton();
+        }
+        
+    } catch (error) {
+        hideLoading();
+        console.error('Check-in error:', error);
+        showEnhancedNotification('เกิดข้อผิดพลาดในการติดต่อเซิร์ฟเวอร์', 'error');
+        resetCheckinButton();
+    }
+}
+
+function resetCheckinButton() {
+    const btn = document.getElementById('checkinBtn');
+    btn.disabled = false;
+    btn.innerHTML = `
+        <div class="flex items-center justify-center space-x-4">
+            <i class="fas fa-check text-2xl group-hover:scale-110 transition-transform"></i>
+            <span>เช็คชื่อเข้าสอบ</span>
+        </div>
+    `;
+}
+
+// Auto-refresh functionality with better UX
+let refreshInterval;
+function startAutoRefresh() {
+    refreshInterval = setInterval(async () => {
+        try {
+            const response = await fetch(window.location.href + '?check_status=1');
+            if (response.ok) {
+                const html = await response.text();
+                // Simple check - in production you might want more sophisticated detection
+                if (html.includes('เช็คชื่อแล้ว') && !document.body.innerHTML.includes('เช็คชื่อแล้ว')) {
+                    showEnhancedNotification('สถานะการเช็คชื่อมีการเปลี่ยนแปลง', 'info');
+                    setTimeout(() => location.reload(), 1000);
+                }
+            }
+        } catch (error) {
+            console.error('Auto-refresh failed:', error);
+        }
+    }, 30000);
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+}
+
+// Page visibility API for better performance
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        stopAutoRefresh();
+    } else {
+        startAutoRefresh();
+    }
+});
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Enhanced check-in page loaded successfully');
+    
+    // Start auto-refresh only if not already checked in
+    {% if not already_checked %}
+        startAutoRefresh();
+    {% endif %}
+    
+    // Show welcome message based on user type and status
+    setTimeout(() => {
+        {% if not already_checked and can_checkin %}
+            showEnhancedNotification('ระบบพร้อมสำหรับการเช็คชื่อ', 'info', 4000);
+        {% elif already_checked %}
+            showEnhancedNotification('คุณได้เช็คชื่อเรียบร้อยแล้ว', 'success', 3000);
+        {% else %}
+            showEnhancedNotification('กรุณาตรวจสอบเวลาและสิทธิ์การเข้าถึง', 'warning', 4000);
+        {% endif %}
+    }, 1000);
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Enter or Space to check-in (if available)
+        if ((e.key === 'Enter' || e.key === ' ') && !document.getElementById('checkinBtn').disabled) {
+            e.preventDefault();
+            performCheckin();
+        }
+        
+        // Escape to go back
+        if (e.key === 'Escape') {
+            window.history.back();
+        }
+    });
+    
+    // Add focus management for accessibility
+    const checkinBtn = document.getElementById('checkinBtn');
+    if (checkinBtn && !checkinBtn.disabled) {
+        checkinBtn.focus();
+    }
+    
+    // Service worker registration for offline support (if available)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.log('Service worker registration failed');
+        });
+    }
+});
+
+// Handle online/offline status with enhanced UX
+window.addEventListener('online', () => {
+    showEnhancedNotification('เชื่อมต่ออินเทอร์เน็ตแล้ว', 'success', 3000);
+    {% if not already_checked %}
+        startAutoRefresh();
+    {% endif %}
+});
+
+window.addEventListener('offline', () => {
+    showEnhancedNotification('ขาดการเชื่อมต่ออินเทอร์เน็ต', 'error', 5000);
+    stopAutoRefresh();
+});
+
+// Performance monitoring
+const perfObserver = new PerformanceObserver((list) => {
+    for (const entry of list.getEntries()) {
+        if (entry.entryType === 'navigation') {
+            console.log('Page load time:', entry.loadEventEnd - entry.loadEventStart, 'ms');
+        }
+    }
+});
+
+if (typeof PerformanceObserver !== 'undefined') {
+    perfObserver.observe({entryTypes: ['navigation']});
+}
+
+// Clean up on page unload
+window.addEventListener('beforeunload', () => {
+    stopAutoRefresh();
+});
+</script>
+{% endblock %}

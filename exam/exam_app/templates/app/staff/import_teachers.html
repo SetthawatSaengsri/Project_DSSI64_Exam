@@ -1,0 +1,628 @@
+{% extends 'app/base.html' %} 
+
+{% block title %}Import ข้อมูลครู - ระบบจัดการการสอบ{% endblock %}
+
+{% block current_page %}import-teachers{% endblock %}
+
+{% block page_title %}Import ข้อมูลครู{% endblock %}
+{% block page_subtitle %}อัพโหลดไฟล์ Excel หรือ CSV เพื่อนำเข้าข้อมูลครูจำนวนมาก{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ==================== CUSTOM COMPONENTS ==================== */
+    .upload-area {
+        transition: all 0.3s ease;
+        border: 2px dashed rgba(147, 51, 234, 0.3);
+    }
+
+    .upload-area:hover {
+        border-color: rgba(147, 51, 234, 0.6);
+        background: rgba(147, 51, 234, 0.05);
+    }
+
+    .upload-area.dragover {
+        border-color: rgba(147, 51, 234, 1);
+        background: rgba(147, 51, 234, 0.1);
+        transform: scale(1.02);
+    }
+
+    .progress-bar {
+        transition: width 0.3s ease;
+        background: linear-gradient(45deg, 
+            rgba(147, 51, 234, 1) 25%, 
+            rgba(236, 72, 153, 1) 25%, 
+            rgba(236, 72, 153, 1) 50%, 
+            rgba(147, 51, 234, 1) 50%, 
+            rgba(147, 51, 234, 1) 75%, 
+            rgba(236, 72, 153, 1) 75%);
+        background-size: 20px 20px;
+        animation: progress-stripes 1s linear infinite;
+    }
+
+    @keyframes progress-stripes {
+        0% { background-position: 0 0; }
+        100% { background-position: 20px 0; }
+    }
+
+    @keyframes pulse-success {
+        0%, 100% { 
+            background: rgba(147, 51, 234, 0.2);
+            box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7);
+        }
+        50% { 
+            background: rgba(147, 51, 234, 0.4);
+            box-shadow: 0 0 0 10px rgba(147, 51, 234, 0);
+        }
+    }
+
+    .animate-pulse-success {
+        animation: pulse-success 2s infinite;
+    }
+
+    /* ==================== FILE INPUT STYLING ==================== */
+    .file-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ==================== HEADER SECTION ==================== -->
+<div class="mb-12 text-center space-y-6">
+    <div class="animate-slide-up">
+        <h2 class="text-4xl lg:text-5xl font-bold font-kanit mb-4">
+            <span class="text-gradient-purple">นำเข้าข้อมูลครู</span>
+        </h2>
+        <p class="text-xl text-slate-300 font-prompt">อัพโหลดไฟล์ Excel หรือ CSV เพื่อนำเข้าข้อมูลครูจำนวนมาก</p>
+    </div>
+    <div class="flex justify-center">
+        <div class="w-32 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 rounded-full"></div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    
+    <!-- ==================== UPLOAD SECTION ==================== -->
+    <div class="glass rounded-3xl p-8 border border-white/20">
+        <div class="text-center mb-8">
+            <h3 class="text-2xl font-bold font-kanit mb-4">
+                <span class="text-gradient-purple">อัพโหลดไฟล์ข้อมูล</span>
+            </h3>
+            <p class="text-slate-300 font-prompt">เลือกไฟล์ Excel (.xlsx, .xls) หรือ CSV เพื่อนำเข้าข้อมูล</p>
+        </div>
+
+        <!-- Upload Form -->
+        <form method="post" enctype="multipart/form-data" id="importForm">
+            {% csrf_token %}
+            
+            <!-- File Upload Area -->
+            <div class="upload-area rounded-2xl p-8 text-center mb-6" id="uploadArea">
+                <div class="mb-6">
+                    <div class="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-float shadow-glow-purple">
+                        <i class="fas fa-cloud-upload-alt text-3xl text-white"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-2 font-kanit">ลากไฟล์มาวางที่นี่</h4>
+                    <p class="text-slate-400 mb-4">หรือคลิกเพื่อเลือกไฟล์</p>
+                </div>
+                
+                <input type="file" name="file" id="fileInput" class="file-input" accept=".xlsx,.xls,.csv" required>
+                <button type="button" onclick="document.getElementById('fileInput').click()" class="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold">
+                    <i class="fas fa-folder-open mr-2"></i>เลือกไฟล์
+                </button>
+                
+                <!-- File Info Display -->
+                <div id="fileInfo" class="hidden mt-4 p-4 glass-dark rounded-xl">
+                    <div class="flex items-center justify-center space-x-3">
+                        <i class="fas fa-file-excel text-purple-400 text-2xl"></i>
+                        <div class="text-left">
+                            <p class="font-medium" id="fileName"></p>
+                            <p class="text-sm text-slate-400" id="fileSize"></p>
+                        </div>
+                        <button type="button" onclick="removeFile()" class="ml-4 text-red-400 hover:text-red-300 transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Options -->
+            <div class="space-y-4 mb-6">
+                <div class="flex items-center space-x-3">
+                    <input type="checkbox" name="overwrite_existing" id="overwrite" class="w-4 h-4 text-purple-500 bg-slate-700 border-slate-600 rounded focus:ring-purple-500">
+                    <label for="overwrite" class="text-slate-300">อัปเดตข้อมูลที่มีอยู่แล้ว</label>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div id="progressContainer" class="hidden mb-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-slate-300">กำลังอัพโหลด...</span>
+                    <span class="text-sm text-slate-400" id="progressText">0%</span>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-2">
+                    <div class="progress-bar h-2 rounded-full" id="progressBar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="submitBtn" class="w-full px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold font-kanit text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+                <i class="fas fa-upload mr-2"></i>เริ่มนำเข้าข้อมูล
+            </button>
+        </form>
+    </div>
+
+    <!-- ==================== INSTRUCTIONS & TEMPLATE ==================== -->
+    <div class="space-y-8">
+        
+        <!-- Download Template -->
+        <div class="glass rounded-3xl p-8 border border-white/20">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold font-kanit mb-4">
+                    <span class="text-gradient">ดาวน์โหลด Template</span>
+                </h3>
+                <p class="text-slate-300 font-prompt">ดาวน์โหลดไฟล์ตัวอย่างพร้อมรูปแบบที่ถูกต้อง</p>
+            </div>
+
+            <div class="space-y-4">
+                <a href="/download/template/teacher/" class="block w-full px-6 py-4 glass border border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/10 rounded-xl transition-all duration-300 group">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                <i class="fas fa-file-excel text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold font-kanit">Template Excel</h4>
+                                <p class="text-sm text-slate-400">ไฟล์ตัวอย่าง .xlsx พร้อมข้อมูลตัวอย่าง</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-download text-purple-400 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </a>
+
+                <a href="/export/users/teacher/" class="block w-full px-6 py-4 glass border border-blue-500/30 hover:border-blue-500/50 hover:bg-blue-500/10 rounded-xl transition-all duration-300 group">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                <i class="fas fa-download text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold font-kanit">ส่งออกข้อมูลปัจจุบัน</h4>
+                                <p class="text-sm text-slate-400">ดาวน์โหลดข้อมูลครูที่มีในระบบ</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-external-link-alt text-blue-400 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="glass rounded-3xl p-8 border border-white/20">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold font-kanit mb-4">
+                    <span class="text-gradient-orange">คำแนะนำการใช้งาน</span>
+                </h3>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex items-start space-x-4">
+                    <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <span class="text-white text-sm font-bold">1</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold mb-2">ดาวน์โหลด Template</h4>
+                        <p class="text-slate-400 text-sm">ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบที่ถูกต้อง</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4">
+                    <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <span class="text-white text-sm font-bold">2</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold mb-2">เตรียมข้อมูล</h4>
+                        <p class="text-slate-400 text-sm">กรอกข้อมูลตามคอลัมน์ที่กำหนด</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4">
+                    <div class="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <span class="text-white text-sm font-bold">3</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold mb-2">อัพโหลดไฟล์</h4>
+                        <p class="text-slate-400 text-sm">เลือกไฟล์ที่เตรียมไว้และกำหนดตัวเลือกต่างๆ</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4">
+                    <div class="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <span class="text-white text-sm font-bold">4</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold mb-2">ตรวจสอบผลลัพธ์</h4>
+                        <p class="text-slate-400 text-sm">รอให้ระบบประมวลผลและตรวจสอบรายงานผลลัพธ์</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Required Fields -->
+            <div class="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                <div class="flex items-center space-x-2 mb-3">
+                    <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                    <h4 class="font-bold text-yellow-400">ข้อมูลที่จำเป็น</h4>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>username (ชื่อผู้ใช้)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>password (Password)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>teacher_id (รหัสครู)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>first_name (ชื่อ)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>last_name (นามสกุล)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>email (อีเมล)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== SUCCESS MODAL ==================== -->
+<div id="successModal" class="fixed inset-0 hidden bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="modal-content glass-dark rounded-3xl p-8 w-full max-w-md border border-white/20 transform scale-75 opacity-0 transition-all duration-300">
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse-success">
+                <i class="fas fa-check text-2xl text-white"></i>
+            </div>
+            <h3 class="text-xl font-bold font-kanit mb-2 text-purple-400">นำเข้าข้อมูลสำเร็จ!</h3>
+            <p class="text-slate-400 font-prompt" id="successMessage">ข้อมูลได้รับการนำเข้าเรียบร้อยแล้ว</p>
+        </div>
+        
+        <button onclick="closeSuccessModal()" class="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all duration-300">
+            <i class="fas fa-check mr-2"></i>ตกลง
+        </button>
+    </div>
+</div>
+
+<!-- Django Messages -->
+{% if messages %}
+    <div id="djangoMessages" class="hidden">
+        {% for message in messages %}
+            <div class="message" data-type="{{ message.tags }}" data-message="{{ message }}"></div>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ==================== GLOBAL VARIABLES ====================
+    let selectedFile = null;
+    let isUploading = false;
+
+    // ==================== FILE HANDLING ====================
+    function initializeFileHandling() {
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+
+        // File input change event
+        fileInput.addEventListener('change', function(e) {
+            handleFileSelect(e.target.files[0]);
+        });
+
+        // Drag and drop events
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // Click to select file
+        uploadArea.addEventListener('click', function(e) {
+            if (e.target === uploadArea || e.target.closest('.upload-area')) {
+                fileInput.click();
+            }
+        });
+    }
+
+    function handleFileSelect(file) {
+        if (!file) return;
+
+        // Validate file type
+        const allowedTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+            'application/vnd.ms-excel', // .xls
+            'text/csv' // .csv
+        ];
+
+        if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().match(/\.(xlsx|xls|csv)$/)) {
+            showNotification('กรุณาเลือกไฟล์ .xlsx, .xls หรือ .csv เท่านั้น', 'error');
+            return;
+        }
+
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            showNotification('ไฟล์ใหญ่เกิน 5MB กรุณาเลือกไฟล์ที่เล็กกว่า', 'error');
+            return;
+        }
+
+        selectedFile = file;
+        
+        // Update UI
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = formatFileSize(file.size);
+        document.getElementById('fileInfo').classList.remove('hidden');
+        
+        // Update file input
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        document.getElementById('fileInput').files = dataTransfer.files;
+
+        showNotification('เลือกไฟล์สำเร็จ: ' + file.name, 'success');
+    }
+
+    function removeFile() {
+        selectedFile = null;
+        document.getElementById('fileInfo').classList.add('hidden');
+        document.getElementById('fileInput').value = '';
+        showNotification('ลบไฟล์แล้ว', 'info');
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // ==================== FORM SUBMISSION ====================
+    function initializeFormSubmission() {
+        const form = document.getElementById('importForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!selectedFile) {
+                showNotification('กรุณาเลือกไฟล์ก่อนทำการอัพโหลด', 'error');
+                return;
+            }
+
+            if (isUploading) {
+                showNotification('กำลังอัพโหลดอยู่ กรุณารอสักครู่', 'warning');
+                return;
+            }
+
+            startUpload();
+        });
+    }
+
+    function startUpload() {
+        isUploading = true;
+        
+        // Update UI
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('progressContainer').classList.remove('hidden');
+        showLoading();
+        
+        // Create FormData
+        const formData = new FormData(document.getElementById('importForm'));
+        
+        // Create XMLHttpRequest for progress tracking
+        const xhr = new XMLHttpRequest();
+        
+        // Progress tracking
+        xhr.upload.addEventListener('progress', function(e) {
+            if (e.lengthComputable) {
+                const percentComplete = (e.loaded / e.total) * 100;
+                updateProgress(percentComplete);
+            }
+        });
+        
+        // Upload complete
+        xhr.addEventListener('load', function() {
+            hideLoading();
+            isUploading = false;
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('progressContainer').classList.add('hidden');
+            
+            if (xhr.status === 200) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    handleUploadSuccess(response);
+                } catch (e) {
+                    // If not JSON, it's likely a redirect (successful form submission)
+                    showSuccessModal('อัพโหลดและนำเข้าข้อมูลสำเร็จ!');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                }
+            } else {
+                showNotification('เกิดข้อผิดพลาดในการอัพโหลด กรุณาลองใหม่อีกครั้ง', 'error');
+            }
+        });
+        
+        // Upload error
+        xhr.addEventListener('error', function() {
+            hideLoading();
+            isUploading = false;
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('progressContainer').classList.add('hidden');
+            showNotification('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง', 'error');
+        });
+        
+        // Start upload
+        xhr.open('POST', window.location.href);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.send(formData);
+        
+        showNotification('เริ่มการอัพโหลด...', 'info');
+    }
+
+    function updateProgress(percent) {
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        
+        progressBar.style.width = percent + '%';
+        progressText.textContent = Math.round(percent) + '%';
+    }
+
+    function handleUploadSuccess(response) {
+        if (response.success) {
+            showSuccessModal(response.message || 'นำเข้าข้อมูลสำเร็จ!');
+        } else {
+            showNotification(response.message || 'เกิดข้อผิดพลาดในการนำเข้าข้อมูล', 'error');
+        }
+    }
+
+    // ==================== SUCCESS MODAL ====================
+    function showSuccessModal(message) {
+        const modal = document.getElementById('successModal');
+        const modalContent = modal.querySelector('.modal-content');
+        const messageElement = document.getElementById('successMessage');
+        
+        messageElement.textContent = message;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        setTimeout(() => {
+            modalContent.style.transform = 'scale(1)';
+            modalContent.style.opacity = '1';
+        }, 10);
+    }
+
+    function closeSuccessModal() {
+        const modal = document.getElementById('successModal');
+        const modalContent = modal.querySelector('.modal-content');
+        
+        modalContent.style.transform = 'scale(0.75)';
+        modalContent.style.opacity = '0';
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }, 300);
+    }
+
+    // ==================== DJANGO MESSAGES HANDLER ====================
+    function handleDjangoMessages() {
+        const messagesContainer = document.getElementById('djangoMessages');
+        if (messagesContainer) {
+            const messages = messagesContainer.querySelectorAll('.message');
+            messages.forEach(messageEl => {
+                const type = messageEl.getAttribute('data-type');
+                const message = messageEl.getAttribute('data-message');
+                
+                // Convert Django message tags to notification types
+                let notificationType = 'info';
+                if (type === 'success') notificationType = 'success';
+                else if (type === 'error') notificationType = 'error';
+                else if (type === 'warning') notificationType = 'warning';
+                
+                setTimeout(() => {
+                    showNotification(message, notificationType);
+                }, 500);
+            });
+        }
+    }
+
+    // ==================== KEYBOARD SHORTCUTS ====================
+    document.addEventListener('keydown', function(e) {
+        // ESC key closes modals
+        if (e.key === 'Escape') {
+            if (!document.getElementById('successModal').classList.contains('hidden')) {
+                closeSuccessModal();
+            }
+        }
+        
+        // Ctrl/Cmd + U for upload
+        if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+            e.preventDefault();
+            document.getElementById('fileInput').click();
+        }
+    });
+
+    // ==================== ACCESSIBILITY ENHANCEMENTS ====================
+    function setupAccessibility() {
+        // Add focus indicators
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                document.body.classList.add('keyboard-nav');
+            }
+        });
+
+        document.addEventListener('mousedown', function() {
+            document.body.classList.remove('keyboard-nav');
+        });
+    }
+
+    // ==================== PAGE INITIALIZATION ====================
+    function initializePage() {
+        console.log('🎯 Teacher Import page loaded successfully!');
+        
+        // Initialize all features
+        initializeFileHandling();
+        initializeFormSubmission();
+        setupAccessibility();
+        handleDjangoMessages();
+        
+        // Show welcome message
+        setTimeout(() => {
+            showNotification('เตรียมพร้อมสำหรับการนำเข้าข้อมูลครู', 'info');
+        }, 1000);
+        
+        // Keyboard shortcuts info
+        setTimeout(() => {
+            showNotification('💡 เคล็ดลับ: ใช้ Ctrl+U เพื่อเลือกไฟล์ได้เร็วขึ้น', 'info', 6000);
+        }, 3000);
+    }
+</script>
+{% endblock %}
