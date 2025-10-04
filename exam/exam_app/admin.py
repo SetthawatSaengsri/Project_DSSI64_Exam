@@ -159,32 +159,6 @@ class AttendanceAdmin(admin.ModelAdmin):
             return format_html('<span style="color: red; font-weight: bold;">⚠️ ทุจริต</span>')
         return "-"
     get_late_info.short_description = 'รายละเอียด'
-
-
-@admin.register(CheatingReport)
-class CheatingReportAdmin(admin.ModelAdmin):
-    """การจัดการรายงานทุจริต"""
-    list_display = ('get_student_info', 'get_subject_info', 'cheating_type', 'status', 'reported_by', 'get_days_since_report', 'created_at')
-    list_filter = ('cheating_type', 'status', 'created_at', 'attendance__subject__academic_year')
-    search_fields = ('attendance__student__student_id', 'attendance__student__user__first_name', 'attendance__subject__subject_name', 'reported_by__first_name')
-    ordering = ('-created_at',)
-    readonly_fields = ('created_at', 'updated_at', 'get_days_since_report')
-    
-    fieldsets = (
-        ('ข้อมูลพื้นฐาน', {
-            'fields': ('attendance', 'reported_by', 'cheating_type', 'status')
-        }),
-        ('รายละเอียดการทุจริต', {
-            'fields': ('description', 'action_taken', 'witness', 'evidence_files')
-        }),
-        ('การติดตาม', {
-            'fields': ('investigation_notes', 'final_decision', 'penalty', 'resolved_by', 'resolved_at')
-        }),
-        ('ข้อมูลระบบ', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
     
     def get_student_info(self, obj):
         return f"{obj.attendance.student.student_id} - {obj.attendance.student.user.get_full_name()}"
@@ -205,24 +179,6 @@ class CheatingReportAdmin(admin.ModelAdmin):
     get_days_since_report.short_description = 'ระยะเวลาตั้งแต่รายงาน'
 
 
-@admin.register(CheatingStatistics)
-class CheatingStatisticsAdmin(admin.ModelAdmin):
-    """การจัดการสถิติการทุจริต"""
-    list_display = ('year', 'month', 'total_cases', 'resolved_cases', 'confirmed_cases', 'dismissed_cases', 'get_resolution_rate', 'get_confirmation_rate')
-    list_filter = ('year', 'month')
-    ordering = ('-year', '-month')
-    readonly_fields = ('created_at', 'updated_at')
-    
-    def get_resolution_rate(self, obj):
-        rate = obj.get_resolution_rate()
-        color = "green" if rate >= 80 else "orange" if rate >= 60 else "red"
-        return format_html(f'<span style="color: {color}; font-weight: bold;">{rate}%</span>')
-    get_resolution_rate.short_description = 'อัตราการดำเนินการ'
-    
-    def get_confirmation_rate(self, obj):
-        rate = obj.get_confirmation_rate()
-        return f"{rate}%"
-    get_confirmation_rate.short_description = 'อัตราการยืนยันทุจริต'
 
 
 @admin.register(ExamSession)

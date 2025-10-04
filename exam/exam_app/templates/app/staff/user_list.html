@@ -59,6 +59,26 @@
         background: linear-gradient(135deg, #3b82f6, #8b5cf6);
         box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
     }
+    .form-control {
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    .form-control:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+    .edit-form-section {
+        background: rgba(15, 23, 42, 0.5);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+    }
 </style>
 {% endblock %}
 
@@ -104,7 +124,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-slate-400 text-sm mb-1">ครูทั้งหมด</p>
-                    <p class="text-3xl font-bold text-blue-400">{{ teacher_stats.total }}</p>
+                    <p id="totalTeachers" class="text-3xl font-bold text-blue-400">{{ teacher_stats.total }}</p>
                 </div>
                 <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
                     <i class="fas fa-users text-blue-400 text-xl"></i>
@@ -115,7 +135,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-slate-400 text-sm mb-1">ครูที่ใช้งาน</p>
-                    <p class="text-3xl font-bold text-green-400">{{ teacher_stats.active }}</p>
+                    <p id="activeTeachers" class="text-3xl font-bold text-green-400">{{ teacher_stats.active }}</p>
                 </div>
                 <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
                     <i class="fas fa-user-check text-green-400 text-xl"></i>
@@ -126,7 +146,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-slate-400 text-sm mb-1">ครูที่ไม่ใช้งาน</p>
-                    <p class="text-3xl font-bold text-red-400">{{ teacher_stats.inactive }}</p>
+                    <p id="inactiveTeachers" class="text-3xl font-bold text-red-400">{{ teacher_stats.inactive }}</p>
                 </div>
                 <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
                     <i class="fas fa-user-times text-red-400 text-xl"></i>
@@ -260,7 +280,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-slate-400 text-sm mb-1">นักเรียนทั้งหมด</p>
-                    <p class="text-3xl font-bold text-blue-400">{{ student_stats.total }}</p>
+                    <p id="totalStudents" class="text-3xl font-bold text-blue-400">{{ student_stats.total }}</p>
                 </div>
                 <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
                     <i class="fas fa-users text-blue-400 text-xl"></i>
@@ -271,7 +291,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-slate-400 text-sm mb-1">นักเรียนที่ใช้งาน</p>
-                    <p class="text-3xl font-bold text-green-400">{{ student_stats.active }}</p>
+                    <p id="activeStudents" class="text-3xl font-bold text-green-400">{{ student_stats.active }}</p>
                 </div>
                 <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
                     <i class="fas fa-user-check text-green-400 text-xl"></i>
@@ -282,7 +302,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-slate-400 text-sm mb-1">นักเรียนที่ไม่ใช้งาน</p>
-                    <p class="text-3xl font-bold text-red-400">{{ student_stats.inactive }}</p>
+                    <p id="inactiveStudents" class="text-3xl font-bold text-red-400">{{ student_stats.inactive }}</p>
                 </div>
                 <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
                     <i class="fas fa-user-times text-red-400 text-xl"></i>
@@ -293,7 +313,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-slate-400 text-sm mb-1">จำนวนระดับชั้น</p>
-                    <p class="text-3xl font-bold text-purple-400">{{ student_stats.classes }}</p>
+                    <p id="totalClasses" class="text-3xl font-bold text-purple-400">{{ student_stats.classes }}</p>
                 </div>
                 <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
                     <i class="fas fa-layer-group text-purple-400 text-xl"></i>
@@ -373,7 +393,7 @@
                         <th class="px-6 py-4 text-center text-sm font-semibold text-slate-300">การกระทำ</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="studentsTableBody">
                     {% for student in students %}
                     <tr class="user-row border-b border-slate-700/50 transition-all duration-300">
                         <td class="px-6 py-4">
@@ -471,20 +491,38 @@
     <div class="glass rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-2xl font-bold text-gradient">รายละเอียดผู้ใช้</h3>
-            <button onclick="closeUserModal()" class="w-8 h-8 bg-red-500/20 hover:bg-red-500/40 rounded-lg flex items-center justify-center transition-colors">
+            <button onclick="closeModal()" class="w-8 h-8 bg-red-500/20 hover:bg-red-500/40 rounded-lg flex items-center justify-center transition-colors">
                 <i class="fas fa-times text-red-400"></i>
             </button>
         </div>
-        <div id="userModalContent">
+        <div id="modalContent">
             <!-- Content will be dynamically populated -->
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<!-- User Edit Modal -->
+<div id="editUserModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass rounded-2xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gradient">แก้ไขข้อมูลผู้ใช้</h3>
+            <button onclick="closeEditModal()" class="w-8 h-8 bg-red-500/20 hover:bg-red-500/40 rounded-lg flex items-center justify-center transition-colors">
+                <i class="fas fa-times text-red-400"></i>
+            </button>
+        </div>
+        <form id="editUserForm">
+            <div id="editModalContent">
+                <!-- Content will be dynamically populated -->
+            </div>
+        </form>
+    </div>
+</div>
+{% block extra_js %} {% endblock %}
+
+<script>
 // Global variables
 let currentTab = 'teachers';
+let currentEditUser = null;
 
 // Tab switching function
 function switchTab(tabName) {
@@ -505,7 +543,20 @@ function switchTab(tabName) {
     showNotification(`แสดงข้อมูล${tabName === 'teachers' ? 'ครู' : 'นักเรียน'}`, 'info', 3000);
 }
 
-// Search and filter functions for students using AJAX
+// Reset teacher filter
+function resetTeacherFilter() {
+    window.location.href = "{% url 'user_list' %}";
+}
+
+// Reset student filter
+function resetStudentFilter() {
+    document.getElementById('studentSearchInput').value = '';
+    document.getElementById('studentClassFilter').value = '';
+    document.getElementById('studentActiveFilter').value = '';
+    searchStudents();
+}
+
+// Search students using AJAX
 function searchStudents() {
     const searchTerm = document.getElementById('studentSearchInput').value;
     const classFilter = document.getElementById('studentClassFilter').value;
@@ -513,7 +564,6 @@ function searchStudents() {
     
     showLoading();
     
-    // Use AJAX to search without page refresh
     const params = new URLSearchParams();
     if (searchTerm) params.append('student_search', searchTerm);
     if (classFilter) params.append('student_class_filter', classFilter);
@@ -546,7 +596,7 @@ function searchStudents() {
 
 // Update students table with new data
 function updateStudentsTable(students) {
-    const tbody = document.querySelector('#studentsContent tbody');
+    const tbody = document.getElementById('studentsTableBody');
     
     if (students.length === 0) {
         tbody.innerHTML = `
@@ -563,7 +613,7 @@ function updateStudentsTable(students) {
         return;
     }
 
-    tbody.innerHTML = students.map((student, index) => `
+    tbody.innerHTML = students.map(student => `
         <tr class="user-row border-b border-slate-700/50 transition-all duration-300">
             <td class="px-6 py-4">
                 <div class="flex items-center space-x-3">
@@ -644,11 +694,11 @@ function animateCounter(elementId, target) {
     }, 50);
 }
 
-// User management functions
+// View user detail function
 function viewUserDetail(type, userId) {
-    const modalContent = document.getElementById('userModalContent');
+    const modalContent = document.getElementById('modalContent');
     
-    // Show loading first
+    // Show loading
     modalContent.innerHTML = `
         <div class="text-center text-slate-400 py-8">
             <i class="fas fa-spinner animate-spin text-2xl mb-4"></i>
@@ -659,156 +709,332 @@ function viewUserDetail(type, userId) {
     document.getElementById('userModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     
-    // Simulate API call to get user details
-    setTimeout(() => {
-        if (type === 'teacher') {
+    // Fetch user details
+    fetch(`{% url "user_detail_api" "placeholder" 0 %}`.replace('placeholder', type).replace('0', userId))
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const user = data.user;
+                modalContent.innerHTML = createUserDetailHTML(type, user);
+            } else {
+                modalContent.innerHTML = `
+                    <div class="text-center text-red-400 py-8">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-4"></i>
+                        <p>เกิดข้อผิดพลาด: ${data.error}</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
             modalContent.innerHTML = `
-                <div class="space-y-6">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                            <i class="fas fa-chalkboard-teacher text-white text-2xl"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-xl font-bold">รายละเอียดครู</h4>
-                            <p class="text-slate-400">Teacher Profile Details</p>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">รหัสครู</label>
-                                <p class="text-white font-mono">TCH${String(userId).padStart(3, '0')}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">ชื่อผู้ใช้</label>
-                                <p class="text-white">teacher${String(userId).padStart(3, '0')}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">ชื่อ - นามสกุล</label>
-                                <p class="text-white">อาจารย์สมชาย ใจดี</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">อีเมล</label>
-                                <p class="text-white">teacher${userId}@school.ac.th</p>
-                            </div>
-                        </div>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">สถานะ</label>
-                                <span class="px-3 py-1 status-active rounded-full text-sm font-medium">
-                                    <i class="fas fa-check-circle mr-1"></i>ใช้งาน
-                                </span>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">วันที่สมัคร</label>
-                                <p class="text-white">15/01/2567</p>
-                            </div>
-
-                        </div>
-                    </div>
-                    
-                    <div class="pt-4 border-t border-slate-700">
-                        <div class="flex justify-end space-x-3">
-                            <button onclick="editUser('teacher', ${userId})" class="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 rounded-lg transition-colors">
-                                <i class="fas fa-edit mr-2"></i>แก้ไข
-                            </button>
-                            <button onclick="closeUserModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">
-                                <i class="fas fa-times mr-2"></i>ปิด
-                            </button>
-                        </div>
-                    </div>
+                <div class="text-center text-red-400 py-8">
+                    <i class="fas fa-exclamation-triangle text-2xl mb-4"></i>
+                    <p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
                 </div>
             `;
-        } else {
-            modalContent.innerHTML = `
-                <div class="space-y-6">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                            <i class="fas fa-user-graduate text-white text-2xl"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-xl font-bold">รายละเอียดนักเรียน</h4>
-                            <p class="text-slate-400">Student Profile Details</p>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">รหัสนักเรียน</label>
-                                <p class="text-white font-mono">STD67${String(userId).padStart(3, '0')}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">ชื่อผู้ใช้</label>
-                                <p class="text-white">student${String(userId).padStart(3, '0')}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">ชื่อ - นามสกุล</label>
-                                <p class="text-white">นิรันดร์ ก้องโลก</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">อีเมล</label>
-                                <p class="text-white">STD67${String(userId).padStart(3, '0')}@student.ac.th</p>
-                            </div>
-                        </div>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">ระดับชั้น</label>
-                                <span class="px-3 py-1 class-badge rounded-full text-sm font-medium">ม.${Math.floor(Math.random() * 6) + 1}/${Math.floor(Math.random() * 4) + 1}</span>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">เลขที่</label>
-                                <p class="text-white font-mono">${Math.floor(Math.random() * 40) + 1}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">สถานะ</label>
-                                <span class="px-3 py-1 status-active rounded-full text-sm font-medium">
-                                    <i class="fas fa-check-circle mr-1"></i>ใช้งาน
-                                </span>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-400 mb-1">วันที่สมัคร</label>
-                                <p class="text-white">01/02/2567</p>
-                            </div>
-
-                        </div>
-                    </div>
-                    
-                    <div class="pt-4 border-t border-slate-700">
-                        <div class="flex justify-end space-x-3">
-                            <button onclick="editUser('student', ${userId})" class="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 rounded-lg transition-colors">
-                                <i class="fas fa-edit mr-2"></i>แก้ไข
-                            </button>
-                            <button onclick="closeUserModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">
-                                <i class="fas fa-times mr-2"></i>ปิด
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-    }, 800); // Simulate loading delay
+        });
 }
 
-function closeUserModal() {
+// Create user detail HTML
+function createUserDetailHTML(type, user) {
+    const isTeacher = type === 'teacher';
+    
+    return `
+        <div class="space-y-6">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 bg-gradient-to-r ${isTeacher ? 'from-blue-500 to-purple-500' : 'from-green-500 to-emerald-500'} rounded-full flex items-center justify-center">
+                    <i class="fas ${isTeacher ? 'fa-chalkboard-teacher' : 'fa-user-graduate'} text-white text-2xl"></i>
+                </div>
+                <div>
+                    <h4 class="text-xl font-bold">รายละเอียด${isTeacher ? 'ครู' : 'นักเรียน'}</h4>
+                    <p class="text-slate-400">${isTeacher ? 'Teacher' : 'Student'} Profile Details</p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">${isTeacher ? 'รหัสครู' : 'รหัสนักเรียน'}</label>
+                        <p class="text-white font-mono">${isTeacher ? user.teacher_id : user.student_id}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">ชื่อผู้ใช้</label>
+                        <p class="text-white">${user.username}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">ชื่อ - นามสกุล</label>
+                        <p class="text-white">${user.full_name}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">อีเมล</label>
+                        <p class="text-white">${user.email}</p>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    ${!isTeacher ? `
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">ระดับชั้น</label>
+                        <span class="px-3 py-1 class-badge rounded-full text-sm font-medium">
+                            ${user.student_class}
+                        </span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">เลขที่</label>
+                        <p class="text-white font-mono">${user.student_number}</p>
+                    </div>
+                    ` : ''}
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">สถานะ</label>
+                        <span class="px-3 py-1 ${user.is_active ? 'status-active' : 'status-inactive'} rounded-full text-sm font-medium">
+                            <i class="fas ${user.is_active ? 'fa-check-circle' : 'fa-times-circle'} mr-1"></i>
+                            ${user.is_active ? 'ใช้งาน' : 'ไม่ใช้งาน'}
+                        </span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">วันที่สมัคร</label>
+                        <p class="text-white">${user.date_joined}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">เข้าใช้งานล่าสุด</label>
+                        <p class="text-white">${user.last_login || 'ยังไม่เคยเข้าใช้งาน'}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pt-4 border-t border-slate-700">
+                <div class="flex justify-end space-x-3">
+                    <button onclick="editUser('${type}', ${user.id})" class="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 rounded-lg transition-colors">
+                        <i class="fas fa-edit mr-2"></i>แก้ไข
+                    </button>
+                    <button onclick="closeModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">
+                        <i class="fas fa-times mr-2"></i>ปิด
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Edit user function
+function editUser(type, userId) {
+    currentEditUser = { type, userId };
+    
+    const editModalContent = document.getElementById('editModalContent');
+    
+    // Show loading
+    editModalContent.innerHTML = `
+        <div class="text-center text-slate-400 py-8">
+            <i class="fas fa-spinner animate-spin text-2xl mb-4"></i>
+            <p>กำลังโหลดข้อมูลสำหรับแก้ไข...</p>
+        </div>
+    `;
+
+    document.getElementById('editUserModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Close view modal if open
+    document.getElementById('userModal').classList.add('hidden');
+    
+    // Fetch user details for editing
+    fetch(`{% url "user_detail_api" "placeholder" 0 %}`.replace('placeholder', type).replace('0', userId))
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const user = data.user;
+                editModalContent.innerHTML = createUserEditHTML(type, user);
+            } else {
+                editModalContent.innerHTML = `
+                    <div class="text-center text-red-400 py-8">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-4"></i>
+                        <p>เกิดข้อผิดพลาด: ${data.error}</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            editModalContent.innerHTML = `
+                <div class="text-center text-red-400 py-8">
+                    <i class="fas fa-exclamation-triangle text-2xl mb-4"></i>
+                    <p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
+                </div>
+            `;
+        });
+}
+
+// Create user edit HTML
+function createUserEditHTML(type, user) {
+    const isTeacher = type === 'teacher';
+    
+    return `
+        <div class="space-y-6">
+            <!-- ข้อมูลพื้นฐาน -->
+            <div class="edit-form-section">
+                <h4 class="text-lg font-semibold mb-4 flex items-center">
+                    <i class="fas fa-user mr-2 text-blue-400"></i>
+                    ข้อมูลพื้นฐาน
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">ชื่อ</label>
+                        <input type="text" name="first_name" value="${user.first_name}" class="form-control w-full">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">นามสกุล</label>
+                        <input type="text" name="last_name" value="${user.last_name}" class="form-control w-full">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">ชื่อผู้ใช้</label>
+                        <input type="text" name="username" value="${user.username}" class="form-control w-full">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">อีเมล</label>
+                        <input type="email" name="email" value="${user.email}" class="form-control w-full">
+                    </div>
+                </div>
+            </div>
+            
+            ${!isTeacher ? `
+            <!-- ข้อมูลนักเรียน -->
+            <div class="edit-form-section">
+                <h4 class="text-lg font-semibold mb-4 flex items-center">
+                    <i class="fas fa-graduation-cap mr-2 text-green-400"></i>
+                    ข้อมูลนักเรียน
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">ระดับชั้น</label>
+                        <input type="text" name="student_class" value="${user.student_class}" class="form-control w-full" placeholder="เช่น ม.6/1">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">เลขที่</label>
+                        <input type="number" name="student_number" value="${user.student_number}" class="form-control w-full" min="1">
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+            
+            <!-- การตั้งค่าบัญชี -->
+            <div class="edit-form-section">
+                <h4 class="text-lg font-semibold mb-4 flex items-center">
+                    <i class="fas fa-cog mr-2 text-purple-400"></i>
+                    การตั้งค่าบัญชี
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">สถานะบัญชี</label>
+                        <select name="is_active" class="form-control w-full">
+                            <option value="true" ${user.is_active ? 'selected' : ''}>ใช้งาน</option>
+                            <option value="false" ${!user.is_active ? 'selected' : ''}>ไม่ใช้งาน</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">รหัสผ่านใหม่ (เว้นว่างหากไม่ต้องการเปลี่ยน)</label>
+                        <input type="password" name="new_password" placeholder="••••••••" class="form-control w-full">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ปุ่มบันทึก -->
+            <div class="flex justify-end space-x-3 pt-4 border-t border-slate-700">
+                <button type="button" onclick="closeEditModal()" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">
+                    <i class="fas fa-times mr-2"></i>ยกเลิก
+                </button>
+                <button type="button" onclick="saveUserChanges()" class="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg transition-colors">
+                    <i class="fas fa-save mr-2"></i>บันทึกการเปลี่ยนแปลง
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Save user changes
+function saveUserChanges() {
+    if (!currentEditUser) return;
+    
+    const form = document.getElementById('editUserForm');
+    const formData = new FormData(form);
+    
+    // Convert form data to JSON
+    const data = {};
+    for (let [key, value] of formData.entries()) {
+        data[key] = value;
+    }
+    
+    showLoading();
+    
+    fetch(`{% url "update_user_api" "placeholder" 0 %}`.replace('placeholder', currentEditUser.type).replace('0', currentEditUser.userId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        hideLoading();
+        if (result.success) {
+            showNotification('อัปเดตข้อมูลเรียบร้อยแล้ว', 'success');
+            closeEditModal();
+            // Reload the page to reflect changes
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showNotification(`เกิดข้อผิดพลาด: ${result.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        hideLoading();
+        showNotification('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+    });
+}
+
+// Modal control functions
+function closeModal() {
     document.getElementById('userModal').classList.add('hidden');
     document.body.style.overflow = 'auto';
 }
 
-function editUser(type, userId) {
-    showNotification(`เปิดหน้าแก้ไขข้อมูล${type === 'teacher' ? 'ครู' : 'นักเรียน'}...`, 'info');
-    // ในการใช้งานจริงจะ redirect ไปหน้าแก้ไข
+function closeEditModal() {
+    document.getElementById('editUserModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    currentEditUser = null;
+}
+
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 
 // Initialize page functions
 function initializePage() {
     console.log('User List page initialized');
     
-    // Close modal when clicking outside
+    // Close modals when clicking outside
     document.getElementById('userModal').addEventListener('click', function(e) {
         if (e.target === this) {
-            closeUserModal();
+            closeModal();
+        }
+    });
+    
+    document.getElementById('editUserModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeEditModal();
         }
     });
 
@@ -829,4 +1055,8 @@ function initializePage() {
         }
     });
 }
+
+// Initialize page when DOM is loaded
+document.addEventListener('DOMContentLoaded', initializePage);
+</script>
 {% endblock %}

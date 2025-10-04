@@ -1,579 +1,463 @@
-{% extends "app/base.html" %}
+{% extends 'app/base.html' %}
 
-{% block title %}ไม่มีสิทธิ์เข้าถึง - {{ subject.subject_name }} - ระบบจัดการการสอบ{% endblock %}
+{% block title %}ไม่มีสิทธิ์เข้าถึง - {{ subject.subject_name }}{% endblock %}
+
+{% block page_title %}ไม่มีสิทธิ์เข้าถึง{% endblock %}
+{% block page_subtitle %}{{ subject.subject_name }} - {{ subject.subject_code }}{% endblock %}
 
 {% block current_page %}unauthorized{% endblock %}
 
-{% block page_title %}ไม่มีสิทธิ์เข้าถึง{% endblock %}
-{% block page_subtitle %}การเข้าถึงการสอบถูกจำกัด{% endblock %}
-
 {% block extra_css %}
 <style>
-    :root {
-        --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        --gradient-secondary: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-        --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    }
-
-    .floating-card {
-        background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+    .unauthorized-card {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(245, 101, 101, 0.1));
         backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 
-            0 8px 32px rgba(0, 0, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(239, 68, 68, 0.2);
     }
-
-    .floating-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 
-            0 12px 40px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    
+    .warning-pulse {
+        animation: warning-pulse 2s ease-in-out infinite;
     }
-
-    .error-container {
-        max-width: 800px;
-        margin: 0 auto;
+    
+    @keyframes warning-pulse {
+        0%, 100% { 
+            transform: scale(1);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+        50% { 
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+        }
     }
-
-    .error-hero {
-        position: relative;
-        overflow: hidden;
-    }
-
-    .error-icon {
-        background: var(--gradient-danger);
-        width: 100px;
-        height: 100px;
+    
+    .floating-warning {
+        position: absolute;
         border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 2rem;
-        box-shadow: 0 15px 35px rgba(239, 68, 68, 0.4);
-        position: relative;
-        animation: pulse-glow 2s ease-in-out infinite alternate;
+        background: linear-gradient(45deg, rgba(239, 68, 68, 0.2), rgba(245, 101, 101, 0.2));
+        filter: blur(1px);
+        animation: float 8s ease-in-out infinite;
     }
-
-    .error-icon::before {
-        content: '';
-        position: absolute;
-        inset: -4px;
-        border: 2px solid rgba(239, 68, 68, 0.3);
-        border-radius: 50%;
-        animation: pulse-ring 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse-glow {
-        0% { box-shadow: 0 15px 35px rgba(239, 68, 68, 0.4); }
-        100% { box-shadow: 0 15px 35px rgba(239, 68, 68, 0.6); }
-    }
-
-    @keyframes pulse-ring {
-        0% { transform: scale(1); opacity: 1; }
-        100% { transform: scale(1.1); opacity: 0; }
-    }
-
-    .text-shimmer {
-        background: linear-gradient(
-            90deg,
-            #ef4444,
-            #f97316,
-            #eab308,
-            #ef4444
-        );
-        background-size: 300% 100%;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        animation: shimmer 3s ease-in-out infinite;
-    }
-
-    @keyframes shimmer {
-        0%, 100% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-    }
-
-    .error-details {
-        background: rgba(239, 68, 68, 0.1);
-        border: 1px solid rgba(239, 68, 68, 0.3);
-        backdrop-filter: blur(10px);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .error-details::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 3px;
-        background: var(--gradient-danger);
-    }
-
-    .detail-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-    }
-
-    .detail-item {
-        background: rgba(30, 41, 59, 0.5);
-        border: 1px solid rgba(59, 130, 246, 0.2);
-        border-radius: 12px;
-        padding: 16px;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .detail-item::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 2px;
-        background: var(--gradient-primary);
-    }
-
-    .detail-item:hover {
-        border-color: rgba(59, 130, 246, 0.4);
-        transform: translateY(-2px);
-    }
-
-    .detail-label {
-        font-size: 0.875rem;
-        color: #94a3b8;
-        font-weight: 500;
-        margin-bottom: 4px;
-    }
-
-    .detail-value {
-        color: white;
-        font-weight: 600;
-        font-size: 1rem;
-    }
-
-    .action-button {
-        background: var(--gradient-primary);
-        color: white;
-        padding: 1rem 2rem;
-        border-radius: 1rem;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        border: none;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-        min-width: 180px;
-    }
-
-    .action-button::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transform: translateX(-100%);
-        transition: transform 0.6s;
-    }
-
-    .action-button:hover::before {
-        transform: translateX(100%);
-    }
-
-    .action-button:hover {
-        background: linear-gradient(135deg, #2563eb, #1d4ed8);
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
-        color: white;
-        text-decoration: none;
-    }
-
-    .action-button.secondary {
-        background: var(--gradient-secondary);
-    }
-
-    .action-button.secondary:hover {
-        background: linear-gradient(135deg, #7c3aed, #6d28d9);
-        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
-        color: white;
-    }
-
-    .back-button {
-        background: rgba(71, 85, 105, 0.3);
-        border: 1px solid rgba(71, 85, 105, 0.5);
-        color: #94a3b8;
-        backdrop-filter: blur(10px);
-    }
-
-    .back-button:hover {
-        background: rgba(71, 85, 105, 0.5);
-        color: #cbd5e1;
-        border-color: rgba(71, 85, 105, 0.7);
-        transform: translateY(-2px);
-    }
-
-    .user-avatar {
-        background: var(--gradient-primary);
+    
+    .floating-warning:nth-child(1) {
         width: 60px;
         height: 60px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
+        top: 15%;
+        left: 10%;
+        animation-delay: 0s;
     }
-
-    .user-avatar::before {
-        content: '';
-        position: absolute;
-        inset: -2px;
-        background: conic-gradient(from 0deg, transparent, rgba(59, 130, 246, 0.5), transparent);
-        border-radius: 50%;
-        animation: spin 3s linear infinite;
+    
+    .floating-warning:nth-child(2) {
+        width: 80px;
+        height: 80px;
+        top: 50%;
+        right: 10%;
+        animation-delay: 3s;
     }
-
-    .user-avatar::after {
-        content: '';
-        position: absolute;
-        inset: 2px;
-        background: inherit;
-        border-radius: inherit;
-        z-index: 1;
+    
+    .floating-warning:nth-child(3) {
+        width: 40px;
+        height: 40px;
+        bottom: 25%;
+        left: 20%;
+        animation-delay: 6s;
     }
-
-    .user-avatar i {
-        position: relative;
-        z-index: 2;
+    
+    .access-denied-icon {
+        background: linear-gradient(135deg, #ef4444, #f87171);
+        animation: shake 0.5s ease-in-out;
     }
-
-    @keyframes spin {
-        to { transform: rotate(360deg); }
+    
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
     }
-
-    .reason-item {
-        background: rgba(239, 68, 68, 0.05);
-        border: 1px solid rgba(239, 68, 68, 0.2);
-        border-radius: 8px;
-        padding: 12px;
+    
+    .suggestion-card {
         transition: all 0.3s ease;
     }
-
-    .reason-item:hover {
-        background: rgba(239, 68, 68, 0.1);
-        transform: translateX(4px);
-    }
-
-    .help-item {
-        background: rgba(245, 158, 11, 0.1);
-        border: 1px solid rgba(245, 158, 11, 0.3);
-        border-radius: 8px;
-        padding: 12px;
-        transition: all 0.3s ease;
-    }
-
-    .help-item:hover {
-        background: rgba(245, 158, 11, 0.2);
-        transform: translateX(4px);
-    }
-
-    .floating-particles {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        pointer-events: none;
-        z-index: -1;
-    }
-
-    .particle {
-        position: absolute;
-        width: 3px;
-        height: 3px;
-        background: rgba(239, 68, 68, 0.4);
-        border-radius: 50%;
-        animation: float-particle 8s linear infinite;
-    }
-
-    @keyframes float-particle {
-        0% {
-            transform: translateY(100vh) scale(0);
-            opacity: 0;
-        }
-        10% {
-            opacity: 1;
-        }
-        90% {
-            opacity: 1;
-        }
-        100% {
-            transform: translateY(-100vh) scale(1);
-            opacity: 0;
-        }
+    
+    .suggestion-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="floating-particles">
-    <div class="particle" style="left: 15%; animation-delay: 0s;"></div>
-    <div class="particle" style="left: 35%; animation-delay: 2s;"></div>
-    <div class="particle" style="left: 55%; animation-delay: 4s;"></div>
-    <div class="particle" style="left: 75%; animation-delay: 6s;"></div>
-</div>
+<!-- Floating Background Elements -->
+<div class="floating-warning"></div>
+<div class="floating-warning"></div>
+<div class="floating-warning"></div>
 
-<div class="error-container">
-    <!-- Error Hero Section -->
-    <div class="error-hero text-center mb-8">
-        <div class="error-icon">
-            <i class="fas fa-ban text-white text-4xl"></i>
-        </div>
-        
-        <h1 class="text-4xl font-bold text-shimmer mb-4">ไม่มีสิทธิ์เข้าถึง</h1>
-        <p class="text-xl text-slate-300 mb-2">คุณไม่สามารถเข้าถึงการสอบนี้ได้</p>
-        <p class="text-sm text-slate-400">กรุณาตรวจสอบข้อมูลและสิทธิ์การเข้าถึง</p>
-    </div>
-    
-    <!-- Subject Information -->
-    <div class="floating-card rounded-2xl p-8 mb-8 border border-white/20">
-        <h3 class="text-2xl font-bold text-white mb-6 flex items-center justify-center">
-            <i class="fas fa-info-circle text-blue-400 mr-3"></i>
-            ข้อมูลการสอบ
-        </h3>
-        
-        <div class="detail-grid">
-            <div class="detail-item">
-                <div class="detail-label">รหัสวิชา</div>
-                <div class="detail-value">{{ subject.subject_code }}</div>
+<div class="min-h-screen flex items-center justify-center relative">
+    <div class="w-full max-w-2xl mx-auto p-6">
+        <!-- Main Unauthorized Card -->
+        <div class="unauthorized-card rounded-3xl p-8 shadow-2xl border border-red-500/20 relative overflow-hidden">
+            <!-- Warning Header -->
+            <div class="text-center mb-8">
+                <div class="w-24 h-24 access-denied-icon rounded-2xl flex items-center justify-center mx-auto mb-6 warning-pulse">
+                    <i class="fas fa-ban text-white text-4xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold font-kanit text-red-400 mb-2">ไม่มีสิทธิ์เข้าถึง</h1>
+                <p class="text-slate-400 font-prompt">คุณไม่สามารถเช็คชื่อในการสอบนี้ได้</p>
             </div>
-            
-            <div class="detail-item">
-                <div class="detail-label">ชื่อวิชา</div>
-                <div class="detail-value">{{ subject.subject_name }}</div>
-            </div>
-            
-            <div class="detail-item">
-                <div class="detail-label">วันที่สอบ</div>
-                <div class="detail-value">{{ subject.exam_date|date:"d/m/Y" }}</div>
-            </div>
-            
-            <div class="detail-item">
-                <div class="detail-label">เวลาสอบ</div>
-                <div class="detail-value">{{ subject.start_time|time:"H:i" }}–{{ subject.end_time|time:"H:i" }} น.</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Error Details -->
-    <div class="floating-card rounded-2xl p-8 mb-8 border border-red-500/30">
-        <div class="error-details rounded-xl p-6">
-            <div class="flex items-start text-left">
-                <i class="fas fa-exclamation-triangle text-red-400 text-2xl mr-4 mt-1 flex-shrink-0"></i>
-                <div class="flex-1">
-                    <p class="text-red-300 font-bold text-lg mb-4">สาเหตุที่ไม่สามารถเข้าถึงได้:</p>
+
+            <!-- Exam Information Card -->
+            <div class="glass-dark rounded-2xl p-6 mb-6 border border-white/10">
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-book text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-white text-lg">ข้อมูลการสอบ</h3>
+                        <p class="text-slate-400 text-sm">รายละเอียดการสอบที่คุณพยายามเข้าถึง</p>
+                    </div>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- ข้อมูลวิชา -->
                     <div class="space-y-3">
+                        <div class="flex justify-between items-center py-2 border-b border-white/10">
+                            <span class="text-slate-400">รายวิชา:</span>
+                            <span class="text-white font-medium">{{ subject.subject_name }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/10">
+                            <span class="text-slate-400">รหัสวิชา:</span>
+                            <span class="text-white font-medium">{{ subject.subject_code }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/10">
+                            <span class="text-slate-400">ปีการศึกษา:</span>
+                            <span class="text-white font-medium">{{ subject.academic_year }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/10">
+                            <span class="text-slate-400">เทอม:</span>
+                            <span class="text-white font-medium">{{ subject.get_term_display }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-slate-400">ระดับชั้น:</span>
+                            <span class="text-white font-medium">
+                                {% if subject.students.first.student_class %}
+                                    {{ subject.students.first.student_class }}
+                                {% else %}
+                                    หลายระดับชั้น
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- ข้อมูลการสอบ -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center py-2 border-b border-white/10">
+                            <span class="text-slate-400">วันที่สอบ:</span>
+                            <span class="text-white font-medium">{{ subject.exam_date|date:"j M Y" }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/10">
+                            <span class="text-slate-400">เวลา:</span>
+                            <span class="text-white font-medium">{{ subject.start_time|time:"H:i" }} - {{ subject.end_time|time:"H:i" }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/10">
+                            <span class="text-slate-400">ห้องสอบ:</span>
+                            <span class="text-white font-medium">
+                                {% if subject.room %}
+                                    {{ subject.room.name }}
+                                {% else %}
+                                    ยังไม่ระบุ
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/10">
+                            <span class="text-slate-400">อาคาร:</span>
+                            <span class="text-white font-medium">
+                                {% if subject.room %}
+                                    {{ subject.room.building.name }}
+                                {% else %}
+                                    ยังไม่ระบุ
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-slate-400">ครูผู้คุมสอบ:</span>
+                            <span class="text-white font-medium">
+                                {% if subject.invigilator %}
+                                    {{ subject.invigilator.user.get_full_name }}
+                                {% else %}
+                                    ยังไม่ระบุ
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Information -->
+            <div class="glass rounded-xl p-4 mb-6 border border-white/10">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
                         {% if user.is_student %}
-                            <div class="reason-item">
-                                <div class="flex items-start space-x-3">
-                                    <i class="fas fa-times text-red-400 mt-1 text-sm"></i>
-                                    <span class="text-red-200">คุณอาจไม่ได้ลงทะเบียนในวิชานี้</span>
-                                </div>
-                            </div>
-                            <div class="reason-item">
-                                <div class="flex items-start space-x-3">
-                                    <i class="fas fa-times text-red-400 mt-1 text-sm"></i>
-                                    <span class="text-red-200">ตรวจสอบรายวิชาที่ลงทะเบียนไว้</span>
-                                </div>
-                            </div>
-                            <div class="reason-item">
-                                <div class="flex items-start space-x-3">
-                                    <i class="fas fa-times text-red-400 mt-1 text-sm"></i>
-                                    <span class="text-red-200">อาจอยู่นอกช่วงเวลาที่อนุญาต</span>
-                                </div>
-                            </div>
+                            <i class="fas fa-user-graduate text-white"></i>
                         {% elif user.is_teacher %}
-                            <div class="reason-item">
-                                <div class="flex items-start space-x-3">
-                                    <i class="fas fa-times text-red-400 mt-1 text-sm"></i>
-                                    <span class="text-red-200">คุณไม่ใช่ครูผู้คุมสอบในวิชานี้</span>
-                                </div>
-                            </div>
-                            <div class="reason-item">
-                                <div class="flex items-start space-x-3">
-                                    <i class="fas fa-times text-red-400 mt-1 text-sm"></i>
-                                    <span class="text-red-200">ติดต่อเจ้าหน้าที่หากมีข้อผิดพลาด</span>
-                                </div>
-                            </div>
+                            <i class="fas fa-user-tie text-white"></i>
                         {% else %}
-                            <div class="reason-item">
-                                <div class="flex items-start space-x-3">
-                                    <i class="fas fa-times text-red-400 mt-1 text-sm"></i>
-                                    <span class="text-red-200">คุณไม่มีบทบาทที่เหมาะสม</span>
-                                </div>
-                            </div>
-                            <div class="reason-item">
-                                <div class="flex items-start space-x-3">
-                                    <i class="fas fa-times text-red-400 mt-1 text-sm"></i>
-                                    <span class="text-red-200">ติดต่อผู้ดูแลระบบ</span>
-                                </div>
-                            </div>
+                            <i class="fas fa-user-shield text-white"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400">ผู้ใช้ปัจจุบัน</p>
+                        <p class="font-semibold text-white">{{ user.get_full_name|default:user.username }}</p>
+                        <div class="text-sm text-slate-300">
+                            {% if user.is_student %}
+                                {% if user.student_profile %}
+                                    <p>รหัสนักเรียน: {{ user.student_profile.student_id }}</p>
+                                    <p>เลขที่: {{ user.student_profile.student_number }} ชั้น: {{ user.student_profile.student_class }}</p>
+                                {% else %}
+                                    <p>นักเรียน (ไม่มีข้อมูลโปรไฟล์)</p>
+                                {% endif %}
+                            {% elif user.is_teacher %}
+                                {% if user.teacher_profile %}
+                                    <p>ครู - รหัส: {{ user.teacher_profile.teacher_id }}</p>
+                                {% else %}
+                                    <p>ครู (ไม่มีข้อมูลโปรไฟล์)</p>
+                                {% endif %}
+                            {% elif user.is_staff %}
+                                <p>เจ้าหน้าที่</p>
+                            {% elif user.is_superuser %}
+                                <p>ผู้ดูแลระบบ</p>
+                            {% else %}
+                                <p>ผู้ใช้ทั่วไป</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Message -->
+            <div class="bg-red-500/10 border border-red-400/20 rounded-xl p-4 mb-6">
+                <div class="flex items-start space-x-3">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-xl mt-1"></i>
+                    <div>
+                        <h4 class="font-semibold text-red-400 mb-2">สาเหตุที่ไม่สามารถเข้าถึงได้</h4>
+                        <p class="text-slate-300 mb-3">{{ message|default:"คุณไม่มีสิทธิ์เช็คชื่อในวิชานี้" }}</p>
+                        
+                        {% if user.is_student %}
+                        <p class="text-sm text-slate-400">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            นักเรียนสามารถเช็คชื่อได้เฉพาะในวิชาที่ลงทะเบียนเรียนเท่านั้น
+                        </p>
+                        {% elif user.is_teacher %}
+                        <p class="text-sm text-slate-400">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            ครูสามารถเช็คชื่อได้เฉพาะในวิชาที่ได้รับมอบหมายให้คุมสอบเท่านั้น
+                        </p>
+                        {% else %}
+                        <p class="text-sm text-slate-400">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            คุณไม่มีบทบาทที่เกี่ยวข้องกับการสอบนี้
+                        </p>
                         {% endif %}
                     </div>
                 </div>
             </div>
+
+            <!-- Possible Actions -->
+            <div class="grid md:grid-cols-2 gap-4 mb-6">
+                {% if user.is_student %}
+                <div class="suggestion-card glass rounded-xl p-4 border border-white/10">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-calendar-check text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white">ตรวจสอบตารางสอบ</h4>
+                            <p class="text-xs text-slate-400">ดูการสอบที่คุณลงทะเบียน</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-300 mb-3">ตรวจสอบรายวิชาที่คุณลงทะเบียนเรียนและตารางการสอบของคุณ</p>
+                    <a href="#" class="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm font-medium">
+                        <i class="fas fa-arrow-right mr-1"></i>
+                        ไปยังตารางสอบ
+                    </a>
+                </div>
+
+                <div class="suggestion-card glass rounded-xl p-4 border border-white/10">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-question-circle text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white">ติดต่อครูที่ปรึกษา</h4>
+                            <p class="text-xs text-slate-400">สอบถามข้อมูลเพิ่มเติม</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-300 mb-3">หากคิดว่าคุณควรมีสิทธิ์เข้าสอบ ให้ติดต่อครูที่ปรึกษาหรือฝ่ายวิชาการ</p>
+                    <a href="#" class="inline-flex items-center text-green-400 hover:text-green-300 text-sm font-medium">
+                        <i class="fas fa-phone mr-1"></i>
+                        ติดต่อครู
+                    </a>
+                </div>
+                {% elif user.is_teacher %}
+                <div class="suggestion-card glass rounded-xl p-4 border border-white/10">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-chalkboard-teacher text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white">ตรวจสอบการคุมสอบ</h4>
+                            <p class="text-xs text-slate-400">ดูรายการสอบที่คุมสอบ</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-300 mb-3">ตรวจสอบรายการการสอบที่คุณได้รับมอบหมายให้คุมสอบ</p>
+                    <a href="{% url 'exam_subjects' %}" class="inline-flex items-center text-purple-400 hover:text-purple-300 text-sm font-medium">
+                        <i class="fas fa-arrow-right mr-1"></i>
+                        ไปยังการสอบของฉัน
+                    </a>
+                </div>
+
+                <div class="suggestion-card glass rounded-xl p-4 border border-white/10">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-user-cog text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white">ติดต่อผู้ดูแลระบบ</h4>
+                            <p class="text-xs text-slate-400">แจ้งปัญหาการใช้งาน</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-300 mb-3">หากมีปัญหาเกี่ยวกับการมอบหมายคุมสอบ ให้ติดต่อผู้ดูแลระบบ</p>
+                    <a href="#" class="inline-flex items-center text-orange-400 hover:text-orange-300 text-sm font-medium">
+                        <i class="fas fa-envelope mr-1"></i>
+                        ส่งข้อความ
+                    </a>
+                </div>
+                {% else %}
+                <div class="suggestion-card glass rounded-xl p-4 border border-white/10">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-home text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white">กลับหน้าหลัก</h4>
+                            <p class="text-xs text-slate-400">ไปยังหน้า Dashboard</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-300 mb-3">กลับไปยังหน้าหลักเพื่อเข้าถึงเมนูที่เหมาะสมกับบทบาทของคุณ</p>
+                    <a href="{% url 'index_view' %}" class="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm font-medium">
+                        <i class="fas fa-arrow-left mr-1"></i>
+                        กลับหน้าหลัก
+                    </a>
+                </div>
+
+                <div class="suggestion-card glass rounded-xl p-4 border border-white/10">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-gray-500 to-slate-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-sign-out-alt text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white">เข้าสู่ระบบใหม่</h4>
+                            <p class="text-xs text-slate-400">ใช้บัญชีที่ถูกต้อง</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-300 mb-3">หากคุณมีบัญชีอื่นที่มีสิทธิ์เข้าถึง ให้ออกจากระบบและเข้าใหม่</p>
+                    <button onclick="confirmLogout()" class="inline-flex items-center text-gray-400 hover:text-gray-300 text-sm font-medium">
+                        <i class="fas fa-redo mr-1"></i>
+                        เข้าสู่ระบบใหม่
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Contact Information -->
+            <div class="glass rounded-xl p-4 border border-white/10">
+                <h4 class="font-semibold text-white mb-3 flex items-center">
+                    <i class="fas fa-phone text-blue-400 mr-2"></i>
+                    ต้องการความช่วยเหลือ?
+                </h4>
+                <div class="grid md:grid-cols-3 gap-4 text-sm">
+                    <div class="text-center">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-school text-white text-xs"></i>
+                        </div>
+                        <p class="text-slate-400">ฝ่ายวิชาการ</p>
+                        <p class="text-white font-medium">โทร. 02-XXX-XXXX</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-laptop text-white text-xs"></i>
+                        </div>
+                        <p class="text-slate-400">ฝ่ายเทคโนโลยี</p>
+                        <p class="text-white font-medium">โทร. 02-YYY-YYYY</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-envelope text-white text-xs"></i>
+                        </div>
+                        <p class="text-slate-400">อีเมล</p>
+                        <p class="text-white font-medium">support@school.ac.th</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 mt-6">
+                <a href="{% url 'index_view' %}" 
+                   class="flex-1 inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 transform hover:scale-105">
+                    <i class="fas fa-home"></i>
+                    <span>กลับหน้าหลัก</span>
+                </a>
+                
+                {% if user.is_authenticated %}
+                <button onclick="history.back()" 
+                        class="flex-1 inline-flex items-center justify-center space-x-2 glass border border-white/20 hover:border-white/40 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>ย้อนกลับ</span>
+                </button>
+                {% endif %}
+            </div>
         </div>
-    </div>
-    
-    <!-- User Information -->
-    <div class="floating-card rounded-2xl p-8 mb-8 border border-white/20">
-        <h3 class="text-xl font-bold text-white mb-6 flex items-center justify-center">
-            <i class="fas fa-user-circle text-blue-400 mr-3"></i>
-            ข้อมูลผู้ใช้ปัจจุบัน
-        </h3>
-        
-        <div class="flex items-center justify-center space-x-6">
-            <div class="user-avatar">
-                <i class="fas fa-user text-white text-xl"></i>
-            </div>
-            <div class="text-left">
-                <p class="text-white font-bold text-lg">{{ user.get_full_name }}</p>
-                <p class="text-blue-300 font-medium">
-                    {% if user.is_student %}
-                        นักเรียน (Student)
-                    {% elif user.is_teacher %}
-                        ครูผู้สอน (Teacher)  
-                    {% elif user.is_staff %}
-                        เจ้าหน้าที่ (Staff)
-                    {% else %}
-                        ผู้ใช้ทั่วไป (User)
-                    {% endif %}
-                </p>
-                <p class="text-slate-400 text-sm">{{ user.email }}</p>
-            </div>
-            <div class="text-center">
-                <div class="text-sm text-slate-400 mb-1">สถานะ</div>
-                <div class="px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-full">
-                    <span class="text-red-300 font-semibold text-sm">
-                        <i class="fas fa-ban mr-1"></i>ไม่มีสิทธิ์
+
+        <!-- Additional Information -->
+        <div class="mt-6 text-center">
+            <div class="glass rounded-xl p-4 border border-white/10">
+                <div class="flex items-center justify-center space-x-2 text-slate-400">
+                    <i class="fas fa-shield-alt"></i>
+                    <span class="text-sm">
+                        ระบบรักษาความปลอดภัยข้อมูลการสอบอย่างเข้มงวด
                     </span>
                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Action Buttons -->
-    <div class="space-y-4 mb-8">
-        <div class="grid md:grid-cols-2 gap-4">
-            {% if user.is_student %}
-                <a href="{% url 'dashboard_student' %}" class="action-button">
-                    <i class="fas fa-home mr-3"></i>กลับหน้าหลัก
-                </a>
-                <a href="#" class="action-button secondary">
-                    <i class="fas fa-calendar-alt mr-3"></i>ดูตารางสอบ
-                </a>
-            {% elif user.is_teacher %}
-                <a href="{% url 'dashboard_teacher' %}" class="action-button">
-                    <i class="fas fa-home mr-3"></i>กลับหน้าหลัก
-                </a>
-                <a href="{% url 'exam_subjects' %}" class="action-button secondary">
-                    <i class="fas fa-calendar-check mr-3"></i>การสอบที่คุมสอบ
-                </a>
-            {% else %}
-                <a href="{% url 'dashboard_staff' %}" class="action-button">
-                    <i class="fas fa-home mr-3"></i>กลับหน้าหลัก
-                </a>
-                <a href="{% url 'exam_subjects' %}" class="action-button secondary">
-                    <i class="fas fa-list mr-3"></i>ดูรายการสอบ
-                </a>
-            {% endif %}
-        </div>
-        
-        <button onclick="history.back()" class="back-button w-full py-4 rounded-xl font-semibold transition-all">
-            <i class="fas fa-arrow-left mr-2"></i>ย้อนกลับ
-        </button>
-    </div>
-    
-    <!-- Help Section -->
-    <div class="floating-card rounded-2xl p-8 border border-yellow-500/30">
-        <h3 class="text-xl font-bold text-white mb-6 flex items-center justify-center">
-            <i class="fas fa-question-circle text-yellow-400 mr-3"></i>
-            ต้องการความช่วยเหลือ?
-        </h3>
-        
-        <div class="grid md:grid-cols-2 gap-4">
-            <div class="help-item">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-check text-yellow-400"></i>
-                    <span class="text-yellow-100">ตรวจสอบรายวิชาที่ลงทะเบียน</span>
-                </div>
-            </div>
-            
-            <div class="help-item">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-check text-yellow-400"></i>
-                    <span class="text-yellow-100">ติดต่อเจ้าหน้าที่หรือครูผู้คุมสอบ</span>
-                </div>
-            </div>
-            
-            <div class="help-item">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-check text-yellow-400"></i>
-                    <span class="text-yellow-100">ตรวจสอบตารางสอบของคุณ</span>
-                </div>
-            </div>
-            
-            <div class="help-item">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-check text-yellow-400"></i>
-                    <span class="text-yellow-100">ตรวจสอบเวลาเข้าสอบ</span>
-                </div>
+                <p class="text-xs text-slate-500 mt-2">
+                    การเข้าถึงระบบเช็คชื่อจะได้รับการตรวจสอบสิทธิ์อย่างละเอียด เพื่อความปลอดภัยของข้อมูลการสอบ
+                </p>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-// Auto redirect after showing error for a while (optional)
-setTimeout(() => {
-    console.log('Unauthorized access page loaded');
-}, 1000);
-
-// Add smooth animations on page load
 document.addEventListener('DOMContentLoaded', function() {
-    const cards = document.querySelectorAll('.floating-card');
+    // Add smooth animations to cards
+    const cards = document.querySelectorAll('.suggestion-card');
     cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        
-        setTimeout(() => {
-            card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 150);
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('animate-slide-up');
     });
+    
+    // Show appropriate message based on user type
+    setTimeout(() => {
+        {% if user.is_student %}
+        showNotification('คุณสามารถเช็คชื่อได้เฉพาะในวิชาที่ลงทะเบียนเรียนเท่านั้น', 'warning', 8000);
+        {% elif user.is_teacher %}
+        showNotification('คุณสามารถเช็คชื่อได้เฉพาะในวิชาที่ได้รับมอบหมายให้คุมสอบเท่านั้น', 'warning', 8000);
+        {% else %}
+        showNotification('กรุณาตรวจสอบสิทธิ์การเข้าถึงของคุณ', 'warning', 8000);
+        {% endif %}
+    }, 1000);
 });
 
-// Enhanced back button functionality
-function goBack() {
-    if (window.history.length > 1) {
-        window.history.back();
-    } else {
-        // Fallback redirect based on user type
-        {% if user.is_student %}
-            window.location.href = "{% url 'dashboard_student' %}";
-        {% elif user.is_teacher %}
-            window.location.href = "{% url 'dashboard_teacher' %}";
-        {% else %}
-            window.location.href = "{% url 'dashboard_staff' %}";
-        {% endif %}
+function confirmLogout() {
+    if (confirm('คุณต้องการออกจากระบบและเข้าสู่ระบบใหม่หรือไม่?')) {
+        window.location.href = '{% url "logout_user" %}';
     }
 }
 </script>

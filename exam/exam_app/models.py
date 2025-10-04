@@ -4,7 +4,8 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from datetime import datetime, timedelta
-
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 class User(AbstractUser):
     """ผู้ใช้งานระบบ - ขยายจาก AbstractUser"""
@@ -130,8 +131,6 @@ class ExamRoom(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(200)],
         verbose_name="ความจุ"
     )
-    has_projector = models.BooleanField(default=False, verbose_name="มีโปรเจคเตอร์")
-    has_aircon = models.BooleanField(default=False, verbose_name="มีแอร์")
     is_active = models.BooleanField(default=True, verbose_name="ใช้งานได้")
     notes = models.TextField(blank=True, verbose_name="หมายเหตุ")
     created_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name="วันที่สร้าง")
@@ -302,13 +301,13 @@ class ExamSubject(models.Model):
 
 
 class Attendance(models.Model):
-    """การเข้าสอบ - เพิ่มสถานะทุจริต"""
+    """การเข้าสอบ"""
     STATUS_CHOICES = [
         ("on_time", "มาตรงเวลา"),
         ("late", "มาสาย"),
         ("absent", "ขาดสอบ"),
         ("excused", "ลาป่วย/ลากิจ"),
-        ("cheating", "ทุจริต"),  # เพิ่มสถานะใหม่
+        ("cheating", "ทุจริต"), 
     ]
 
     student = models.ForeignKey(
@@ -375,143 +374,6 @@ class Attendance(models.Model):
         return int(late_duration.total_seconds() / 60)
 
 
-class CheatingReport(models.Model):
-    """รายงานทุจริตในการสอบ"""
-    CHEATING_TYPE_CHOICES = [
-        ('copying', 'ลอกข้อสอบ'),
-        ('communication', 'สื่อสารกับผู้อื่น'),
-        ('materials', 'นำสื่อการสอนเข้าห้องสอบ'),
-        ('technology', 'ใช้อุปกรณ์อิเล็กทรอนิกส์'),
-        ('impersonation', 'สอบแทนกัน'),
-        ('other', 'อื่นๆ'),
-    ]
-    
-    STATUS_CHOICES = [
-        ('reported', 'รายงานแล้ว'),
-        ('investigating', 'กำลังสอบสวน'),
-        ('confirmed', 'ยืนยันทุจริต'),
-        ('dismissed', 'ยกเลิกข้อหา'),
-        ('resolved', 'ดำเนินการเสร็จสิ้น'),
-    ]
-    
-    attendance = models.OneToOneField(
-        Attendance,
-        on_delete=models.CASCADE,
-        related_name='cheating_report',
-        verbose_name="การเข้าสอบ"
-    )
-    
-    reported_by = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='reported_cheating_cases',
-        verbose_name="รายงานโดย"
-    )
-    
-    cheating_type = models.CharField(
-        max_length=20,
-        choices=CHEATING_TYPE_CHOICES,
-        verbose_name="ประเภทการทุจริต"
-    )
-    
-    description = models.TextField(
-        verbose_name="รายละเอียดการทุจริต"
-    )
-    
-    action_taken = models.TextField(
-        verbose_name="มาตรการที่ดำเนินการ"
-    )
-    
-    witness = models.CharField(
-        max_length=200,
-        blank=True,
-        verbose_name="พยาน"
-    )
-    
-    status = models.CharField(
-        max_length=15,
-        choices=STATUS_CHOICES,
-        default='reported',
-        verbose_name="สถานะการดำเนินการ"
-    )
-    
-    # ข้อมูลการติดตาม
-    investigation_notes = models.TextField(
-        blank=True,
-        verbose_name="หมายเหตุการสอบสวน"
-    )
-    
-    final_decision = models.TextField(
-        blank=True,
-        verbose_name="คำตัดสินสุดท้าย"
-    )
-    
-    penalty = models.CharField(
-        max_length=100,
-        blank=True,
-        verbose_name="โทษที่ได้รับ"
-    )
-    
-    # เอกสารประกอบ
-    evidence_files = models.FileField(
-        upload_to='cheating_evidence/',
-        blank=True,
-        null=True,
-        verbose_name="เอกสารหลักฐาน"
-    )
-    
-    # ข้อมูลการติดตาม
-    resolved_by = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='resolved_cheating_cases',
-        verbose_name="ดำเนินการโดย"
-    )
-    
-    resolved_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name="วันที่ดำเนินการเสร็จ"
-    )
-    
-    created_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name="วันที่รายงาน")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="วันที่แก้ไข")
-
-    
-    class Meta:
-        verbose_name = "รายงานทุจริต"
-        verbose_name_plural = "รายงานทุจริต"
-        ordering = ['-created_at']
-    
-    def __str__(self):
-        return f"ทุจริต: {self.attendance.student.user.get_full_name()} - {self.attendance.subject.subject_name}"
-    
-    def get_student_name(self):
-        """ชื่อนักเรียน"""
-        return self.attendance.student.user.get_full_name()
-    
-    def get_subject_name(self):
-        """ชื่อวิชา"""
-        return self.attendance.subject.subject_name
-    
-    def is_resolved(self):
-        """ตรวจสอบว่าดำเนินการเสร็จสิ้นแล้วหรือไม่"""
-        return self.status == 'resolved'
-    
-    def get_days_since_report(self):
-        """จำนวนวันนับตั้งแต่รายงาน"""
-        return (timezone.now() - self.created_at).days
-    
-    def save(self, *args, **kwargs):
-        # ตั้งค่าวันที่ดำเนินการเสร็จเมื่อเปลี่ยนสถานะเป็น resolved
-        if self.status == 'resolved' and not self.resolved_at:
-            self.resolved_at = timezone.now()
-        
-        super().save(*args, **kwargs)
-
-
 class ExamSession(models.Model):
     """เซสชันการสอบ (สำหรับเก็บข้อมูลการดำเนินการสอบ)"""
     subject = models.OneToOneField(
@@ -558,45 +420,7 @@ class ExamSession(models.Model):
         self.save()
 
 
-class CheatingStatistics(models.Model):
-    """สถิติการทุจริตรายเดือน/ปี"""
-    year = models.IntegerField(verbose_name="ปี")
-    month = models.IntegerField(verbose_name="เดือน")
-    total_cases = models.PositiveIntegerField(default=0, verbose_name="จำนวนคดีทั้งหมด")
-    resolved_cases = models.PositiveIntegerField(default=0, verbose_name="คดีที่ดำเนินการเสร็จ")
-    confirmed_cases = models.PositiveIntegerField(default=0, verbose_name="คดีที่ยืนยันทุจริต")
-    dismissed_cases = models.PositiveIntegerField(default=0, verbose_name="คดีที่ยกเลิก")
-    
-    created_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name="วันที่สร้าง")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="วันที่อัพเดท")
-
-    
-    class Meta:
-        verbose_name = "สถิติการทุจริต"
-        verbose_name_plural = "สถิติการทุจริต"
-        unique_together = ('year', 'month')
-        ordering = ['-year', '-month']
-    
-    def __str__(self):
-        return f"สถิติทุจริต {self.month:02d}/{self.year} ({self.total_cases} คดี)"
-    
-    def get_resolution_rate(self):
-        """อัตราการดำเนินการเสร็จ"""
-        if self.total_cases == 0:
-            return 0
-        return round((self.resolved_cases / self.total_cases) * 100, 1)
-    
-    def get_confirmation_rate(self):
-        """อัตราการยืนยันทุจริต"""
-        if self.total_cases == 0:
-            return 0
-        return round((self.confirmed_cases / self.total_cases) * 100, 1)
-
-
 # ==================== SIGNALS FOR AUTO-UPDATE ====================
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
-
 @receiver(post_save, sender=Attendance)
 def update_exam_session_on_attendance_save(sender, instance, **kwargs):
     """อัพเดทเซสชันเมื่อมีการบันทึกการเข้าสอบ"""
@@ -625,41 +449,6 @@ def create_user_profile(sender, instance, created, **kwargs):
         # เช่น student_id, teacher_id เป็นต้น
         pass
 
-@receiver(post_save, sender=CheatingReport)
-def update_cheating_statistics(sender, instance, created, **kwargs):
-    """อัพเดทสถิติทุจริตเมื่อมีรายงานใหม่"""
-    try:
-        report_date = instance.created_at
-        year = report_date.year
-        month = report_date.month
-        
-        stats, created_stats = CheatingStatistics.objects.get_or_create(
-            year=year,
-            month=month,
-            defaults={
-                'total_cases': 0,
-                'resolved_cases': 0,
-                'confirmed_cases': 0,
-                'dismissed_cases': 0,
-            }
-        )
-        
-        # นับรายงานทั้งหมดในเดือนนี้
-        month_reports = CheatingReport.objects.filter(
-            created_at__year=year,
-            created_at__month=month
-        )
-        
-        stats.total_cases = month_reports.count()
-        stats.resolved_cases = month_reports.filter(status='resolved').count()
-        stats.confirmed_cases = month_reports.filter(status='confirmed').count()
-        stats.dismissed_cases = month_reports.filter(status='dismissed').count()
-        
-        stats.save()
-        
-    except Exception as e:
-        print(f"Error updating cheating statistics: {str(e)}")
-
 
 # ==================== CUSTOM MANAGERS ====================
 class ActiveExamSubjectManager(models.Manager):
@@ -680,5 +469,3 @@ class UpcomingExamSubjectManager(models.Manager):
 ExamSubject.add_to_class('objects', models.Manager())
 ExamSubject.add_to_class('active', ActiveExamSubjectManager())
 ExamSubject.add_to_class('upcoming', UpcomingExamSubjectManager())
-
-

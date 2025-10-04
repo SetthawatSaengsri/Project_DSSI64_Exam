@@ -208,7 +208,7 @@
                     </div>
                 </a>
 
-                <a href="{% url 'exam_subjects_enhanced' %}"
+                <a href="{% url 'exam_subjects' %}"
                     class="block w-full px-6 py-4 glass border border-blue-500/30 hover:border-blue-500/50 hover:bg-blue-500/10 rounded-xl transition-all duration-300 group">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-4">
@@ -364,9 +364,7 @@
     {% endfor %}
     {% endif %}
 </div>
-{% endblock %}
-
-{% block extra_js %}
+{% block extra_js %}{% endblock %}
 <script>
     // ==================== NOTIFICATION SYSTEM ====================
     function showNotification(message, type = 'info', duration = 5000) {
@@ -919,7 +917,7 @@
 
     function viewImportResults() {
         closeSuccessModal();
-        window.location.href = '{% url "exam_subjects_enhanced" %}';
+        window.location.href = '{% url "exam_subjects" %}';
     }
 
     // ==================== ERROR DISPLAY ====================

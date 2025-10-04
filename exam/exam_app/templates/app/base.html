@@ -57,12 +57,9 @@
 
         /* ==================== ANIMATIONS ==================== */
         @keyframes float {
-
-            0%,
-            100% {
+            0%, 100% {
                 transform: translateY(0px);
             }
-
             50% {
                 transform: translateY(-10px);
             }
@@ -72,7 +69,6 @@
             from {
                 box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
             }
-
             to {
                 box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
             }
@@ -83,7 +79,6 @@
                 opacity: 0;
                 transform: translateY(30px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -95,7 +90,6 @@
                 opacity: 0;
                 transform: translateX(-30px);
             }
-
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -103,12 +97,9 @@
         }
 
         @keyframes wiggle {
-
-            0%,
-            100% {
+            0%, 100% {
                 transform: rotate(-3deg);
             }
-
             50% {
                 transform: rotate(3deg);
             }
@@ -135,27 +126,6 @@
             background-clip: text;
         }
 
-        .text-gradient-green {
-            background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .text-gradient-orange {
-            background: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fdba74 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .text-gradient-purple {
-            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 50%, #c4b5fd 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
         /* ==================== BACKGROUND PATTERNS ==================== */
         .bg-mesh {
             background-image:
@@ -166,11 +136,6 @@
                 radial-gradient(at 0% 100%, hsla(22, 100%, 77%, 1) 0px, transparent 50%),
                 radial-gradient(at 80% 100%, hsla(242, 100%, 70%, 1) 0px, transparent 50%),
                 radial-gradient(at 0% 0%, hsla(343, 100%, 76%, 1) 0px, transparent 50%);
-        }
-
-        .pattern-dots {
-            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-            background-size: 20px 20px;
         }
 
         .pattern-grid {
@@ -283,12 +248,10 @@
             0% {
                 background-position: -200% 0;
             }
-
             100% {
                 background-position: 200% 0;
             }
         }
-
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -307,8 +270,7 @@
         <div class="p-6 border-b border-white/10">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
-                    <div
-                        class="w-12 h-12 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-glow-blue animate-glow">
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-glow-blue animate-glow">
                         <i class="fas fa-graduation-cap text-white text-xl"></i>
                     </div>
                     <div class="sidebar-text">
@@ -316,8 +278,7 @@
                         <p class="text-xs text-slate-400 font-prompt">Exam Management System</p>
                     </div>
                 </div>
-                <button id="sidebarToggle"
-                    class="w-8 h-8 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg flex items-center justify-center transition-colors lg:flex hidden">
+                <button id="sidebarToggle" class="w-8 h-8 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg flex items-center justify-center transition-colors lg:flex hidden">
                     <i class="fas fa-bars text-slate-400"></i>
                 </button>
             </div>
@@ -329,10 +290,8 @@
                 {% if user.is_authenticated %}
                 {% if user.is_superuser %}
                 <!-- ADMIN MENU -->
-                <a href="{% url 'dashboard_admin' %}" class="sidebar-item flex items-center p-3 group"
-                    data-page="dashboard">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                <a href="{% url 'dashboard_admin' %}" class="sidebar-item flex items-center p-3 group" data-page="dashboard">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-tachometer-alt text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -347,8 +306,7 @@
                 </div>
 
                 <a href="{% url 'manage_users' %}" class="sidebar-item flex items-center p-3 group" data-page="users">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-users-cog text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -358,8 +316,7 @@
                 </a>
 
                 <a href="{% url 'exam_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="exams">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-calendar-alt text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -369,8 +326,7 @@
                 </a>
 
                 <a href="{% url 'manage_rooms' %}" class="sidebar-item flex items-center p-3 group" data-page="rooms">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <div class="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-building text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -379,12 +335,25 @@
                     </div>
                 </a>
 
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">เครื่องมือ</p>
+                </div>
+
+                <a href="{% url 'exam_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="qr-scanner">
+                    <div class="w-10 h-10 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-qrcode text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">สแกน QR Code</span>
+                        <p class="text-xs text-slate-400">QR Scanner</p>
+                    </div>
+                </a>
+
                 {% elif user.is_staff %}
                 <!-- STAFF MENU -->
-                <a href="{% url 'dashboard_staff' %}" class="sidebar-item flex items-center p-3 group"
-                    data-page="dashboard">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                <a href="{% url 'dashboard_staff' %}" class="sidebar-item flex items-center p-3 group" data-page="dashboard">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-tachometer-alt text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -399,8 +368,7 @@
                 </div>
 
                 <a href="{% url 'exam_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="exams">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-calendar-alt text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -409,10 +377,8 @@
                     </div>
                 </a>
 
-                <a href="{% url 'add_exam_subject' %}" class="sidebar-item flex items-center p-3 group"
-                    data-page="add-exam">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                <a href="{% url 'add_exam_subject' %}" class="sidebar-item flex items-center p-3 group" data-page="add-exam">
+                    <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-plus-circle text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -427,8 +393,7 @@
                 </div>
 
                 <a href="{% url 'user_list' %}" class="sidebar-item flex items-center p-3 group" data-page="users">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-users text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -438,14 +403,11 @@
                 </a>
 
                 <div class="sidebar-text">
-                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2 mt-4">นำเข้าข้อมูล
-                    </p>
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2 mt-4">นำเข้าข้อมูล</p>
                 </div>
 
-                <a href="{% url 'import_teachers' %}" class="sidebar-item flex items-center p-3 group"
-                    data-page="import-teachers">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                <a href="{% url 'import_teachers' %}" class="sidebar-item flex items-center p-3 group" data-page="import-teachers">
+                    <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-chalkboard-teacher text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -454,10 +416,8 @@
                     </div>
                 </a>
 
-                <a href="{% url 'import_students' %}" class="sidebar-item flex items-center p-3 group"
-                    data-page="import-students">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                <a href="{% url 'import_students' %}" class="sidebar-item flex items-center p-3 group" data-page="import-students">
+                    <div class="w-10 h-10 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-user-graduate text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -472,8 +432,7 @@
                 </div>
 
                 <a href="{% url 'manage_rooms' %}" class="sidebar-item flex items-center p-3 group" data-page="rooms">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <div class="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-building text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -482,12 +441,25 @@
                     </div>
                 </a>
 
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">เครื่องมือ</p>
+                </div>
+
+                <a href="{% url 'exam_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="qr-scanner">
+                    <div class="w-10 h-10 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-qrcode text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">สแกน QR Code</span>
+                        <p class="text-xs text-slate-400">QR Scanner</p>
+                    </div>
+                </a>
+
                 {% elif user.is_teacher %}
                 <!-- TEACHER MENU -->
-                <a href="{% url 'dashboard_teacher' %}" class="sidebar-item flex items-center p-3 group"
-                    data-page="dashboard">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                <a href="{% url 'dashboard_teacher' %}" class="sidebar-item flex items-center p-3 group" data-page="dashboard">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-tachometer-alt text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -501,25 +473,23 @@
                     <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">การสอบของฉัน</p>
                 </div>
 
-                <a href="{% url 'exam_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="exams">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                <a href="{% url 'invigilated_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="exams">
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-calendar-check text-white"></i>
                     </div>
                     <div class="sidebar-text">
-                        <span class="font-semibold">การสอบที่คุมสอบ</span>
+                        <span class="font-semibold">วิชาที่คุมสอบ</span>
                         <p class="text-xs text-slate-400">My Exams</p>
                     </div>
                 </a>
 
+                <div class="border-t border-white/10 my-4 mx-2"></div>
                 <div class="sidebar-text">
-                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2 mt-4">เครื่องมือ
-                    </p>
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">เครื่องมือ</p>
                 </div>
 
-                <a href="#" class="sidebar-item flex items-center p-3 group" data-page="attendance">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                <a href="{% url 'invigilated_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="attendance">
+                    <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-clipboard-check text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -528,12 +498,20 @@
                     </div>
                 </a>
 
+                <a href="{% url 'exam_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="qr-scanner">
+                    <div class="w-10 h-10 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-qrcode text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">สแกน QR Code</span>
+                        <p class="text-xs text-slate-400">QR Scanner</p>
+                    </div>
+                </a>
+
                 {% elif user.is_student %}
                 <!-- STUDENT MENU -->
-                <a href="{% url 'dashboard_student' %}" class="sidebar-item flex items-center p-3 group"
-                    data-page="dashboard">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                <a href="{% url 'dashboard_student' %}" class="sidebar-item flex items-center p-3 group" data-page="dashboard">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-tachometer-alt text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -547,10 +525,8 @@
                     <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">การสอบของฉัน</p>
                 </div>
 
-                <a href="#" class="sidebar-item flex items-center p-3 group"
-                    data-page="schedule">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                <a href="{% url 'dashboard_student' %}" class="sidebar-item flex items-center p-3 group" data-page="schedule">
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-calendar text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -559,10 +535,8 @@
                     </div>
                 </a>
 
-                <a href="#"class="sidebar-item flex items-center p-3 group"
-                    data-page="history">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                <a href="{% url 'dashboard_student' %}" class="sidebar-item flex items-center p-3 group" data-page="history">
+                    <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-history text-white"></i>
                     </div>
                     <div class="sidebar-text">
@@ -571,19 +545,19 @@
                     </div>
                 </a>
 
+                <div class="border-t border-white/10 my-4 mx-2"></div>
                 <div class="sidebar-text">
-                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2 mt-4">เครื่องมือ
-                    </p>
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">เครื่องมือ</p>
                 </div>
 
-                <a href="#" class="sidebar-item flex items-center p-3 group" data-page="qr-scan">
-                    <div
-                        class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
-                        <i class="fas fa-qrcode text-white"></i>
+                <a href="{% url 'dashboard_student' %}" class="sidebar-item flex items-center p-3 group" data-page="qr-scan">
+                    <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-qrcode text-white">
+                            </i>
                     </div>
                     <div class="sidebar-text">
                         <span class="font-semibold">สแกน QR เข้าสอบ</span>
-                        <p class="text-xs text-slate-400">QR Scanner</p>
+                        <p class="text-xs text-slate-400">QR Check-in</p>
                     </div>
                 </a>
                 {% endif %}
@@ -594,8 +568,7 @@
         <!-- Sidebar Footer -->
         <div class="p-4 border-t border-white/10">
             <div class="sidebar-item flex items-center p-3 cursor-pointer group" onclick="confirmLogout()">
-                <div
-                    class="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                <div class="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                     <i class="fas fa-sign-out-alt text-white"></i>
                 </div>
                 <div class="sidebar-text">
@@ -612,16 +585,14 @@
         <header class="sticky top-0 z-30 glass-dark border-b border-white/10 backdrop-blur-sm">
             <div class="flex items-center justify-between h-16 px-6">
                 <!-- Mobile Menu Button -->
-                <button id="mobileSidebarToggle"
-                    class="lg:hidden w-10 h-10 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg flex items-center justify-center transition-colors">
+                <button id="mobileSidebarToggle" class="lg:hidden w-10 h-10 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg flex items-center justify-center transition-colors">
                     <i class="fas fa-bars text-slate-400"></i>
                 </button>
 
                 <!-- Page Title -->
                 <div class="flex-1 lg:ml-0 ml-4">
-                    <h1 class="text-xl font-bold font-kanit text-gradient">{% block page_title %}Dashboard{% endblock %}
-                    </h1>
-                    <p class="text-sm text-slate-400 font-prompt">{% block page_subtitle %}ระบบจัดการการสอบ{% endblock%}</p>
+                    <h1 class="text-xl font-bold font-kanit text-gradient">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <p class="text-sm text-slate-400 font-prompt">{% block page_subtitle %}ระบบจัดการการสอบ{% endblock %}</p>
                 </div>
 
                 <!-- Top Bar Actions -->
@@ -629,8 +600,7 @@
                     <!-- User Profile -->
                     {% if user.is_authenticated %}
                     <div class="flex items-center space-x-3 glass px-4 py-2 rounded-full border border-white/20">
-                        <div
-                            class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                             <i class="fas fa-user text-white text-sm"></i>
                         </div>
                         <div class="hidden md:block">
@@ -674,11 +644,9 @@
     <div id="notifications" class="fixed top-20 right-6 z-50 space-y-3 max-w-sm"></div>
 
     <!-- ==================== LOADING OVERLAY ==================== -->
-    <div id="loadingOverlay"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+    <div id="loadingOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
         <div class="glass rounded-2xl p-8 text-center">
-            <div
-                class="w-16 h-16 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-spin-slow">
+            <div class="w-16 h-16 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-spin-slow">
                 <i class="fas fa-graduation-cap text-white text-2xl"></i>
             </div>
             <p class="text-white font-medium">กำลังโหลด...</p>
@@ -686,13 +654,10 @@
     </div>
 
     <!-- ==================== CONFIRMATION MODAL ==================== -->
-    <div id="confirmModal"
-        class="fixed inset-0 hidden bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div
-            class="modal-content glass-dark rounded-3xl p-8 w-full max-w-md border border-white/20 transform scale-75 opacity-0 transition-all duration-300">
+    <div id="confirmModal" class="fixed inset-0 hidden bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="modal-content glass-dark rounded-3xl p-8 w-full max-w-md border border-white/20 transform scale-75 opacity-0 transition-all duration-300">
             <div class="text-center mb-6">
-                <div
-                    class="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div class="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-exclamation-triangle text-2xl text-white"></i>
                 </div>
                 <h3 class="text-xl font-bold font-kanit mb-2">ยืนยันการดำเนินการ</h3>
@@ -700,12 +665,10 @@
             </div>
 
             <div class="flex space-x-4">
-                <button onclick="closeConfirmModal()"
-                    class="flex-1 px-6 py-3 glass border border-white/20 hover:border-white/40 rounded-xl transition-all duration-300">
+                <button onclick="closeConfirmModal()" class="flex-1 px-6 py-3 glass border border-white/20 hover:border-white/40 rounded-xl transition-all duration-300">
                     <i class="fas fa-times mr-2"></i>ยกเลิก
                 </button>
-                <button id="confirmAction"
-                    class="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 rounded-xl transition-all duration-300">
+                <button id="confirmAction" class="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 rounded-xl transition-all duration-300">
                     <i class="fas fa-check mr-2"></i>ยืนยัน
                 </button>
             </div>
@@ -714,300 +677,7 @@
 
     <!-- ==================== BASE JAVASCRIPT ==================== -->
     <script>
-        // Global notification system
-        let notificationContainer = null;
-        let loadingOverlay = null;
-
-        // Initialize notification system when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function () {
-            initializeNotificationSystem();
-        });
-
-        function initializeNotificationSystem() {
-            // Create notification container
-            if (!notificationContainer) {
-                notificationContainer = document.createElement('div');
-                notificationContainer.id = 'notification-container';
-                notificationContainer.className = 'fixed top-4 right-4 z-50 space-y-3';
-                notificationContainer.style.maxWidth = '400px';
-                document.body.appendChild(notificationContainer);
-            }
-
-            // Create loading overlay
-            if (!loadingOverlay) {
-                loadingOverlay = document.createElement('div');
-                loadingOverlay.id = 'loading-overlay';
-                loadingOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                loadingOverlay.style.display = 'none';
-                loadingOverlay.innerHTML = `
-            <div class="glass rounded-2xl p-8 text-center border border-white/20">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <p class="text-white text-lg font-prompt">กำลังประมวลผล...</p>
-                <p class="text-slate-300 text-sm">กรุณารอสักครู่</p>
-            </div>
-        `;
-                document.body.appendChild(loadingOverlay);
-            }
-        }
-
-        function showNotification(message, type = 'info', duration = 5000) {
-            if (!notificationContainer) {
-                initializeNotificationSystem();
-            }
-
-            const notification = document.createElement('div');
-            notification.className = `
-        notification glass rounded-xl p-4 border transition-all duration-300 transform translate-x-full opacity-0
-        ${getNotificationClasses(type)}
-    `;
-
-            notification.innerHTML = `
-        <div class="flex items-start space-x-3">
-            <div class="flex-shrink-0">
-                ${getNotificationIcon(type)}
-            </div>
-            <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-white">${message}</p>
-            </div>
-            <div class="flex-shrink-0 ml-4">
-                <button type="button" class="inline-flex text-white hover:text-gray-300 focus:outline-none transition-colors duration-200" onclick="closeNotification(this)">
-                    <i class="fas fa-times text-sm"></i>
-                </button>
-            </div>
-        </div>
-    `;
-
-            notificationContainer.appendChild(notification);
-
-            // Animate in
-            setTimeout(() => {
-                notification.classList.remove('translate-x-full', 'opacity-0');
-            }, 100);
-
-            // Auto remove
-            if (duration > 0) {
-                setTimeout(() => {
-                    removeNotification(notification);
-                }, duration);
-            }
-
-            return notification;
-        }
-
-        function getNotificationClasses(type) {
-            switch (type) {
-                case 'success':
-                    return 'border-green-500/30 bg-green-500/10';
-                case 'error':
-                    return 'border-red-500/30 bg-red-500/10';
-                case 'warning':
-                    return 'border-yellow-500/30 bg-yellow-500/10';
-                case 'info':
-                default:
-                    return 'border-blue-500/30 bg-blue-500/10';
-            }
-        }
-
-        function getNotificationIcon(type) {
-            const iconClasses = 'w-5 h-5';
-            switch (type) {
-                case 'success':
-                    return `<i class="fas fa-check-circle ${iconClasses} text-green-400"></i>`;
-                case 'error':
-                    return `<i class="fas fa-exclamation-triangle ${iconClasses} text-red-400"></i>`;
-                case 'warning':
-                    return `<i class="fas fa-exclamation-circle ${iconClasses} text-yellow-400"></i>`;
-                case 'info':
-                default:
-                    return `<i class="fas fa-info-circle ${iconClasses} text-blue-400"></i>`;
-            }
-        }
-
-        function closeNotification(button) {
-            const notification = button.closest('.notification');
-            removeNotification(notification);
-        }
-
-        function removeNotification(notification) {
-            if (notification && notification.parentNode) {
-                notification.classList.add('translate-x-full', 'opacity-0');
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 300);
-            }
-        }
-
-        function showLoading() {
-            if (loadingOverlay) {
-                loadingOverlay.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-            }
-        }
-
-        function hideLoading() {
-            if (loadingOverlay) {
-                loadingOverlay.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            }
-        }
-
-        // ==================== FORM HELPERS ====================
-        function validateForm(formId) {
-            const form = document.getElementById(formId);
-            if (!form) return false;
-
-            const requiredFields = form.querySelectorAll('[required]');
-            let isValid = true;
-
-            requiredFields.forEach(field => {
-                if (!field.value.trim()) {
-                    field.classList.add('border-red-500');
-                    isValid = false;
-                } else {
-                    field.classList.remove('border-red-500');
-                }
-            });
-
-            return isValid;
-        }
-
-        function resetForm(formId) {
-            const form = document.getElementById(formId);
-            if (form) {
-                form.reset();
-                // Remove validation classes
-                form.querySelectorAll('.border-red-500').forEach(field => {
-                    field.classList.remove('border-red-500');
-                });
-            }
-        }
-
-        // ==================== AJAX HELPERS ====================
-        function makeAjaxRequest(url, options = {}) {
-            const defaultOptions = {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'same-origin'
-            };
-
-            // Add CSRF token for POST requests
-            if (options.method === 'POST') {
-                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-                if (csrfToken) {
-                    defaultOptions.headers['X-CSRFToken'] = csrfToken.value;
-                }
-            }
-
-            const finalOptions = { ...defaultOptions, ...options };
-
-            return fetch(url, finalOptions)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .catch(error => {
-                    console.error('AJAX Error:', error);
-                    showNotification('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
-                    throw error;
-                });
-        }
-
-        // ==================== UTILITY FUNCTIONS ====================
-        function formatThaiDate(dateString) {
-            const date = new Date(dateString);
-            const thaiMonths = [
-                'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-                'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
-            ];
-
-            const day = date.getDate();
-            const month = thaiMonths[date.getMonth()];
-            const year = date.getFullYear() + 543; // Convert to Buddhist Era
-
-            return `${day} ${month} ${year}`;
-        }
-
-        function formatTime(timeString) {
-            const time = new Date(`1970-01-01T${timeString}`);
-            return time.toLocaleTimeString('th-TH', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            });
-        }
-
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // ==================== AUTO-SAVE FUNCTIONALITY ====================
-        function enableAutoSave(formId, saveFunction, interval = 30000) {
-            const form = document.getElementById(formId);
-            if (!form) return;
-
-            let autoSaveTimer;
-            let hasChanges = false;
-
-            // Track changes
-            form.addEventListener('input', function () {
-                hasChanges = true;
-                clearTimeout(autoSaveTimer);
-                autoSaveTimer = setTimeout(() => {
-                    if (hasChanges) {
-                        saveFunction();
-                        hasChanges = false;
-                    }
-                }, interval);
-            });
-
-            // Clear timer on form submit
-            form.addEventListener('submit', function () {
-                clearTimeout(autoSaveTimer);
-                hasChanges = false;
-            });
-        }
-
-        // ==================== KEYBOARD SHORTCUTS ====================
-        document.addEventListener('keydown', function (e) {
-            // Ctrl + S to save (prevent default browser save)
-            if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                const submitBtn = document.querySelector('button[type="submit"]');
-                if (submitBtn && !submitBtn.disabled) {
-                    submitBtn.click();
-                }
-            }
-
-            // Escape to close modals
-            if (e.key === 'Escape') {
-                const modals = document.querySelectorAll('.modal:not([style*="display: none"])');
-                modals.forEach(modal => {
-                    if (modal.style.display !== 'none') {
-                        modal.style.display = 'none';
-                    }
-                });
-            }
-        });
-
-        // ==================== INITIALIZATION ====================
-        console.log('🚀 Notification system loaded successfully!');
-
-        // ==================== GLOBAL VARIABLES ====================
+        // Global variables
         let sidebarCollapsed = false;
         let isMobile = window.innerWidth < 1024;
 
@@ -1019,40 +689,24 @@
             const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
             const mobileOverlay = document.getElementById('mobileOverlay');
 
-            // Desktop sidebar toggle
-            sidebarToggle?.addEventListener('click', function () {
-                toggleSidebar();
-            });
+            sidebarToggle?.addEventListener('click', toggleSidebar);
+            mobileSidebarToggle?.addEventListener('click', toggleMobileSidebar);
+            mobileOverlay?.addEventListener('click', closeMobileSidebar);
 
-            // Mobile sidebar toggle
-            mobileSidebarToggle?.addEventListener('click', function () {
-                toggleMobileSidebar();
-            });
-
-            // Close mobile sidebar when clicking overlay
-            mobileOverlay?.addEventListener('click', function () {
-                closeMobileSidebar();
-            });
-
-            // Handle window resize
-            window.addEventListener('resize', function () {
+            window.addEventListener('resize', function() {
                 const newIsMobile = window.innerWidth < 1024;
                 if (newIsMobile !== isMobile) {
                     isMobile = newIsMobile;
-                    if (!isMobile) {
-                        closeMobileSidebar();
-                    }
+                    if (!isMobile) closeMobileSidebar();
                 }
             });
 
-            // Set active menu item
             setActiveMenuItem();
         }
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
-
             sidebarCollapsed = !sidebarCollapsed;
 
             if (sidebarCollapsed) {
@@ -1063,28 +717,20 @@
                 mainContent.classList.remove('sidebar-collapsed');
             }
 
-            // Save state to localStorage
             localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
         }
 
         function toggleMobileSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobileOverlay');
-
             sidebar.classList.toggle('mobile-open');
             overlay.classList.toggle('hidden');
-
-            if (sidebar.classList.contains('mobile-open')) {
-                document.body.style.overflow = 'hidden';
-            } else {
-                document.body.style.overflow = 'auto';
-            }
+            document.body.style.overflow = sidebar.classList.contains('mobile-open') ? 'hidden' : 'auto';
         }
 
         function closeMobileSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobileOverlay');
-
             sidebar.classList.remove('mobile-open');
             overlay.classList.add('hidden');
             document.body.style.overflow = 'auto';
@@ -1093,7 +739,6 @@
         function setActiveMenuItem() {
             const currentPage = '{% block current_page %}{% endblock %}';
             const menuItems = document.querySelectorAll('.sidebar-item[data-page]');
-
             menuItems.forEach(item => {
                 const page = item.getAttribute('data-page');
                 if (page === currentPage) {
@@ -1109,22 +754,25 @@
             const notificationsContainer = document.getElementById('notifications');
             const notification = document.createElement('div');
 
-            notification.className = `notification glass-dark rounded-xl p-4 border-l-4 transform translate-x-full opacity-0 transition-all duration-500 ${type === 'success' ? 'border-green-400' :
-                    type === 'error' ? 'border-red-400' :
-                        type === 'warning' ? 'border-yellow-400' : 'border-blue-400'
-                }`;
+            notification.className = `notification glass-dark rounded-xl p-4 border-l-4 transform translate-x-full opacity-0 transition-all duration-500 ${
+                type === 'success' ? 'border-green-400' :
+                type === 'error' ? 'border-red-400' :
+                type === 'warning' ? 'border-yellow-400' : 'border-blue-400'
+            }`;
 
             notification.innerHTML = `
                 <div class="flex items-start space-x-3">
                     <div class="flex-shrink-0 mt-0.5">
-                        <div class="w-6 h-6 ${type === 'success' ? 'bg-green-500' :
-                    type === 'error' ? 'bg-red-500' :
-                        type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
-                } rounded-full flex items-center justify-center">
-                            <i class="fas ${type === 'success' ? 'fa-check' :
-                    type === 'error' ? 'fa-times' :
-                        type === 'warning' ? 'fa-exclamation' : 'fa-info'
-                } text-white text-xs"></i>
+                        <div class="w-6 h-6 ${
+                            type === 'success' ? 'bg-green-500' :
+                            type === 'error' ? 'bg-red-500' :
+                            type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+                        } rounded-full flex items-center justify-center">
+                            <i class="fas ${
+                                type === 'success' ? 'fa-check' :
+                                type === 'error' ? 'fa-times' :
+                                type === 'warning' ? 'fa-exclamation' : 'fa-info'
+                            } text-white text-xs"></i>
                         </div>
                     </div>
                     <div class="flex-1 min-w-0">
@@ -1154,11 +802,8 @@
             const notification = button.closest('.notification');
             notification.style.transform = 'translateX(100%)';
             notification.style.opacity = '0';
-
             setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
+                if (notification.parentNode) notification.remove();
             }, 300);
         }
 
@@ -1198,10 +843,8 @@
         function closeConfirmModal() {
             const modal = document.getElementById('confirmModal');
             const modalContent = modal.querySelector('.modal-content');
-
             modalContent.style.transform = 'scale(0.75)';
             modalContent.style.opacity = '0';
-
             setTimeout(() => {
                 modal.classList.add('hidden');
                 document.body.style.overflow = 'auto';
@@ -1213,7 +856,6 @@
             showConfirmModal('คุณแน่ใจหรือไม่ที่จะออกจากระบบ?', () => {
                 showLoading();
                 showNotification('กำลังออกจากระบบ...', 'info');
-
                 setTimeout(() => {
                     window.location.href = '{% url "logout_user" %}';
                 }, 1000);
@@ -1221,8 +863,7 @@
         }
 
         // ==================== KEYBOARD SHORTCUTS ====================
-        document.addEventListener('keydown', function (e) {
-            // ESC key closes modals and mobile sidebar
+        document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 if (!document.getElementById('confirmModal').classList.contains('hidden')) {
                     closeConfirmModal();
@@ -1231,7 +872,6 @@
                 }
             }
 
-            // Ctrl/Cmd + B toggles sidebar
             if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
                 e.preventDefault();
                 if (isMobile) {
@@ -1243,46 +883,34 @@
         });
 
         // ==================== INITIALIZATION ====================
-        document.addEventListener('DOMContentLoaded', function () {
-            console.log('🚀 Base Template loaded successfully!');
-
-            // Initialize components
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Base Template loaded successfully!');
             initializeSidebar();
 
-            // Restore sidebar state
             const savedState = localStorage.getItem('sidebarCollapsed');
             if (savedState === 'true' && !isMobile) {
                 toggleSidebar();
             }
 
-            // Page-specific initialization
             if (typeof initializePage === 'function') {
                 initializePage();
             }
 
-            // Show welcome message
             setTimeout(() => {
                 showNotification('ยินดีต้อนรับสู่ระบบจัดการการสอบ', 'success');
             }, 500);
         });
 
         // ==================== ERROR HANDLING ====================
-        window.addEventListener('error', function (e) {
+        window.addEventListener('error', function(e) {
             console.error('JavaScript error:', e.error);
             showNotification('เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง', 'error');
             hideLoading();
         });
-
-        // ==================== CLOSE MODALS ON OUTSIDE CLICK ====================
-        document.addEventListener('click', function (e) {
-            if (e.target.classList.contains('modal-overlay') || e.target.id === 'confirmModal') {
-                closeConfirmModal();
-            }
-        });
-
-        // ==================== PAGE SPECIFIC FUNCTIONS ====================
-        {% block extra_js %} {% endblock %}
     </script>
+
+    <!-- ==================== PAGE SPECIFIC FUNCTIONS ====================-->
+    {% block extra_js %}{% endblock %}
 
     <!-- Page specific scripts -->
     {% block scripts %}{% endblock %}

@@ -38,13 +38,13 @@
   
   .modal-content {
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
-    margin: 5% auto;
+    margin: 2% auto;
     padding: 2rem;
     border: 1px solid rgba(255,255,255,0.2);
     border-radius: 1.5rem;
-    width: 90%;
-    max-width: 600px;
-    max-height: 80vh;
+    width: 95%;
+    max-width: 800px;
+    max-height: 90vh;
     overflow-y: auto;
   }
   
@@ -60,7 +60,7 @@
     margin-bottom: 0.5rem;
   }
   
-  .form-input {
+  .form-input, .form-select {
     width: 100%;
     padding: 0.75rem 1rem;
     background: rgba(51, 65, 85, 0.5);
@@ -71,7 +71,7 @@
     transition: all 0.3s ease;
   }
   
-  .form-input:focus {
+  .form-input:focus, .form-select:focus {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -124,6 +124,56 @@
   .empty-state {
     background: rgba(71, 85, 105, 0.2);
     border: 2px dashed rgba(148, 163, 184, 0.3);
+  }
+
+  .select2-container {
+    width: 100% !important;
+  }
+  
+  .select2-selection {
+    background: rgba(51, 65, 85, 0.5) !important;
+    border: 1px solid rgba(148, 163, 184, 0.3) !important;
+    border-radius: 0.75rem !important;
+    height: auto !important;
+    min-height: 46px !important;
+  }
+  
+  .select2-selection__rendered {
+    color: #e2e8f0 !important;
+    padding: 0.75rem 1rem !important;
+  }
+  
+  .select2-dropdown {
+    background: rgba(30, 41, 59, 0.95) !important;
+    border: 1px solid rgba(148, 163, 184, 0.3) !important;
+    border-radius: 0.75rem !important;
+  }
+  
+  .select2-results__option {
+    color: #e2e8f0 !important;
+    padding: 0.75rem 1rem !important;
+  }
+  
+  .select2-results__option--highlighted {
+    background: rgba(59, 130, 246, 0.3) !important;
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .grid-auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
 </style>
 {% endblock %}
@@ -337,7 +387,7 @@
               </div>
               <div class="flex items-center text-slate-300">
                 <i class="fa-regular fa-clock mr-2 text-green-400"></i>
-                {{ s.start_time|time:"H:i" }}–{{ s.end_time|time:"H:i" }}
+                {{ s.start_time|time:"H:i" }}—{{ s.end_time|time:"H:i" }}
               </div>
             </div>
             {% if s.get_duration %}
@@ -394,7 +444,7 @@
           <!-- ระดับชั้น/นักเรียน -->
           <td class="px-4 py-4 text-center">
             {% with student_count=s.get_student_count %}
-              <div class="font-semibold text-white text-lg">{{ s.students.first.student_class|default:"–" }}</div>
+              <div class="font-semibold text-white text-lg">{{ s.students.first.student_class|default:"—" }}</div>
               <div class="text-xs text-slate-400 mt-1">
                 {% if student_count %}{{ student_count }} คน{% else %}ไม่มีนักเรียน{% endif %}
               </div>
@@ -428,7 +478,7 @@
               <a href="{% url 'generate_qr_code' s.id %}" class="px-3 py-2 bg-green-500/20 hover:bg-green-500/40 text-green-400 rounded-lg transition-colors" title="QR เข้าสอบ">
                 <i class="fa-solid fa-qrcode"></i>
               </a>
-              <button onclick="openEditModal({{ s.id }}, '{{ s.subject_name }}', '{{ s.subject_code }}', '{{ s.academic_year }}', '{{ s.term }}', '{{ s.exam_date|date:"Y-m-d" }}', '{{ s.start_time|time:"H:i" }}', '{{ s.end_time|time:"H:i" }}')" 
+              <button onclick="openEditModal({{ s.id }})" 
                       class="px-3 py-2 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 rounded-lg transition-colors" title="แก้ไข">
                 <i class="fa-regular fa-pen-to-square"></i>
               </button>
@@ -471,23 +521,24 @@
       
       <div class="grid md:grid-cols-2 gap-4">
         <div class="form-group">
-          <label class="form-label">ชื่อวิชา</label>
+          <label class="form-label">ชื่อวิชา <span class="text-red-400">*</span></label>
           <input type="text" id="editSubjectName" name="subject_name" class="form-input" required>
         </div>
         
         <div class="form-group">
-          <label class="form-label">รหัสวิชา</label>
+          <label class="form-label">รหัสวิชา <span class="text-red-400">*</span></label>
           <input type="text" id="editSubjectCode" name="subject_code" class="form-input" required>
         </div>
         
         <div class="form-group">
-          <label class="form-label">ปีการศึกษา</label>
+          <label class="form-label">ปีการศึกษา <span class="text-red-400">*</span></label>
           <input type="text" id="editAcademicYear" name="academic_year" class="form-input" required>
         </div>
         
         <div class="form-group">
-          <label class="form-label">เทอม</label>
-          <select id="editTerm" name="term" class="form-input" required>
+          <label class="form-label">เทอม <span class="text-red-400">*</span></label>
+          <select id="editTerm" name="term" class="form-select" required>
+            <option value="">เลือกเทอม</option>
             <option value="1">เทอม 1</option>
             <option value="2">เทอม 2</option>
             <option value="3">เทอม 3</option>
@@ -495,17 +546,45 @@
         </div>
         
         <div class="form-group">
-          <label class="form-label">วันที่สอบ</label>
+          <label class="form-label">วันที่สอบ <span class="text-red-400">*</span></label>
           <input type="date" id="editExamDate" name="exam_date" class="form-input" required>
         </div>
         
         <div class="form-group">
-          <label class="form-label">เวลา</label>
+          <label class="form-label">เวลา <span class="text-red-400">*</span></label>
           <div class="flex gap-2">
             <input type="time" id="editStartTime" name="start_time" class="form-input" required>
             <span class="flex items-center text-slate-400">ถึง</span>
             <input type="time" id="editEndTime" name="end_time" class="form-input" required>
           </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">ระดับชั้น</label>
+          <select id="editStudentClass" name="student_class" class="form-select">
+            <option value="">เลือกระดับชั้น</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">ครูคุมสอบหลัก</label>
+          <select id="editInvigilator" name="invigilator" class="form-select">
+            <option value="">เลือกครูคุมสอบหลัก</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">ครูคุมสอบสำรอง</label>
+          <select id="editSecondaryInvigilator" name="secondary_invigilator" class="form-select">
+            <option value="">เลือกครูคุมสอบสำรอง</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">ห้องสอบ</label>
+          <select id="editRoom" name="room" class="form-select">
+            <option value="">เลือกห้องสอบ</option>
+          </select>
         </div>
       </div>
       
@@ -541,325 +620,286 @@
     </div>
   </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-// ตัวแปรสำหรับการลบ
-let deleteSubjectId = null;
+/* ====== CONFIG (จาก template) ====== */
+const IS_SUPERUSER = {{ request.user.is_superuser|yesno:"true,false" }};
 
-// ค้นหาแบบ client-side
-(function(){
-  const searchInput = document.getElementById('searchInput');
-  const tbody = document.getElementById('subjectTableBody');
-  const displayedCount = document.getElementById('displayedCount');
-  
-  if(!searchInput || !tbody) return;
-  
-  const rows = Array.from(tbody.querySelectorAll('tr.subject-row'));
-  
-  searchInput.addEventListener('input', function(){
-    const q = this.value.toLowerCase().trim();
-    let visibleCount = 0;
-    
-    rows.forEach(r => {
-      const hay = (r.getAttribute('data-search') || '').toLowerCase();
-      const isVisible = hay.includes(q);
-      r.style.display = isVisible ? '' : 'none';
-      if (isVisible) visibleCount++;
-    });
-    
-    if (displayedCount) {
-      displayedCount.textContent = visibleCount;
+/* ====== Utilities ====== */
+function getCookie(name){
+  let v=null;
+  if(document.cookie && document.cookie!==''){
+    for(let c of document.cookie.split(';')){
+      c=c.trim();
+      if(c.startsWith(name+'=')){ v=decodeURIComponent(c.split('=')[1]); break; }
     }
-  });
-})();
+  }
+  return v;
+}
+function notify(msg){ alert(msg); }
 
-// การจัดการ Bulk Actions
-function toggleSelectAll(checkbox) {
-  const checkboxes = document.querySelectorAll('.subject-checkbox');
-  checkboxes.forEach(cb => {
-    cb.checked = checkbox.checked;
+/* ====== ค้นหา/กรองในตาราง ====== */
+document.getElementById('searchInput')?.addEventListener('input', function(){
+  const q=this.value.trim().toLowerCase();
+  const rows=document.querySelectorAll('#subjectTableBody tr.subject-row');
+  let shown=0;
+  rows.forEach(tr=>{
+    const hay=(tr.getAttribute('data-search')||'').toLowerCase();
+    const ok=!q || hay.includes(q);
+    tr.style.display= ok ? '' : 'none';
+    if(ok) shown++;
   });
+  const counter = document.getElementById('displayedCount');
+  if (counter) counter.textContent = shown.toString();
+});
+
+/* ====== Bulk select / delete ====== */
+function selectedSubjectIds(){
+  return [...document.querySelectorAll('.subject-checkbox:checked')].map(x=>parseInt(x.value));
+}
+function updateBulkActions(){
+  const has = selectedSubjectIds().length>0;
+  const btn = document.getElementById('bulkDeleteBtn');
+  if(btn) btn.style.display = has ? 'inline-flex' : 'none';
+}
+function toggleSelectAll(src){
+  document.querySelectorAll('.subject-checkbox').forEach(cb=>cb.checked = src.checked);
   updateBulkActions();
 }
+function toggleBulkDelete(){
+  const ids = selectedSubjectIds();
+  if (!ids.length){ notify('โปรดเลือกรายวิชาที่ต้องการลบ'); return; }
+  if (!confirm(`ยืนยันลบ ${ids.length} รายการ?`)) return;
 
-function updateBulkActions() {
-  const checkedBoxes = document.querySelectorAll('.subject-checkbox:checked');
-  const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
-  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-  const headerCheckbox = document.getElementById('headerCheckbox');
-  
-  if (checkedBoxes.length > 0) {
-    bulkDeleteBtn.style.display = 'inline-flex';
-    bulkDeleteBtn.innerHTML = `<i class="fa-solid fa-trash mr-2"></i>ลบที่เลือก (${checkedBoxes.length})`;
-  } else {
-    bulkDeleteBtn.style.display = 'none';
-  }
-  
-  // อัปเดตสถานะ checkbox หลัก
-  const allCheckboxes = document.querySelectorAll('.subject-checkbox');
-  if (checkedBoxes.length === allCheckboxes.length && allCheckboxes.length > 0) {
-    selectAllCheckbox.checked = true;
-    headerCheckbox.checked = true;
-    selectAllCheckbox.indeterminate = false;
-    headerCheckbox.indeterminate = false;
-  } else if (checkedBoxes.length > 0) {
-    selectAllCheckbox.checked = false;
-    headerCheckbox.checked = false;
-    selectAllCheckbox.indeterminate = true;
-    headerCheckbox.indeterminate = true;
-  } else {
-    selectAllCheckbox.checked = false;
-    headerCheckbox.checked = false;
-    selectAllCheckbox.indeterminate = false;
-    headerCheckbox.indeterminate = false;
-  }
-}
-
-function toggleBulkDelete() {
-  const checkedBoxes = document.querySelectorAll('.subject-checkbox:checked');
-  if (checkedBoxes.length === 0) return;
-  
-  const subjectNames = Array.from(checkedBoxes).map(cb => {
-    const row = cb.closest('tr');
-    return row.querySelector('td:nth-child(2) p.font-semibold').textContent.trim();
-  });
-  
-  if (confirm(`คุณต้องการลบรายวิชาที่เลือก ${checkedBoxes.length} รายการหรือไม่?\n\n${subjectNames.slice(0, 5).join('\n')}${subjectNames.length > 5 ? '\n...' : ''}`)) {
-    const ids = Array.from(checkedBoxes).map(cb => cb.value);
-    bulkDeleteSubjects(ids);
-  }
-}
-
-async function bulkDeleteSubjects(ids) {
-  try {
-    showLoading('กำลังลบรายวิชา...');
-    
-    for (const id of ids) {
-      const response = await fetch(`/exam-subjects/${id}/delete/`, {
+  fetch('/exam-subjects/bulk-delete/', {
+    method: 'POST',
+    headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json'},
+    body: JSON.stringify({ subject_ids: ids })
+  })
+  .then(r => r.json().then(j => ({ok:r.ok, status:r.status, data:j})))
+  .then(({ok,status,data})=>{
+    if (ok && data.success){
+      notify(data.message || 'ลบสำเร็จ');
+      location.reload();
+      return;
+    }
+    const msg = (data && (data.message || data.error)) || `ลบไม่สำเร็จ (HTTP ${status})`;
+    if (IS_SUPERUSER && confirm(`${msg}\n\nต้องการลบแบบ "บังคับ" สำหรับรายการที่เลือกหรือไม่?`)){
+      return fetch('/exam-subjects/force-delete/', {
         method: 'POST',
-        headers: {
-          'X-CSRFToken': getCsrfToken(),
-          'Content-Type': 'application/json'
-        }
+        headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json'},
+        body: JSON.stringify({ subject_ids: ids })
+      }).then(r=>r.json()).then(fd=>{
+        if (fd.success){ notify(fd.message || 'ลบแบบบังคับสำเร็จ'); location.reload(); }
+        else { notify(fd.error || 'ลบแบบบังคับไม่สำเร็จ'); }
       });
-      
-      if (!response.ok) {
-        throw new Error(`ไม่สามารถลบรายวิชา ID ${id} ได้`);
-      }
+    } else {
+      notify(msg);
     }
-    
-    hideLoading();
-    showNotification(`ลบรายวิชาสำเร็จ ${ids.length} รายการ`, 'success');
-    setTimeout(() => location.reload(), 1500);
-    
-  } catch (error) {
-    hideLoading();
-    showNotification(error.message || 'เกิดข้อผิดพลาดในการลบรายวิชา', 'error');
-  }
+  })
+  .catch(e => notify('เกิดข้อผิดพลาด: ' + e.message));
 }
+document.addEventListener('change', e=>{
+  if (e.target.classList?.contains('subject-checkbox')) updateBulkActions();
+});
 
-// การจัดการ Modal แก้ไข
-function openEditModal(id, name, code, year, term, date, startTime, endTime) {
-  document.getElementById('editSubjectId').value = id;
-  document.getElementById('editSubjectName').value = name;
-  document.getElementById('editSubjectCode').value = code;
-  document.getElementById('editAcademicYear').value = year;
-  document.getElementById('editTerm').value = term;
-  document.getElementById('editExamDate').value = date;
-  document.getElementById('editStartTime').value = startTime;
-  document.getElementById('editEndTime').value = endTime;
-  
-  document.getElementById('editModal').style.display = 'block';
-  document.body.style.overflow = 'hidden';
-}
-
-function closeEditModal() {
-  document.getElementById('editModal').style.display = 'none';
-  document.body.style.overflow = 'auto';
-}
-
-// การจัดการ Modal ลบ
-function confirmDeleteSubject(id, name) {
-  deleteSubjectId = id;
-  document.getElementById('deleteSubjectName').textContent = name;
+/* ====== Delete one ====== */
+let deletingSubjectId=null;
+function confirmDeleteSubject(id, name){
+  deletingSubjectId=id;
+  const nameEl = document.getElementById('deleteSubjectName');
+  if (nameEl) nameEl.textContent = name;
   document.getElementById('deleteModal').style.display = 'block';
-  document.body.style.overflow = 'hidden';
 }
-
-function closeDeleteModal() {
-  deleteSubjectId = null;
+function closeDeleteModal(){
   document.getElementById('deleteModal').style.display = 'none';
-  document.body.style.overflow = 'auto';
+  deletingSubjectId=null;
+}
+function forceDeleteSingle(id){
+  return fetch('/exam-subjects/force-delete/', {
+    method: 'POST',
+    headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json'},
+    body: JSON.stringify({ subject_ids: [id] })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success){
+      notify(data.message || 'ลบแบบบังคับสำเร็จ');
+      location.reload();
+    } else {
+      notify(data.error || 'ลบแบบบังคับไม่สำเร็จ');
+    }
+  });
+}
+function executeDelete(){
+  if(!deletingSubjectId) return;
+  fetch(`/ajax/exam-subjects/${deletingSubjectId}/delete/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+  })
+  .then(async (r) => {
+    const data = await r.json().catch(()=>({}));
+    if (!r.ok) {
+      // 400 จากฝั่ง server = มี attendance หรือกำลังสอบ ฯลฯ
+      if (r.status === 400 && data.error) {
+        if (IS_SUPERUSER) {
+          if (confirm(`${data.error}\n\nคุณเป็นผู้ดูแลระบบ ต้องการลบแบบ "บังคับ" ไหม?`)) {
+            return forceDeleteSingle(deletingSubjectId);
+          }
+        } else {
+          notify(data.error);
+        }
+      } else {
+        notify(data.error || `ลบไม่สำเร็จ (HTTP ${r.status})`);
+      }
+      throw new Error('handled');
+    }
+    return data;
+  })
+  .then(data => {
+    if (data && data.success){
+      notify(data.message || 'ลบสำเร็จ');
+      location.reload();
+    }
+  })
+  .catch(e => { if (e.message !== 'handled') notify('เกิดข้อผิดพลาด: ' + e.message); })
+  .finally(()=> closeDeleteModal());
 }
 
-async function executeDelete() {
-  if (!deleteSubjectId) return;
-  
-  try {
-    showLoading('กำลังลบรายวิชา...');
-    
-    const response = await fetch(`/exam-subjects/${deleteSubjectId}/delete/`, {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': getCsrfToken(),
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (response.ok) {
-      hideLoading();
-      closeDeleteModal();
-      showNotification('ลบรายวิชาสำเร็จ', 'success');
-      
-      // ลบแถวออกจากตาราง
-      const row = document.querySelector(`input[value="${deleteSubjectId}"]`).closest('tr');
-      if (row) {
-        row.remove();
-        updateDisplayedCount();
-      }
-    } else {
-      throw new Error('ไม่สามารถลบรายวิชาได้');
-    }
-    
-  } catch (error) {
-    hideLoading();
-    showNotification(error.message || 'เกิดข้อผิดพลาดในการลบรายวิชา', 'error');
+/* ====== ตัวช่วยเติม <select> ====== */
+function fillSelect(el, items, valueKey='id', labelKey='name', current=null){
+  el.innerHTML = '<option value="">-- เลือก --</option>';
+  items.forEach(it=>{
+    const opt=document.createElement('option');
+    opt.value = String(it[valueKey] ?? '');
+    opt.textContent = String(it[labelKey] ?? '');
+    if(current!=null && String(current)===String(it[valueKey])) opt.selected = true;
+    el.appendChild(opt);
+  });
+  if(el.options.length===1){
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '— ไม่มีรายการ —';
+    el.appendChild(opt);
   }
 }
 
-// จัดการการส่งฟอร์มแก้ไข
-document.getElementById('editForm').addEventListener('submit', async function(e) {
+/* ====== โหลด options ตามวัน/เวลา (กัน 400) ====== */
+async function loadEditOptionsFor(subjectId, date, startTime, endTime){
+  const qs = `?date=${encodeURIComponent(date)}&start_time=${encodeURIComponent(startTime)}&end_time=${encodeURIComponent(endTime)}&exclude_subject_id=${encodeURIComponent(subjectId)}`;
+
+  const [clsRes, tRes, rRes] = await Promise.all([
+    fetch('/ajax/get-class-list/'),                        // -> {classes: [{value, text}, ...]}
+    fetch('/ajax/get-available-teachers-for-edit/'+qs),    // -> {available_teachers: [{id, name, ...}]}
+    fetch('/ajax/get-available-rooms-for-edit/'+qs),       // -> {available_rooms: [{id, display_text, ...}]}
+  ]);
+
+  const classesJson  = await clsRes.json();
+  const teachersJson = await tRes.json();
+  const roomsJson    = await rRes.json();
+
+  return {
+    classes: classesJson.classes || [],
+    teachers: teachersJson.available_teachers || [],
+    rooms: roomsJson.available_rooms || []
+  };
+}
+
+/* ====== Edit (เปิดโมดัล + prefill + reload options เมื่อเปลี่ยนเวลา) ====== */
+async function openEditModal(subjectId){
+  try{
+    // 1) รายละเอียดวิชา (สำคัญ: อยู่ใต้คีย์ subject)
+    const detailRes = await fetch(`/exam-subjects/${subjectId}/detail/`);
+    if(!detailRes.ok) throw new Error(`HTTP ${detailRes.status}`);
+    const j = await detailRes.json();
+    if (!j.success) throw new Error(j.error || 'โหลดรายละเอียดไม่สำเร็จ');
+    const s = j.subject;
+
+    // 2) เติมค่าพื้นฐาน
+    document.getElementById('editSubjectId').value    = s.id;
+    document.getElementById('editSubjectName').value  = s.subject_name || '';
+    document.getElementById('editSubjectCode').value  = s.subject_code || '';
+    document.getElementById('editAcademicYear').value = s.academic_year || '';
+    document.getElementById('editTerm').value         = String(s.term || '');
+    document.getElementById('editExamDate').value     = s.exam_date || '';
+    document.getElementById('editStartTime').value    = s.start_time || '';
+    document.getElementById('editEndTime').value      = s.end_time || '';
+
+    // 3) โหลด options ตามวัน/เวลา + preselect ค่าปัจจุบัน
+    const { classes, teachers, rooms } =
+      await loadEditOptionsFor(subjectId, s.exam_date, s.start_time, s.end_time);
+
+    // ระดับชั้น (ถ้า backend ยังไม่ได้ส่ง student_class มากับ detail จะยังไม่มี preselect)
+    fillSelect(document.getElementById('editStudentClass'), classes, 'value', 'text', s.student_class ?? null);
+
+    // ครูหลัก/สำรอง
+    fillSelect(document.getElementById('editInvigilator'), teachers, 'id', 'name', s.invigilator ? s.invigilator.id : null);
+    fillSelect(document.getElementById('editSecondaryInvigilator'), teachers, 'id', 'name', s.secondary_invigilator ? s.secondary_invigilator.id : null);
+
+    // ห้องสอบ
+    fillSelect(document.getElementById('editRoom'), rooms, 'id', 'display_text', s.room ? s.room.id : null);
+
+    // 4) เมื่อเปลี่ยนวัน/เวลา → reload รายการครู/ห้อง
+    const reloader = async ()=>{
+      const date  = document.getElementById('editExamDate').value;
+      const start = document.getElementById('editStartTime').value;
+      const end   = document.getElementById('editEndTime').value;
+      if(!date || !start || !end) return;
+
+      const { teachers, rooms } = await loadEditOptionsFor(subjectId, date, start, end);
+      const curT1 = document.getElementById('editInvigilator').value || '';
+      const curT2 = document.getElementById('editSecondaryInvigilator').value || '';
+      const curRm = document.getElementById('editRoom').value || '';
+      fillSelect(document.getElementById('editInvigilator'), teachers, 'id', 'name', curT1 || (s.invigilator ? s.invigilator.id : null));
+      fillSelect(document.getElementById('editSecondaryInvigilator'), teachers, 'id', 'name', curT2 || (s.secondary_invigilator ? s.secondary_invigilator.id : null));
+      fillSelect(document.getElementById('editRoom'), rooms, 'id', 'display_text', curRm || (s.room ? s.room.id : null));
+    };
+    ['editExamDate','editStartTime','editEndTime'].forEach(id=>{
+      const el = document.getElementById(id);
+      if (el) el.onchange = reloader;
+    });
+
+    // 5) ตั้ง action ของฟอร์มไปยัง AJAX edit
+    document.getElementById('editForm').setAttribute('action', `/ajax/exam-subjects/${subjectId}/edit/`);
+
+    // 6) เปิดโมดัล
+    document.getElementById('editModal').style.display = 'block';
+  }catch(err){
+    notify('โหลดข้อมูลแก้ไขไม่สำเร็จ: ' + err.message);
+    console.error(err);
+  }
+}
+function closeEditModal(){ document.getElementById('editModal').style.display='none'; }
+
+/* ====== Submit แก้ไขผ่าน AJAX ====== */
+document.getElementById('editForm')?.addEventListener('submit', function(e){
   e.preventDefault();
-  
-  const formData = new FormData(this);
-  const id = formData.get('subject_id');
-  
-  try {
-    showLoading('กำลังบันทึกการเปลี่ยนแปลง...');
-    
-    const response = await fetch(`/exam-subjects/${id}/edit/`, {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': getCsrfToken()
-      },
-      body: formData
-    });
-    
-    if (response.ok) {
-      hideLoading();
-      closeEditModal();
-      showNotification('บันทึกการเปลี่ยนแปลงสำเร็จ', 'success');
-      setTimeout(() => location.reload(), 1500);
-    } else {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'ไม่สามารถบันทึกการเปลี่ยนแปลงได้');
-    }
-    
-  } catch (error) {
-    hideLoading();
-    showNotification(error.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+
+  const start=document.getElementById('editStartTime').value;
+  const end  =document.getElementById('editEndTime').value;
+  if (start && end && start >= end){
+    notify('เวลาเริ่มต้องน้อยกว่าเวลาสิ้นสุด');
+    return;
   }
+
+  const fd = new FormData(this);
+  fetch(this.action, {
+    method:'POST',
+    headers:{ 'X-CSRFToken': getCookie('csrftoken') },
+    body: fd
+  })
+  .then(r=> r.ok ? r.json() : r.json().then(j=>{throw new Error(j.error || `HTTP ${r.status}`);} ))
+  .then(data=>{
+    if(data.success){ notify(data.message || 'บันทึกสำเร็จ'); location.reload(); }
+    else{ notify(data.error || 'บันทึกไม่สำเร็จ'); }
+  })
+  .catch(err=>notify('บันทึกไม่สำเร็จ: '+err.message));
 });
 
-// ปิด Modal เมื่อคลิกนอกพื้นที่
-window.onclick = function(event) {
-  const editModal = document.getElementById('editModal');
-  const deleteModal = document.getElementById('deleteModal');
-  
-  if (event.target == editModal) {
-    closeEditModal();
-  }
-  if (event.target == deleteModal) {
-    closeDeleteModal();
-  }
-}
-
-// ปิด Modal เมื่อกด Escape
-document.addEventListener('keydown', function(event) {
-  if (event.key === 'Escape') {
-    closeEditModal();
-    closeDeleteModal();
-  }
-});
-
-// อัปเดตจำนวนที่แสดง
-function updateDisplayedCount() {
-  const visibleRows = document.querySelectorAll('#subjectTableBody tr.subject-row:not([style*="display: none"])');
-  const displayedCount = document.getElementById('displayedCount');
-  if (displayedCount) {
-    displayedCount.textContent = visibleRows.length;
-  }
-}
-
-// ฟังก์ชันช่วยเหลือ
-function getCsrfToken() {
-  return document.querySelector('[name=csrfmiddlewaretoken]').value;
-}
-
-function showLoading(message = 'กำลังดำเนินการ...') {
-  const overlay = document.createElement('div');
-  overlay.id = 'loadingOverlay';
-  overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50';
-  overlay.innerHTML = `
-    <div class="glass rounded-2xl p-6 flex items-center gap-4 border border-white/20">
-      <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-      <span class="text-white font-medium">${message}</span>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-}
-
-function hideLoading() {
-  const overlay = document.getElementById('loadingOverlay');
-  if (overlay) {
-    overlay.remove();
-  }
-}
-
-function showNotification(message, type = 'info', duration = 4000) {
-  const notification = document.createElement('div');
-  notification.className = `fixed top-4 right-4 p-4 rounded-xl border z-50 flex items-center gap-3 transform translate-x-full transition-transform duration-300`;
-  
-  if (type === 'success') {
-    notification.className += ' bg-green-500/20 border-green-500/50 text-green-400';
-    notification.innerHTML = `<i class="fa-solid fa-check-circle"></i><span>${message}</span>`;
-  } else if (type === 'error') {
-    notification.className += ' bg-red-500/20 border-red-500/50 text-red-400';
-    notification.innerHTML = `<i class="fa-solid fa-exclamation-circle"></i><span>${message}</span>`;
-  } else {
-    notification.className += ' bg-blue-500/20 border-blue-500/50 text-blue-400';
-    notification.innerHTML = `<i class="fa-solid fa-info-circle"></i><span>${message}</span>`;
-  }
-  
-  document.body.appendChild(notification);
-  
-  // แสดงการแจ้งเตือน
-  setTimeout(() => {
-    notification.style.transform = 'translateX(0)';
-  }, 100);
-  
-  // ซ่อนการแจ้งเตือนหลัง duration
-  setTimeout(() => {
-    notification.style.transform = 'translateX(100%)';
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
-    }, 300);
-  }, duration);
-}
-
-// เริ่มต้นหน้า
-document.addEventListener('DOMContentLoaded', function() {
-  // อัปเดต bulk actions เมื่อโหลดหน้า
+/* ====== Init ====== */
+document.addEventListener('DOMContentLoaded', ()=>{
   updateBulkActions();
-  
-  // ตั้งค่าการค้นหาเริ่มต้น
-  updateDisplayedCount();
-  
-  console.log('Exam subjects page initialized');
 });
 </script>
+
 {% endblock %}

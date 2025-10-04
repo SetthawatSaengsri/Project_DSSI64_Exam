@@ -1,795 +1,1186 @@
-{% extends 'app/base.html' %}
-{% load extras %}
-{% load static %}
+{% extends "app/base.html" %}
 
-{% block title %}แผนผังที่นั่งสอบ - {{ subject.subject_name }}{% endblock %}
-
-{% block page_title %}แผนผังที่นั่งสอบ{% endblock %}
-{% block page_subtitle %}{{ subject.subject_name }} - {{ subject.exam_date|date:"d/m/Y" }} {{
-subject.start_time|time:"H:i" }}-{{ subject.end_time|time:"H:i" }}{% endblock %}
-
-{% block current_page %}exam-seating{% endblock %}
+{% block title %}ผังที่นั่ง - {{ subject.subject_name }} | ระบบจัดการการสอบ{% endblock %}
+{% block page_title %}ผังที่นั่งการสอบ - {{ subject.subject_name }}{% endblock %}
+{% block page_subtitle %}แสดงการจัดที่นั่งและสถานะการเข้าสอบของนักเรียนแบบเรียลไทม์{% endblock %}
+{% block current_page %}exams{% endblock %}
 
 {% block extra_css %}
 <style>
-    .seat {
-        transition: all 0.3s ease;
-        cursor: pointer;
+  /* ===== ใช้โทนสีเดียวกันกับ exam_attendance ===== */
+  .chip{display:inline-flex;align-items:center;padding:.25rem .625rem;border-radius:9999px;font-size:.75rem;line-height:1rem;font-weight:600;border-width:1px}
+  .chip-blue{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.1);color:#60a5fa}
+  .chip-green{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#22c55e}
+  .chip-yellow{border-color:rgba(234,179,8,.5);background:rgba(234,179,8,.12);color:#eab308}
+  .chip-red{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.1);color:#ef4444}
+  .chip-slate{border-color:rgba(148,163,184,.35);background:rgba(148,163,184,.12);color:#94a3b8}
+  .chip-purple{border-color:rgba(147,51,234,.5);background:rgba(147,51,234,.12);color:#a78bfa}
+  .chip-orange{border-color:rgba(249,115,22,.5);background:rgba(249,115,22,.12);color:#fb923c}
+  .chip-cyan{border-color:rgba(6,182,212,.5);background:rgba(6,182,212,.12);color:#06b6d4}
+
+  .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.625rem 1rem;border-radius:.75rem;font-weight:600;transition:.2s;text-decoration:none;border:none;cursor:pointer}
+  .btn:hover{transform:translateY(-1px)}
+  .btn-sm{padding:.375rem .75rem;font-size:.875rem}
+  .btn-xs{padding:.25rem .5rem;font-size:.75rem}
+  
+  .btn-primary{background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff}
+  .btn-secondary{background:linear-gradient(135deg,#64748b,#475569);color:#fff}
+  .btn-success{background:linear-gradient(135deg,#10b981,#22c55e);color:#fff}
+  .btn-warning{background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff}
+  .btn-danger{background:linear-gradient(135deg,#ef4444,#f97316);color:#fff}
+  .btn-info{background:linear-gradient(135deg,#06b6d4,#3b82f6);color:#fff}
+
+  .text-gradient{background:linear-gradient(135deg,#3b82f6,#8b5cf6,#06b6d4);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  
+  .shadow-glow-blue{box-shadow:0 0 20px rgba(59,130,246,.3)}
+  .shadow-glow-green{box-shadow:0 0 20px rgba(34,197,94,.3)}
+  .shadow-glow-yellow{box-shadow:0 0 20px rgba(234,179,8,.3)}
+  .shadow-glow-red{box-shadow:0 0 20px rgba(239,68,68,.3)}
+  .shadow-glow-purple{box-shadow:0 0 20px rgba(147,51,234,.3)}
+
+  /* Glass effect */
+  .glass{background:linear-gradient(135deg,rgba(15,23,42,.65),rgba(30,41,59,.65));border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(16px)}
+  .glass-soft{background:linear-gradient(135deg,rgba(15,23,42,.45),rgba(30,41,59,.45));border:1px solid rgba(255,255,255,.12)}
+
+  /* สถิติ Cards */
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem}
+  .stat-card{position:relative;overflow:hidden}
+  
+  /* exam summary */
+  .exam-summary{background:linear-gradient(135deg,rgba(15,23,42,.8),rgba(30,41,59,.8));border:2px solid rgba(59,130,246,.3);position:relative;overflow:hidden}
+  .exam-summary::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(45deg,rgba(59,130,246,.1),rgba(139,92,246,.1));pointer-events:none}
+  .exam-summary.completed{border-color:rgba(34,197,94,.5)}
+  .exam-summary.completed::before{background:linear-gradient(45deg,rgba(34,197,94,.1),rgba(16,185,129,.1))}
+
+  /* ===== ออกแบบผังที่นั่งใหม่ - จัดกึ่งกลาง ===== */
+  .seating-container{max-width:1400px;margin:0 auto;padding:2rem}
+  .classroom{position:relative;background:linear-gradient(135deg,rgba(15,23,42,.8),rgba(30,41,59,.8));border:2px solid rgba(59,130,246,.3);border-radius:1.5rem;padding:2rem;margin:2rem 0}
+  
+  /* ครูโต๊ะ - จัดให้อยู่กลาง */
+  .teachers-section{display:flex;justify-content:center;align-items:center;margin-bottom:3rem;gap:3rem}
+  .teacher-desk{position:relative;width:200px;height:90px;border-radius:.75rem;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;font-weight:600;box-shadow:0 4px 12px rgba(139,92,246,.3);padding:1rem}
+  .teacher-desk.primary{background:linear-gradient(135deg,#8b5cf6,#6366f1)}
+  .teacher-desk.secondary{background:linear-gradient(135deg,#10b981,#22c55e)}
+  .teacher-desk.empty{background:linear-gradient(135deg,#64748b,#475569);opacity:0.6}
+
+  .teacher-info{text-align:center}
+  .teacher-name{font-size:.875rem;font-weight:600;margin-bottom:.25rem}
+  .teacher-status{font-size:.75rem;opacity:0.9}
+
+  /* ที่นั่งนักเรียน - รองรับหลายขนาดและจัดกึ่งกลาง */
+  .seating-grid{
+    display: grid;
+    gap: 1.5rem;
+    justify-items: center;
+    align-items: center;
+    justify-content: center; /* จัดกึ่งกลางในแนวนอน */
+    margin: 2rem auto; /* จัดกึ่งกลางทั้งหมด */
+    padding: 1rem;
+    width: fit-content; /* ให้ความกว้างพอดีกับเนื้อหา */
+  }
+  
+  /* ขนาดต่างๆ ของห้องสอบ - ทั้งหมดจัดกึ่งกลาง */
+  .seating-grid.size-4x5{grid-template-columns: repeat(4, 1fr);max-width: 600px;margin: 2rem auto}
+  .seating-grid.size-5x5{grid-template-columns: repeat(5, 1fr);max-width: 750px;margin: 2rem auto}
+  .seating-grid.size-5x6{grid-template-columns: repeat(5, 1fr);max-width: 750px;margin: 2rem auto}
+  .seating-grid.size-6x6{grid-template-columns: repeat(6, 1fr);max-width: 900px;margin: 2rem auto}
+  .seating-grid.size-6x8{grid-template-columns: repeat(6, 1fr);max-width: 900px;margin: 2rem auto}
+  .seating-grid.size-8x6{grid-template-columns: repeat(8, 1fr);max-width: 1200px;margin: 2rem auto}
+  .seating-grid.auto{grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));max-width: 1200px;margin: 2rem auto}
+  
+  .seat-card{
+    position: relative;
+    width: 130px;
+    height: 160px;
+    background: linear-gradient(135deg, rgba(51,65,85,.8), rgba(71,85,105,.8));
+    border-radius: 20px;
+    border: 2px solid rgba(148,163,184,.3);
+    cursor: pointer;
+    transition: all .4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0.75rem;
+  }
+  
+  .seat-card:hover{
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(59,130,246,.3);
+  }
+  
+  /* สถานะที่นั่ง - แก้ไขเพิ่ม not_checked และ not_started */
+  .seat-card.on_time{
+    background: linear-gradient(135deg,rgba(34,197,94,.85),rgba(16,185,129,.85));
+    border-color: rgba(34,197,94,.6);
+    color: white;
+    box-shadow: 0 8px 32px rgba(34,197,94,.4);
+  }
+  .seat-card.late{
+    background: linear-gradient(135deg,rgba(234,179,8,.85),rgba(245,158,11,.85));
+    border-color: rgba(234,179,8,.6);
+    color: white;
+    box-shadow: 0 8px 32px rgba(234,179,8,.4);
+  }
+  .seat-card.absent{
+    background: linear-gradient(135deg,rgba(239,68,68,.85),rgba(220,38,38,.85));
+    border-color: rgba(239,68,68,.6);
+    color: white;
+    box-shadow: 0 8px 32px rgba(239,68,68,.4);
+  }
+  .seat-card.excused{
+    background: linear-gradient(135deg,rgba(6,182,212,.85),rgba(14,165,233,.85));
+    border-color: rgba(6,182,212,.6);
+    color: white;
+    box-shadow: 0 8px 32px rgba(6,182,212,.4);
+  }
+  .seat-card.cheating{
+    background: linear-gradient(135deg,rgba(249,115,22,.85),rgba(234,88,12,.85));
+    border-color: rgba(249,115,22,.6);
+    color: white;
+    box-shadow: 0 8px 32px rgba(249,115,22,.4);
+  }
+  /* เพิ่มสถานะใหม่ */
+  .seat-card.not_checked{
+    background: linear-gradient(135deg,rgba(148,163,184,.7),rgba(100,116,139,.7));
+    border-color: rgba(148,163,184,.4);
+    color: white;
+    box-shadow: 0 8px 32px rgba(148,163,184,.3);
+  }
+  .seat-card.not_started{
+    background: linear-gradient(135deg,rgba(71,85,105,.5),rgba(51,65,85,.5));
+    border-color: rgba(71,85,105,.3);
+    color: #94a3b8;
+  }
+  .seat-card.empty{
+    background: rgba(51,65,85,.3);
+    border-color: rgba(148,163,184,.2);
+    color: #94a3b8;
+    opacity: 0.5;
+  }
+
+  /* ส่วนข้อมูลในที่นั่ง */
+  .seat-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .seat-number{
+    background: rgba(0,0,0,.4);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-width: 32px;
+    text-align: center;
+  }
+  
+  .status-indicator{
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: white;
+    background: rgba(0,0,0,.3);
+    border: 2px solid rgba(255,255,255,.3);
+  }
+
+  .student-avatar{
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(59,130,246,.3), rgba(139,92,246,.3));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    border: 2px solid rgba(255,255,255,.2);
+  }
+  
+  .student-avatar i{
+    font-size: 1.5rem;
+    opacity: 0.8;
+  }
+  
+  .student-info{
+    text-align: center;
+    flex-grow: 1;
+  }
+  
+  .student-name{
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 0.25rem;
+    max-height: 2.4rem;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  
+  .student-details{
+    font-size: 0.65rem;
+    opacity: 0.9;
+    line-height: 1.3;
+  }
+  
+  .student-id{
+    margin-bottom: 0.125rem;
+  }
+  
+  .student-class{
+    font-weight: 500;
+  }
+
+  /* Animation */
+  .seat-card.animate-update{
+    animation: seatPulse .6s ease-out;
+  }
+  
+  @keyframes seatPulse{
+    0%{transform: scale(1)}
+    50%{transform: scale(1.05)}
+    100%{transform: scale(1)}
+  }
+  
+  .animate-float{animation: float 6s ease-in-out infinite}
+  @keyframes float{
+    0%,100%{transform: translateY(0px)}
+    50%{transform: translateY(-10px)}
+  }
+
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(12px);z-index:50;display:none;align-items:center;justify-content:center;padding:1rem}
+  .modal-overlay.active{display:flex}
+  .modal-content{max-width:500px;width:100%;max-height:90vh;overflow-y:auto}
+
+  /* Legend - แก้ไขเพิ่มสถานะใหม่ */
+  .legend{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;align-items:center;padding:1rem;background:rgba(51,65,85,.4);border-radius:.75rem;margin:1rem 0}
+  .legend-item{display:flex;align-items:center;gap:.5rem;font-size:.875rem}
+  .legend-dot{width:12px;height:12px;border-radius:50%}
+  .legend-dot.on_time{background:#22c55e}
+  .legend-dot.late{background:#eab308}
+  .legend-dot.absent{background:#ef4444}
+  .legend-dot.excused{background:#06b6d4}
+  .legend-dot.cheating{background:#f97316}
+  .legend-dot.not_checked{background:#94a3b8}
+  .legend-dot.not_started{background:#475569}
+  .legend-dot.empty{background:#6b7280}
+
+  /* Loading */
+  .loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);z-index:9999;display:none;align-items:center;justify-content:center}
+  .loading-overlay.active{display:flex}
+
+  .loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Layout controls */
+  .layout-controls{
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .layout-btn{
+    padding: 0.5rem 1rem;
+    border: 2px solid rgba(59,130,246,.3);
+    background: rgba(59,130,246,.1);
+    color: #60a5fa;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.875rem;
+  }
+
+  .layout-btn:hover, .layout-btn.active{
+    background: rgba(59,130,246,.3);
+    border-color: rgba(59,130,246,.6);
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  /* Responsive */
+  @media (max-width: 1200px) {
+    .seating-grid{
+      gap: 1.25rem;
     }
-
-    .seat:hover {
-        transform: scale(1.1);
-        z-index: 10;
+    .seat-card{
+      width: 120px;
+      height: 150px;
     }
+  }
 
-    .seat-present {
-        background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-        box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
-        animation: pulse-green 2s infinite;
+  @media (max-width: 768px) {
+    .seating-grid{
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)) !important;
+      gap: 1rem;
+      max-width: 100% !important;
     }
-
-    .seat-late {
-        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
-        box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
-        animation: pulse-yellow 2s infinite;
+    .seat-card{
+      width: 110px;
+      height: 140px;
+      padding: 0.75rem 0.5rem;
     }
-
-    .seat-absent {
-        background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
-        box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
-        animation: pulse-red 2s infinite;
+    .teachers-section{
+      flex-direction: column;
+      gap: 1rem;
     }
-
-    .seat-empty {
-        background: rgba(100, 116, 139, 0.3);
-        border: 2px dashed rgba(148, 163, 184, 0.5);
+    .teacher-desk{
+      width: 180px;
+      height: 80px;
     }
-
-    .seat-not-checked {
-        background: rgba(71, 85, 105, 0.5);
-        border: 2px solid rgba(148, 163, 184, 0.3);
+    .legend{
+      flex-direction: column;
+      gap: 0.5rem;
     }
-
-    @keyframes pulse-green {
-
-        0%,
-        100% {
-            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
-        }
-
-        50% {
-            box-shadow: 0 0 25px rgba(16, 185, 129, 0.8);
-        }
+    .student-avatar{
+      width: 40px;
+      height: 40px;
     }
-
-    @keyframes pulse-yellow {
-
-        0%,
-        100% {
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
-        }
-
-        50% {
-            box-shadow: 0 0 25px rgba(245, 158, 11, 0.8);
-        }
+    .student-avatar i{
+      font-size: 1.25rem;
     }
-
-    @keyframes pulse-red {
-
-        0%,
-        100% {
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
-        }
-
-        50% {
-            box-shadow: 0 0 25px rgba(239, 68, 68, 0.8);
-        }
+    .layout-controls{
+      flex-direction: column;
+      align-items: center;
     }
+  }
 
-    .attendance-legend {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
+  @media (max-width: 480px) {
+    .seating-grid{
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)) !important;
+      gap: 0.75rem;
     }
-
-    .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem;
-        border-radius: 0.5rem;
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+    .seat-card{
+      width: 100px;
+      height: 130px;
     }
-
-    .legend-color {
-        width: 1rem;
-        height: 1rem;
-        border-radius: 0.25rem;
-        flex-shrink: 0;
+    .student-name{
+      font-size: 0.7rem;
     }
-
-    .seating-grid {
-        display: grid;
-        gap: 0.5rem;
-        justify-content: center;
-        padding: 2rem;
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 1rem;
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+    .student-details{
+      font-size: 0.6rem;
     }
-
-    .seating-row {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .row-number {
-        width: 2rem;
-        height: 2rem;
-        background: rgba(59, 130, 246, 0.2);
-        border: 1px solid rgba(59, 130, 246, 0.3);
-        border-radius: 0.5rem;
-        display: flex;
-        items-center: center;
-        justify-content: center;
-        font-weight: 600;
-        color: #60a5fa;
-        margin-right: 1rem;
-    }
-
-    .room-layout {
-        position: relative;
-        max-width: 1000px;
-        margin: 0 auto;
-    }
-
-    .teacher-desk {
-        background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
-        border: 2px solid rgba(139, 92, 246, 0.5);
-        border-radius: 0.75rem;
-        padding: 1rem;
-        text-align: center;
-        margin-bottom: 2rem;
-        box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
-    }
-
-    .student-info-tooltip {
-        position: absolute;
-        background: rgba(0, 0, 0, 0.9);
-        color: white;
-        padding: 0.75rem;
-        border-radius: 0.5rem;
-        font-size: 0.875rem;
-        z-index: 50;
-        pointer-events: none;
-        opacity: 0;
-        transform: translateY(-10px);
-        transition: all 0.3s ease;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(10px);
-    }
-
-    .student-info-tooltip.show {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    .refresh-indicator {
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        background: rgba(16, 185, 129, 0.1);
-        border: 1px solid rgba(16, 185, 129, 0.3);
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(10px);
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .refresh-indicator:hover {
-        background: rgba(16, 185, 129, 0.2);
-        transform: scale(1.1);
-    }
-
-    .refresh-indicator.refreshing {
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        from {
-            transform: rotate(0deg);
-        }
-
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    .stats-summary {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    .stat-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 1rem;
-        padding: 1.5rem;
-        text-align: center;
-        transition: all 0.3s ease;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    }
-
-    .stat-number {
-        font-size: 2rem;
-        font-weight: 800;
-        margin-bottom: 0.5rem;
-        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .stat-label {
-        font-size: 0.875rem;
-        color: rgba(255, 255, 255, 0.7);
-        font-weight: 500;
-    }
-
-    .action-buttons {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-        margin-top: 2rem;
-        flex-wrap: wrap;
-    }
-
-    .action-button {
-        padding: 0.75rem 1.5rem;
-        border-radius: 0.75rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-primary {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-        color: white;
-    }
-
-    .btn-primary:hover {
-        background: linear-gradient(135deg, #2563eb, #1e40af);
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
-    }
-
-    .btn-success {
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-    }
-
-    .btn-success:hover {
-        background: linear-gradient(135deg, #059669, #047857);
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
-    }
-
-    .btn-secondary {
-        background: rgba(100, 116, 139, 0.2);
-        color: white;
-    }
-
-    .btn-secondary:hover {
-        background: rgba(100, 116, 139, 0.3);
-        transform: translateY(-2px);
-    }
-
-    @media (max-width: 768px) {
-        .seating-grid {
-            padding: 1rem;
-        }
-
-        .seat {
-            width: 2.5rem;
-            height: 2.5rem;
-            font-size: 0.75rem;
-        }
-
-        .stats-summary {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .action-buttons {
-            flex-direction: column;
-            align-items: stretch;
-        }
-    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <!-- Header Information -->
-    <div class="glass-dark rounded-2xl p-6 border border-white/20">
-        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-gradient mb-2">{{ subject.subject_name }}</h1>
-                <div class="flex flex-wrap gap-4 text-sm text-slate-300">
-                    <span><i class="fas fa-calendar mr-2"></i>{{ subject.exam_date|date:"l, d F Y" }}</span>
-                    <span><i class="fas fa-clock mr-2"></i>{{ subject.start_time|time:"H:i" }} - {{
-                        subject.end_time|time:"H:i" }}</span>
-                    <span><i class="fas fa-code mr-2"></i>{{ subject.subject_code }}</span>
-                    {% if subject.room %}
-                    <span><i class="fas fa-map-marker-alt mr-2"></i>{{ subject.room.building.name }} ห้อง {{
-                        subject.room.name }}</span>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="refreshSeatingChart()" class="action-button btn-secondary">
-                    <i class="fas fa-sync-alt"></i>
-                    รีเฟรช
-                </button>
-                <a href="{% url 'exam_attendance' subject.id %}" class="action-button btn-primary">
-                    <i class="fas fa-list-check"></i>
-                    รายการเช็คชื่อ
-                </a>
-            </div>
-        </div>
-    </div>
+{% csrf_token %}
 
-    <!-- Statistics Summary -->
-    <div class="stats-summary">
-        <div class="stat-card">
-            <div class="stat-number text-blue-400">{{ students.count }}</div>
-            <div class="stat-label">นักเรียนทั้งหมด</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number text-green-400">
-                {{ attendance_dict.values|length }}
-            </div>
-            <div class="stat-label">เข้าสอบแล้ว</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number text-red-400">
-                {% widthratio students.count attendance_dict.values|length 1 as absent_count %}
-                {{ absent_count }}
-            </div>
-            <div class="stat-label">ยังไม่เข้าสอบ</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number text-purple-400">
-                {% if subject.room %}{{ subject.room.capacity }}{% else %}0{% endif %}
-            </div>
-            <div class="stat-label">ความจุห้อง</div>
-        </div>
-    </div>
-
-    <!-- Attendance Legend -->
-    <div class="glass-dark rounded-xl p-4 border border-white/20">
-        <h3 class="text-lg font-semibold mb-3 text-white">สัญลักษณ์สถานะ</h3>
-        <div class="attendance-legend">
-            <div class="legend-item">
-                <div class="legend-color seat-present"></div>
-                <span class="text-sm text-white">เข้าสอบตรงเวลา</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color seat-late"></div>
-                <span class="text-sm text-white">เข้าสอบสาย</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color seat-absent"></div>
-                <span class="text-sm text-white">ขาดสอบ</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color seat-not-checked"></div>
-                <span class="text-sm text-white">ยังไม่เช็คชื่อ</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color seat-empty"></div>
-                <span class="text-sm text-white">ที่นั่งว่าง</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Seating Chart -->
-    <div class="glass-dark rounded-2xl p-6 border border-white/20">
-        <div class="room-layout">
-            <!-- Teacher's Desk -->
-            <div class="teacher-desk">
-                <i class="fas fa-chalkboard-teacher text-xl mb-2"></i>
-                <div class="text-white font-semibold">โต๊ะครู</div>
-                <div class="text-sm text-purple-200 mt-1">
-                    {% if subject.invigilator %}
-                    {{ subject.invigilator.user.get_full_name }}
-                    {% endif %}
-                    {% if subject.secondary_invigilator %}
-                    {% if subject.invigilator %}, {% endif %}
-                    {{ subject.secondary_invigilator.user.get_full_name }}
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Seating Grid -->
-            {% if seating_chart %}
-            <div class="seating-grid">
-                {% for row in seating_chart %}
-                <div class="seating-row">
-                    <div class="row-number">{{ forloop.counter }}</div>
-                    {% for seat in row %}
-                    {% if seat %}
-                    <div class="seat w-12 h-12 rounded-lg flex items-center justify-center text-xs font-bold text-white relative
-                            {% if seat.attendance %}
-                                {% if seat.attendance.status == 'on_time' %}seat-present
-                                {% elif seat.attendance.status == 'late' %}seat-late
-                                {% elif seat.attendance.status == 'absent' %}seat-absent
-                                {% else %}seat-not-checked{% endif %}
-                            {% else %}seat-not-checked{% endif %}" data-student-id="{{ seat.student.id }}"
-                        data-student-name="{{ seat.student.user.get_full_name }}"
-                        data-student-number="{{ seat.student.student_number }}"
-                        data-student-class="{{ seat.student.student_class }}"
-                        data-attendance-status="{% if seat.attendance %}{{ seat.attendance.status }}{% else %}not_checked{% endif %}"
-                        data-checkin-time="{% if seat.attendance %}{{ seat.attendance.checkin_time|date:'H:i' }}{% endif %}"
-                        onmouseenter="showStudentTooltip(event, this)" onmouseleave="hideStudentTooltip()">
-                        {{ seat.seat_number }}
-                    </div>
-                    {% else %}
-                    <div class="seat seat-empty w-12 h-12 rounded-lg"></div>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-                {% endfor %}
-            </div>
+<!-- Header Section -->
+<div class="mb-12 text-center space-y-6">
+    <div class="animate-slide-up">
+        <h2 class="text-4xl lg:text-5xl font-bold font-kanit mb-4">
+            <span class="text-gradient">{{ subject.subject_name }}</span>
+        </h2>
+        <div class="flex items-center justify-center flex-wrap gap-2 text-slate-300">
+            <span class="chip chip-blue"><i class="fa-solid fa-hashtag mr-1.5"></i>{{ subject.subject_code }}</span>
+            <span class="chip chip-slate"><i class="fa-solid fa-calendar-day mr-1.5"></i>{{ subject.exam_date|date:"d/m/Y" }}</span>
+            <span class="chip chip-purple"><i class="fa-regular fa-clock mr-1.5"></i>{{ subject.start_time|time:"H:i" }}–{{ subject.end_time|time:"H:i" }}</span>
+            {% if subject.room %}
+                <span class="chip chip-slate"><i class="fa-solid fa-building-columns mr-1.5"></i>{{ subject.room.building.name }} ห้อง {{ subject.room.name }}</span>
+            {% endif %}
+            {% if subject.students.first.student_class %}
+                <span class="chip chip-green"><i class="fa-solid fa-layer-group mr-1.5"></i>{{ subject.students.first.student_class }}</span>
             {% else %}
-            <!-- No Room Layout - Simple List View -->
-            <div class="text-center py-8">
-                <div class="glass-dark rounded-xl p-6 border border-white/20">
-                    <i class="fas fa-exclamation-triangle text-yellow-400 text-3xl mb-4"></i>
-                    <h3 class="text-xl font-semibold text-white mb-2">ไม่สามารถแสดงแผนผังที่นั่งได้</h3>
-                    <p class="text-slate-400 mb-4">ยังไม่ได้กำหนดห้องสอบสำหรับรายวิชานี้</p>
-
-                    <!-- Alternative: Student Grid View -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 mt-6">
-                        {% for student in students %}
-                            {% with att=attendance_dict|lookup:student.id %}
-                            <div class="seat w-12 h-12 rounded-lg flex items-center justify-center text-xs font-bold text-white
-                            {% if att %}
-                                {% if att.status == 'on_time' %}seat-present
-                                {% elif att.status == 'late' %}seat-late
-                                {% elif att.status == 'absent' %}seat-absent
-                                {% else %}seat-not-checked{% endif %}
-                            {% else %}seat-not-checked{% endif %}" data-student-id="{{ student.id }}"
-                            data-student-name="{{ student.user.get_full_name }}"
-                            data-student-number="{{ student.student_number }}"
-                            data-student-class="{{ student.student_class }}"
-                            data-attendance-status="{% if att %}{{ att.status }}{% else %}not_checked{% endif %}"
-                            data-checkin-time="{% if att and att.checkin_time %}{{ att.checkin_time|date:'H:i' }}{% endif %}">
-                            {{ student.student_number }}
-                        </div>
-                        {% endwith %}
-                    {% endfor %}
-                    </div>
-                </div>
-            </div>
+                <span class="chip chip-yellow"><i class="fa-solid fa-layer-group mr-1.5"></i>หลายระดับชั้น</span>
             {% endif %}
         </div>
     </div>
-
-    <!-- Action Buttons -->
-    <div class="action-buttons">
-        {% if user.is_staff or user.teacher_profile == subject.invigilator %}
-        <a href="{% url 'generate_qr_code' subject.id %}" class="action-button btn-success">
-            <i class="fas fa-qrcode"></i>
-            แสดง QR Code เช็คชื่อ
-        </a>
-        {% endif %}
-
-        <a href="{% url 'exam_attendance' subject.id %}" class="action-button btn-primary">
-            <i class="fas fa-clipboard-check"></i>
-            จัดการเช็คชื่อ
-        </a>
-
-        <button onclick="exportSeatingChart()" class="action-button btn-secondary">
-            <i class="fas fa-download"></i>
-            Export แผนผัง
-        </button>
-
-        <a href="{% url 'exam_subjects' %}" class="action-button btn-secondary">
-            <i class="fas fa-arrow-left"></i>
-            กลับสู่รายการสอบ
-        </a>
+    <div class="flex justify-center">
+        <div class="w-32 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
     </div>
 </div>
 
-<!-- Student Info Tooltip -->
-<div id="studentTooltip" class="student-info-tooltip">
-    <div id="tooltipContent"></div>
+<!-- Action Buttons และ Controls -->
+<div class="flex flex-wrap gap-4 mb-8 justify-between">
+  <div class="flex flex-wrap gap-3">
+    <a href="{% url 'exam_attendance' subject.id %}" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold shadow-glow-blue">
+      <i class="fa-solid fa-list-check mr-2"></i>รายละเอียดการเข้าสอบ
+    </a>
+    <a href="{% url 'generate_qr_code' subject.id %}" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold shadow-glow-purple">
+      <i class="fa-solid fa-qrcode mr-2"></i>QR เช็คชื่อ
+    </a>
+    <button type="button" onclick="refreshSeatingData()" class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold shadow-glow-green">
+      <i class="fa-solid fa-rotate mr-2"></i>รีเฟรช
+    </button>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <span class="text-slate-300 text-sm">อัปเดตล่าสุด:</span>
+    <span id="lastUpdated" class="chip chip-blue text-xs">{{ "now"|date:"H:i" }}</span>
+  </div>
 </div>
 
-<!-- Refresh Indicator -->
-<div id="refreshIndicator" class="refresh-indicator" onclick="refreshSeatingChart()">
-    <i class="fas fa-sync-alt text-green-400"></i>
-</div>
-{% endblock %}
+<!-- สรุปผลการสอบ -->
+<div class="glass exam-summary rounded-2xl p-6 mb-8 {% if exam_completed %}completed{% endif %}">
+  <div class="relative z-10">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-2xl font-bold text-white flex items-center gap-3">
+        <i class="fas fa-chart-bar text-blue-400"></i> 
+        สรุปผลการเข้าสอบ
+        {% if exam_completed %}
+          <span class="chip chip-green"><i class="fa-solid fa-check-circle mr-1.5"></i>สิ้นสุดการสอบ</span>
+        {% else %}
+          <span class="chip chip-yellow"><i class="fa-solid fa-clock mr-1.5"></i>กำลังดำเนินการ</span>
+        {% endif %}
+      </h3>
+      <button onclick="exportAttendanceReport()" class="btn btn-info btn-sm shadow-glow-blue">
+        <i class="fa-solid fa-download"></i> ส่งออกรายงาน
+      </button>
+    </div>
 
-{% block extra_js %}
+    <div class="stats-grid">
+      <div class="stat-card glass rounded-2xl p-6 border border-white/20 hover:border-green-500/50 transition-all duration-300 animate-float">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-sm mb-1">เข้าสอบตรงเวลา</p>
+            <p class="text-3xl font-bold text-green-400" data-stat="on_time">{{ stats.on_time }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ stats.on_time_percentage|floatformat:1 }}% ของทั้งหมด</p>
+          </div>
+          <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-user-check text-green-400 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card glass rounded-2xl p-6 border border-white/20 hover:border-yellow-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.2s;">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-sm mb-1">เข้าสอบสาย</p>
+            <p class="text-3xl font-bold text-yellow-400" data-stat="late">{{ stats.late }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ stats.late_percentage|floatformat:1 }}% ของทั้งหมด</p>
+          </div>
+          <div class="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-clock text-yellow-400 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card glass rounded-2xl p-6 border border-white/20 hover:border-red-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.4s;">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-sm mb-1">ขาดสอบ</p>
+            <p class="text-3xl font-bold text-red-400" data-stat="absent">{{ stats.absent }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ stats.absent_percentage|floatformat:1 }}% ของทั้งหมด</p>
+          </div>
+          <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-user-xmark text-red-400 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card glass rounded-2xl p-6 border border-white/20 hover:border-slate-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.6s;">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-sm mb-1">ยังไม่เช็คชื่อ</p>
+            <p class="text-3xl font-bold text-slate-400" data-stat="not_checked">{{ stats.not_checked }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ stats.not_checked_percentage|floatformat:1 }}% ของทั้งหมด</p>
+          </div>
+          <div class="w-12 h-12 bg-slate-500/20 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-hourglass-half text-slate-400 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card glass rounded-2xl p-6 border border-white/20 hover:border-cyan-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.8s;">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-sm mb-1">ลาป่วย</p>
+            <p class="text-3xl font-bold text-cyan-400" data-stat="excused">{{ stats.excused }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ stats.excused_percentage|floatformat:1 }}% ของทั้งหมด</p>
+          </div>
+          <div class="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-notes-medical text-cyan-400 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card glass rounded-2xl p-6 border border-white/20 hover:border-orange-500/50 transition-all duration-300 animate-float" style="animation-delay: 1.0s;">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-sm mb-1">ทุจริต</p>
+            <p class="text-3xl font-bold text-orange-400" data-stat="cheating">{{ stats.cheating }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ stats.cheating_percentage|floatformat:1 }}% ของทั้งหมด</p>
+          </div>
+          <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-exclamation-triangle text-orange-400 text-xl"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Legend - แก้ไขเพิ่มสถานะใหม่ -->
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot on_time"></div>
+    <span class="text-slate-300">เข้าสอบตรงเวลา</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot late"></div>
+    <span class="text-slate-300">เข้าสอบสาย</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot absent"></div>
+    <span class="text-slate-300">ขาดสอบ</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot excused"></div>
+    <span class="text-slate-300">ลาป่วย</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot cheating"></div>
+    <span class="text-slate-300">ทุจริต</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot not_checked"></div>
+    <span class="text-slate-300">ยังไม่เช็คชื่อ</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot not_started"></div>
+    <span class="text-slate-300">ยังไม่เริ่มสอบ</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot empty"></div>
+    <span class="text-slate-300">ที่นั่งว่าง</span>
+  </div>
+</div>
+
+<!-- Layout Controls -->
+<div class="glass rounded-2xl border border-white/20 mb-6">
+  <div class="p-4 border-b border-white/10">
+    <h3 class="text-lg font-bold text-white flex items-center gap-3">
+      <i class="fas fa-th text-blue-400"></i> เลือกรูปแบบการจัดที่นั่ง
+    </h3>
+  </div>
+  
+  <div class="p-4">
+    <div class="layout-controls">
+      <button class="layout-btn" onclick="changeLayout('4x5')" data-layout="4x5">
+        <i class="fa-solid fa-grip mr-2"></i>4×5 (20 ที่นั่ง)
+      </button>
+      <button class="layout-btn" onclick="changeLayout('5x5')" data-layout="5x5">
+        <i class="fa-solid fa-grip mr-2"></i>5×5 (25 ที่นั่ง)
+      </button>
+      <button class="layout-btn" onclick="changeLayout('5x6')" data-layout="5x6">
+        <i class="fa-solid fa-grip mr-2"></i>5×6 (30 ที่นั่ง)
+      </button>
+      <button class="layout-btn" onclick="changeLayout('6x6')" data-layout="6x6">
+        <i class="fa-solid fa-grip mr-2"></i>6×6 (36 ที่นั่ง)
+      </button>
+      <button class="layout-btn" onclick="changeLayout('6x8')" data-layout="6x8">
+        <i class="fa-solid fa-grip mr-2"></i>6×8 (48 ที่นั่ง)
+      </button>
+      <button class="layout-btn" onclick="changeLayout('8x6')" data-layout="8x6">
+        <i class="fa-solid fa-grip mr-2"></i>8×6 (48 ที่นั่ง)
+      </button>
+      <button class="layout-btn active" onclick="changeLayout('auto')" data-layout="auto">
+        <i class="fa-solid fa-expand mr-2"></i>อัตโนมัติ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Classroom Layout ใหม่ - จัดกึ่งกลางทั้งหมด -->
+<div class="classroom">
+  <!-- Teachers Section - อยู่กลาง -->
+  <div class="teachers-section">
+    <!-- ครูหลัก -->
+    <div class="teacher-desk primary">
+      <div class="teacher-info">
+        <div class="teacher-name">
+          <i class="fa-solid fa-chalkboard-user mr-1"></i>
+          ครูหลัก
+        </div>
+        {% if subject.invigilator %}
+          <div class="teacher-status">{{ subject.invigilator.user.get_full_name }}</div>
+          {% if subject.invigilator_checkin %}
+            <div class="text-xs mt-1 text-green-200">
+              <i class="fa-solid fa-check mr-1"></i>เข้าหน้าที่แล้ว
+            </div>
+          {% else %}
+            <div class="text-xs mt-1 text-red-200">
+              <i class="fa-solid fa-clock mr-1"></i>ยังไม่เข้าหน้าที่
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="teacher-status text-slate-300">ยังไม่ระบุครู</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ครูสำรอง -->
+    <div class="teacher-desk {% if subject.secondary_invigilator %}secondary{% else %}empty{% endif %}">
+      <div class="teacher-info">
+        <div class="teacher-name">
+          <i class="fa-solid fa-user-tie mr-1"></i>
+          ครูสำรอง
+        </div>
+        {% if subject.secondary_invigilator %}
+          <div class="teacher-status">{{ subject.secondary_invigilator.user.get_full_name }}</div>
+          {% if subject.secondary_invigilator_checkin %}
+            <div class="text-xs mt-1 text-green-200">
+              <i class="fa-solid fa-check mr-1"></i>เข้าหน้าที่แล้ว
+            </div>
+          {% else %}
+            <div class="text-xs mt-1 text-red-200">
+              <i class="fa-solid fa-clock mr-1"></i>ยังไม่เข้าหน้าที่
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="teacher-status text-slate-400">ยังไม่ระบุครู</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ผังที่นั่งใหม่ - จัดกึ่งกลางและเรียงตามเลขที่ -->
+  <div class="seating-grid auto" id="seatingChart">
+    {% if seating_chart %}
+      {% for row in seating_chart %}
+        {% for seat in row %}
+          {% if seat %}
+            {% with student=seat.student attendance=seat.attendance status=seat.status %}
+              <div class="seat-card {{ status|default:'not_checked' }}" 
+                   data-student-id="{{ student.id }}"
+                   data-seat-number="{{ seat.seat_number }}"
+                   onclick="showStudentDetail({{ student.id }}, '{{ student.user.get_full_name|escapejs }}', '{{ student.student_id }}', '{{ status|default:'not_checked' }}', '{% if attendance %}{{ attendance.checkin_time|time:'H:i' }}{% endif %}', '{{ student.student_number }}', '{{ student.student_class }}')">
+                
+                <!-- Header ที่นั่ง -->
+                <div class="seat-header">
+                  <div class="seat-number">{{ seat.seat_number }}</div>
+                  <div class="status-indicator">
+                    {% if status == 'on_time' %}
+                      <i class="fa-solid fa-check"></i>
+                    {% elif status == 'late' %}
+                      <i class="fa-solid fa-clock"></i>
+                    {% elif status == 'excused' %}
+                      <i class="fa-solid fa-notes-medical"></i>
+                    {% elif status == 'cheating' %}
+                      <i class="fa-solid fa-exclamation-triangle"></i>
+                    {% elif status == 'absent' %}
+                      <i class="fa-solid fa-xmark"></i>
+                    {% elif status == 'not_checked' %}
+                      <i class="fa-solid fa-hourglass-half"></i>
+                    {% elif status == 'not_started' %}
+                      <i class="fa-solid fa-pause"></i>
+                    {% else %}
+                      <i class="fa-solid fa-question"></i>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Avatar นักเรียน -->
+                <div class="student-avatar">
+                  <i class="fas fa-user-graduate"></i>
+                </div>
+
+                <!-- ข้อมูลนักเรียน -->
+                <div class="student-info">
+                  <div class="student-name">{{ student.user.get_full_name }}</div>
+                  <div class="student-details">
+                    <div class="student-id">{{ student.student_id }}</div>
+                    <div class="student-class">{{ student.student_class }} เลขที่ {{ student.student_number }}</div>
+                  </div>
+                </div>
+              </div>
+            {% endwith %}
+          {% else %}
+            <!-- ที่นั่งว่าง -->
+            <div class="seat-card empty">
+              <div class="seat-header">
+                <div class="seat-number">-</div>
+                <div class="status-indicator">
+                  <i class="fa-solid fa-minus"></i>
+                </div>
+              </div>
+              <div class="student-avatar">
+                <i class="fas fa-chair"></i>
+              </div>
+              <div class="student-info">
+                <div class="student-name">ที่นั่งว่าง</div>
+                <div class="student-details">
+                  <div class="student-id">-</div>
+                  <div class="student-class">-</div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    {% else %}
+      <div class="col-span-full text-center text-slate-400 py-8">
+        <i class="fa-solid fa-chair text-4xl mb-4 opacity-50"></i>
+        <p>ไม่มีข้อมูลที่นั่ง</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Student Detail Modal -->
+<div id="studentModal" class="modal-overlay">
+  <div class="modal-content glass rounded-2xl p-6">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold text-white">รายละเอียดนักเรียน</h3>
+      <button onclick="closeStudentModal()" class="text-slate-400 hover:text-white transition-colors">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+    </div>
+
+    <div id="studentInfo" class="space-y-4">
+      <!-- Student info will be populated by JavaScript -->
+    </div>
+
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeStudentModal()" class="btn btn-secondary flex-1">
+        <i class="fa-solid fa-xmark"></i> ปิด
+      </button>
+      {% if request.user.is_staff %}
+        <button onclick="editStudentStatus()" class="btn btn-primary flex-1">
+          <i class="fa-solid fa-edit"></i> แก้ไขสถานะ
+        </button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="glass rounded-2xl p-6 text-center border border-white/20">
+    <div class="loading-spinner mb-4"></div>
+    <p class="text-white font-medium">กำลังโหลด...</p>
+  </div>
+</div>
+
+<!-- แจ้งเตือน -->
+<div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
 <script>
-    // Auto-refresh functionality
-    let refreshInterval;
-    let isRefreshing = false;
+  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+  let refreshInterval;
+  let examCompleted = {{ exam_completed|yesno:"true,false" }};
+  let currentLayout = 'auto';
 
-    function startAutoRefresh() {
-        refreshInterval = setInterval(refreshSeatingChart, 30000); // Refresh every 30 seconds
+  // เริ่มต้น
+  document.addEventListener('DOMContentLoaded', function() {
+    startAutoRefresh();
+    updateLastUpdatedTime();
+    
+    // เพิ่ม animation delay สำหรับที่นั่งแต่ละตัว
+    const seats = document.querySelectorAll('.seat-card');
+    seats.forEach((seat, index) => {
+      seat.style.animationDelay = `${index * 0.05}s`;
+      seat.classList.add('animate-float');
+      
+      // เพิ่ม hover effect
+      seat.addEventListener('mouseenter', function() {
+        this.style.filter = `drop-shadow(0 0 20px rgba(59,130,246,0.4))`;
+      });
+      
+      seat.addEventListener('mouseleave', function() {
+        this.style.filter = '';
+      });
+    });
+    
+    // รีเฟรชข้อมูลทุก 30 วินาที
+    if (!examCompleted) {
+      setInterval(refreshSeatingData, 30000);
     }
+  });
 
-    function stopAutoRefresh() {
-        if (refreshInterval) {
-            clearInterval(refreshInterval);
-        }
+  // เปลี่ยนรูปแบบการจัดที่นั่ง
+  function changeLayout(layout) {
+    const seatingGrid = document.getElementById('seatingChart');
+    const layoutButtons = document.querySelectorAll('.layout-btn');
+    
+    // ลบ class เก่า
+    seatingGrid.classList.remove('auto', 'size-4x5', 'size-5x5', 'size-5x6', 'size-6x6', 'size-6x8', 'size-8x6');
+    
+    // เพิ่ม class ใหม่
+    if (layout === 'auto') {
+      seatingGrid.classList.add('auto');
+    } else {
+      seatingGrid.classList.add(`size-${layout}`);
     }
+    
+    // อัปเดต active button
+    layoutButtons.forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`[data-layout="${layout}"]`).classList.add('active');
+    
+    currentLayout = layout;
+    
+    // Animate การเปลี่ยนแปลง
+    const seats = document.querySelectorAll('.seat-card');
+    seats.forEach((seat, index) => {
+      seat.style.animationDelay = `${index * 0.02}s`;
+      seat.classList.add('animate-update');
+      
+      setTimeout(() => {
+        seat.classList.remove('animate-update');
+      }, 600);
+    });
+    
+    showNotification(`เปลี่ยนเป็นรูปแบบ ${layout === 'auto' ? 'อัตโนมัติ' : layout.replace('x', '×')}`, 'success');
+  }
 
-    function refreshSeatingChart() {
-        if (isRefreshing) return;
+  // แสดงรายละเอียดนักเรียน - แก้ไขให้รองรับสถานะใหม่
+  function showStudentDetail(studentId, fullName, studentIdCode, status, checkinTime, studentNumber, studentClass) {
+    const statusMap = {
+      'on_time': { text: 'เข้าสอบตรงเวลา', class: 'chip-green', icon: 'fa-check' },
+      'late': { text: 'เข้าสอบสาย', class: 'chip-yellow', icon: 'fa-clock' },
+      'absent': { text: 'ขาดสอบ', class: 'chip-red', icon: 'fa-xmark' },
+      'excused': { text: 'ลาป่วย', class: 'chip-cyan', icon: 'fa-notes-medical' },
+      'cheating': { text: 'ทุจริต', class: 'chip-orange', icon: 'fa-exclamation-triangle' },
+      'not_checked': { text: 'ยังไม่เช็คชื่อ', class: 'chip-slate', icon: 'fa-hourglass-half' },
+      'not_started': { text: 'ยังไม่เริ่มสอบ', class: 'chip-slate', icon: 'fa-pause' }
+    };
 
-        isRefreshing = true;
-        const indicator = document.getElementById('refreshIndicator');
-        indicator.classList.add('refreshing');
+    const statusInfo = statusMap[status] || statusMap['not_checked'];
+    
+    const studentInfo = document.getElementById('studentInfo');
+    studentInfo.innerHTML = `
+      <div class="glass-soft rounded-xl p-4">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center">
+            <i class="fas fa-user-graduate text-blue-400 text-2xl"></i>
+          </div>
+          <div>
+            <h4 class="text-xl font-semibold text-white">${fullName}</h4>
+            <p class="text-slate-300">รหัสนักเรียน: ${studentIdCode}</p>
+            <p class="text-slate-300">ชั้น ${studentClass} เลขที่ ${studentNumber}</p>
+          </div>
+        </div>
 
-        // Simulate AJAX call to refresh data
-        fetch(`/exams/{{ subject.id }}/seating-data/`)
-            .then(response => response.json())
-            .then(data => {
-                updateSeatingChart(data);
-                showNotification('อัปเดตแผนผังที่นั่งแล้ว', 'success');
-            })
-            .catch(error => {
-                console.error('Error refreshing seating chart:', error);
-                showNotification('เกิดข้อผิดพลาดในการอัปเดตข้อมูล', 'error');
-            })
-            .finally(() => {
-                isRefreshing = false;
-                indicator.classList.remove('refreshing');
-            });
-    }
-
-    function updateSeatingChart(data) {
-        // Update seat statuses based on new attendance data
-        document.querySelectorAll('.seat[data-student-id]').forEach(seat => {
-            const studentId = seat.getAttribute('data-student-id');
-            const attendance = data.attendance[studentId];
-
-            // Remove existing status classes
-            seat.classList.remove('seat-present', 'seat-late', 'seat-absent', 'seat-not-checked');
-
-            // Add new status class
-            if (attendance) {
-                switch (attendance.status) {
-                    case 'on_time':
-                        seat.classList.add('seat-present');
-                        break;
-                    case 'late':
-                        seat.classList.add('seat-late');
-                        break;
-                    case 'absent':
-                        seat.classList.add('seat-absent');
-                        break;
-                    default:
-                        seat.classList.add('seat-not-checked');
-                }
-                seat.setAttribute('data-attendance-status', attendance.status);
-                seat.setAttribute('data-checkin-time', attendance.checkin_time);
-            } else {
-                seat.classList.add('seat-not-checked');
-                seat.setAttribute('data-attendance-status', 'not_checked');
-                seat.removeAttribute('data-checkin-time');
-            }
-        });
-
-        // Update statistics
-        updateStatistics(data.stats);
-    }
-
-    function updateStatistics(stats) {
-        const statCards = document.querySelectorAll('.stat-card .stat-number');
-        if (statCards.length >= 3) {
-            statCards[1].textContent = stats.checked_in;
-            statCards[2].textContent = stats.not_checked;
-        }
-    }
-
-    // Tooltip functionality
-    let tooltipElement = null;
-
-    function showStudentTooltip(event, seatElement) {
-        if (!tooltipElement) {
-            tooltipElement = document.getElementById('studentTooltip');
-        }
-
-        const studentName = seatElement.getAttribute('data-student-name');
-        const studentNumber = seatElement.getAttribute('data-student-number');
-        const studentClass = seatElement.getAttribute('data-student-class');
-        const attendanceStatus = seatElement.getAttribute('data-attendance-status');
-        const checkinTime = seatElement.getAttribute('data-checkin-time');
-
-        const statusText = {
-            'on_time': 'เข้าสอบตรงเวลา',
-            'late': 'เข้าสอบสาย',
-            'absent': 'ขาดสอบ',
-            'not_checked': 'ยังไม่เช็คชื่อ'
-        };
-
-        const statusColor = {
-            'on_time': 'text-green-400',
-            'late': 'text-yellow-400',
-            'absent': 'text-red-400',
-            'not_checked': 'text-slate-400'
-        };
-
-        let tooltipContent = `
-        <div class="font-semibold text-white mb-1">${studentName}</div>
-        <div class="text-sm text-slate-300 mb-1">เลขที่: ${studentNumber} | ชั้น: ${studentClass}</div>
-        <div class="text-sm ${statusColor[attendanceStatus]}">${statusText[attendanceStatus]}</div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-slate-400 text-sm">ที่นั่ง</label>
+            <p class="text-white font-medium">ที่ ${document.querySelector(`[data-student-id="${studentId}"]`)?.dataset.seatNumber || 'ไม่ระบุ'}</p>
+          </div>
+          <div>
+            <label class="text-slate-400 text-sm">ห้องสอบ</label>
+            <p class="text-white font-medium">{{ subject.room.building.name|default:"ไม่ระบุ" }} ห้อง {{ subject.room.name|default:"ไม่ระบุ" }}</p>
+          </div>
+          <div>
+            <label class="text-slate-400 text-sm">สถานะ</label>
+            <div class="mt-1">
+              <span class="chip ${statusInfo.class}">
+                <i class="fa-solid ${statusInfo.icon}"></i> ${statusInfo.text}
+              </span>
+            </div>
+          </div>
+          <div>
+            <label class="text-slate-400 text-sm">เวลาเข้าสอบ</label>
+            <p class="text-white font-medium">${checkinTime || 'ยังไม่เข้าสอบ'}</p>
+          </div>
+        </div>
+      </div>
     `;
 
-        if (checkinTime) {
-            tooltipContent += `<div class="text-xs text-slate-400 mt-1">เวลาเช็คชื่อ: ${checkinTime}</div>`;
-        }
+    // เก็บข้อมูลสำหรับการแก้ไข
+    studentInfo.dataset.studentId = studentId;
+    studentInfo.dataset.currentStatus = status;
 
-        document.getElementById('tooltipContent').innerHTML = tooltipContent;
+    document.getElementById('studentModal').classList.add('active');
+  }
 
-        // Position tooltip
-        const rect = seatElement.getBoundingClientRect();
-        tooltipElement.style.left = (rect.left + rect.width / 2 - tooltipElement.offsetWidth / 2) + 'px';
-        tooltipElement.style.top = (rect.top - tooltipElement.offsetHeight - 10) + 'px';
+  // ปิด modal
+  function closeStudentModal() {
+    document.getElementById('studentModal').classList.remove('active');
+  }
 
-        // Show tooltip
-        tooltipElement.classList.add('show');
+  // แก้ไขสถานะนักเรียน
+  async function editStudentStatus() {
+    const studentInfo = document.getElementById('studentInfo');
+    const studentId = studentInfo.dataset.studentId;
+    const currentStatus = studentInfo.dataset.currentStatus;
+
+    const newStatus = prompt('เลือกสถานะใหม่:\n\n1. เข้าสอบตรงเวลา\n2. เข้าสอบสาย\n3. ขาดสอบ\n4. ลาป่วย\n5. ทุจริต\n\nกรอกหมายเลข 1-5:');
+    
+    const statusMapping = {
+      '1': 'on_time',
+      '2': 'late', 
+      '3': 'absent',
+      '4': 'excused',
+      '5': 'cheating'
+    };
+
+    const selectedStatus = statusMapping[newStatus];
+    
+    if (!selectedStatus) {
+      showNotification('กรุณาเลือกสถานะที่ถูกต้อง', 'error');
+      return;
     }
 
-    function hideStudentTooltip() {
-        if (tooltipElement) {
-            tooltipElement.classList.remove('show');
-        }
-    }
-
-    // Export functionality
-    function exportSeatingChart() {
-        showLoading();
-
-        // Create export data
-        const exportData = {
-            subject: '{{ subject.subject_name }}',
-            date: '{{ subject.exam_date|date:"d/m/Y" }}',
-            time: '{{ subject.start_time|time:"H:i" }} - {{ subject.end_time|time:"H:i" }}',
-            room: '{% if subject.room %}{{ subject.room.building.name }} ห้อง {{ subject.room.name }}{% else %}ไม่ระบุห้อง{% endif %}',
-            students: []
-        };
-
-        // Collect student data
-        document.querySelectorAll('.seat[data-student-id]').forEach(seat => {
-            const studentData = {
-                name: seat.getAttribute('data-student-name'),
-                number: seat.getAttribute('data-student-number'),
-                class: seat.getAttribute('data-student-class'),
-                status: seat.getAttribute('data-attendance-status'),
-                checkin_time: seat.getAttribute('data-checkin-time') || 'ไม่ได้เช็คชื่อ'
-            };
-            exportData.students.push(studentData);
-        });
-
-        // Simulate export process
-        setTimeout(() => {
-            hideLoading();
-            showNotification('Export แผนผังที่นั่งสำเร็จ', 'success');
-
-            // In real implementation, this would trigger actual file download
-            console.log('Export data:', exportData);
-        }, 2000);
-    }
-
-    // Keyboard shortcuts
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'r' && e.ctrlKey) {
-            e.preventDefault();
-            refreshSeatingChart();
-        }
-
-        if (e.key === 'q' && e.ctrlKey) {
-            e.preventDefault();
-            window.location.href = "{% url 'generate_qr_code' subject.id %}";
-        }
-    });
-
-    // Initialize page
-    document.addEventListener('DOMContentLoaded', function () {
-        console.log('Seating chart initialized');
-
-        // Start auto-refresh
-        startAutoRefresh();
-
-        // Initial notification
-        showNotification('แผนผังที่นั่งโหลดสมบูรณ์', 'success', 3000);
-
-        // Add click handlers for seats
-        document.querySelectorAll('.seat[data-student-id]').forEach(seat => {
-            seat.addEventListener('click', function () {
-                const studentName = this.getAttribute('data-student-name');
-                const status = this.getAttribute('data-attendance-status');
-
-                if (status === 'not_checked') {
-                    // Option to manually check-in
-                    showConfirmModal(
-                        `ต้องการเช็คชื่อ ${studentName} หรือไม่?`,
-                        () => manualCheckin(this.getAttribute('data-student-id'))
-                    );
-                }
-            });
-        });
-    });
-
-    function manualCheckin(studentId) {
-        showLoading();
-
-        fetch('/ajax/manual-checkin/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({
-                student_id: studentId,
-                subject_id: {{ subject.id }},
-            status: 'on_time'
+    try {
+      showLoading('กำลังอัปเดตสถานะ...');
+      
+      const response = await fetch("{% url 'manual_checkin_student' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+          student_id: studentId,
+          subject_id: {{ subject.id }},
+          status: selectedStatus
         })
-    })
-    .then(response => response.json())
-        .then(data => {
-            hideLoading();
-            if (data.status === 'success') {
-                showNotification('เช็คชื่อสำเร็จ', 'success');
-                refreshSeatingChart();
-            } else {
-                showNotification('เกิดข้อผิดพลาด: ' + data.message, 'error');
-            }
-        })
-        .catch(error => {
-            hideLoading();
-            showNotification('เกิดข้อผิดพลาดในการเช็คชื่อ', 'error');
-            console.error('Error:', error);
+      });
+
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        updateSeatDisplay(studentId, selectedStatus);
+        showNotification('อัปเดตสถานะสำเร็จ', 'success');
+        closeStudentModal();
+        
+        // รีเฟรชข้อมูลหลังอัปเดต
+        setTimeout(refreshSeatingData, 1000);
+      } else {
+        showNotification(data.message || 'เกิดข้อผิดพลาด', 'error');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showNotification('เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+    } finally {
+      hideLoading();
+    }
+  }
+
+  // อัปเดตการแสดงผลที่นั่ง - แก้ไขให้รองรับสถานะใหม่
+  function updateSeatDisplay(studentId, status) {
+    const seat = document.querySelector(`[data-student-id="${studentId}"]`);
+    if (!seat) return;
+
+    // ลบคลาสสถานะเก่า
+    seat.classList.remove('on_time', 'late', 'absent', 'excused', 'cheating', 'not_checked', 'not_started');
+    
+    // เพิ่มคลาสสถานะใหม่
+    seat.classList.add(status);
+    seat.classList.add('animate-update');
+
+    // อัปเดตไอคอนสถานะ
+    const statusIcon = seat.querySelector('.status-indicator');
+    if (statusIcon) {
+      const iconMap = {
+        'on_time': 'fa-check',
+        'late': 'fa-clock',
+        'absent': 'fa-xmark',
+        'excused': 'fa-notes-medical',
+        'cheating': 'fa-exclamation-triangle',
+        'not_checked': 'fa-hourglass-half',
+        'not_started': 'fa-pause'
+      };
+      
+      statusIcon.innerHTML = `<i class="fa-solid ${iconMap[status] || 'fa-question'}"></i>`;
+    }
+
+    // ลบ animation หลังเสร็จ
+    setTimeout(() => {
+      seat.classList.remove('animate-update');
+    }, 600);
+  }
+
+  // รีเฟรชข้อมูลผังที่นั่ง
+  async function refreshSeatingData() {
+    try {
+      showLoading('กำลังอัปเดตข้อมูล...');
+      
+      const response = await fetch(`{% url 'exam_seating_data' subject.id %}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // อัปเดตสถานะของแต่ละที่นั่ง
+        Object.entries(data.attendance).forEach(([studentId, attendance]) => {
+          updateSeatDisplay(studentId, attendance.status);
         });
-}
+        
+        // อัปเดตสถิติ
+        updateStats(data.stats);
+        updateLastUpdatedTime();
+        
+        showNotification('อัปเดตข้อมูลล่าสุดแล้ว', 'success', 2000);
+      } else {
+        showNotification('ไม่สามารถอัปเดตข้อมูลได้', 'error');
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      showNotification('เกิดข้อผิดพลาดในการรีเฟรช', 'error');
+    } finally {
+      hideLoading();
+    }
+  }
 
-    // Handle visibility change (refresh when page becomes visible)
-    document.addEventListener('visibilitychange', function () {
-        if (!document.hidden) {
-            refreshSeatingChart();
-        }
-    });
+  // อัปเดตสถิติ
+  function updateStats(stats) {
+    const elements = {
+      'on_time': stats.on_time || 0,
+      'late': stats.late || 0,
+      'absent': stats.absent || 0,
+      'excused': stats.excused || 0,
+      'cheating': stats.cheating || 0,
+      'not_checked': stats.not_checked || 0
+    };
 
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', function () {
-        stopAutoRefresh();
+    Object.entries(elements).forEach(([key, value]) => {
+      const element = document.querySelector(`[data-stat="${key}"]`);
+      if (element) {
+        animateNumber(element, value);
+      }
     });
+  }
+
+  // แอนิเมชันตัวเลข
+  function animateNumber(element, targetValue) {
+    const currentValue = parseInt(element.textContent) || 0;
+    const difference = targetValue - currentValue;
+    const steps = 10;
+    const stepValue = difference / steps;
+    let current = currentValue;
+    
+    const interval = setInterval(() => {
+      current += stepValue;
+      if ((stepValue > 0 && current >= targetValue) || (stepValue < 0 && current <= targetValue)) {
+        element.textContent = targetValue;
+        clearInterval(interval);
+      } else {
+        element.textContent = Math.round(current);
+      }
+    }, 50);
+  }
+
+  // อัปเดตเวลา
+  function updateLastUpdatedTime() {
+    const timeElement = document.getElementById('lastUpdated');
+    if (timeElement) {
+      const now = new Date();
+      timeElement.textContent = now.toLocaleTimeString('th-TH', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    }
+  }
+
+  // เริ่ม auto refresh
+  function startAutoRefresh() {
+    // อัปเดตเวลาทุกวินาที
+    setInterval(updateLastUpdatedTime, 1000);
+  }
+
+  // ส่งออกรายงาน
+  function exportAttendanceReport() {
+    const url = `{% url 'export_attendance_report' subject.id %}`;
+    window.open(url, '_blank');
+  }
+
+  // แจ้งเตือน
+  function showNotification(message, type = 'info', duration = 3000) {
+    const colors = {
+      success: 'bg-green-500/20 border-green-500/50 text-green-400',
+      error: 'bg-red-500/20 border-red-500/50 text-red-400', 
+      warning: 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400',
+      info: 'bg-blue-500/20 border-blue-500/50 text-blue-400'
+    };
+    
+    const icons = {
+      success: 'fa-check-circle',
+      error: 'fa-exclamation-circle',
+      warning: 'fa-exclamation-triangle',
+      info: 'fa-info-circle'
+    };
+
+    const notification = document.createElement('div');
+    notification.className = `${colors[type]} border rounded-xl p-4 backdrop-blur-sm transform translate-x-full transition-transform duration-300`;
+    notification.innerHTML = `
+      <div class="flex items-center gap-3">
+        <i class="fas ${icons[type]}"></i>
+        <span class="font-medium">${message}</span>
+      </div>
+    `;
+
+    const container = document.getElementById('notificationContainer');
+    if (container) {
+      container.appendChild(notification);
+      
+      setTimeout(() => notification.style.transform = 'translateX(0)', 50);
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+      }, duration);
+    }
+  }
+
+  function showLoading(message = 'กำลังโหลด...') {
+    const loader = document.getElementById('loadingOverlay');
+    if (loader) {
+      loader.querySelector('p').textContent = message;
+      loader.classList.add('active');
+    }
+  }
+
+  function hideLoading() {
+    const loader = document.getElementById('loadingOverlay');
+    if (loader) {
+      loader.classList.remove('active');
+    }
+  }
+
+  // ปิด modal เมื่อคลิกข้างนอก
+  document.getElementById('studentModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeStudentModal();
+    }
+  });
+
+  // ESC key ปิด modal
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeStudentModal();
+    }
+  });
+
+  // ปิด auto refresh เมื่อออกจากหน้า
+  window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+    }
+  });
+
+  // ปรับ responsive เมื่อขนาดหน้าจอเปลี่ยน
+  window.addEventListener('resize', function() {
+    const seatingChart = document.getElementById('seatingChart');
+    if (window.innerWidth <= 768) {
+      // Force responsive layout on mobile
+      seatingChart.classList.remove('size-4x5', 'size-5x5', 'size-5x6', 'size-6x6', 'size-6x8', 'size-8x6');
+      seatingChart.classList.add('auto');
+    }
+  });
+</script>
+{% endblock %}

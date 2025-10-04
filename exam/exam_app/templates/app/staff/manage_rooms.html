@@ -6,7 +6,6 @@
 {% block page_subtitle %}Building & Room Management{% endblock %}
 
 {% block extra_css %}
-<!-- CSRF Token สำหรับ AJAX -->
 <meta name="csrf-token" content="{{ csrf_token }}">
 <style>
     .building-card {
@@ -85,7 +84,7 @@
 </div>
 
 <!-- Statistics Cards -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <div class="stats-card rounded-2xl p-6 animate-float">
         <div class="flex items-center justify-between">
             <div>
@@ -121,18 +120,6 @@
             </div>
         </div>
     </div>
-    
-    <div class="stats-card rounded-2xl p-6 animate-float" style="animation-delay: 0.3s;">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-slate-400 text-sm mb-1">ใช้งานวันนี้</p>
-                <p class="text-3xl font-bold text-orange-400" id="roomsInUse">0</p>
-            </div>
-            <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
-                <i class="fas fa-calendar-check text-orange-400 text-xl"></i>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Action Buttons -->
@@ -143,9 +130,6 @@
     <button onclick="openRoomModal()" class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold shadow-glow-green">
         <i class="fas fa-plus mr-2"></i>เพิ่มห้องสอบ
     </button>
-    <a href="{% url 'export_rooms_data' %}" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold shadow-glow-purple">
-        <i class="fas fa-download mr-2"></i>ส่งออก Excel
-    </a>
     <button onclick="loadRoomsData()" class="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold shadow-glow-orange">
         <i class="fas fa-sync-alt mr-2"></i>รีเฟรชข้อมูล
     </button>
@@ -167,9 +151,7 @@
     </div>
 
     <!-- Buildings List -->
-    <div id="buildingsList" class="space-y-6">
-        <!-- Buildings will be loaded here via JavaScript -->
-    </div>
+    <div id="buildingsList" class="space-y-6"></div>
 
     <!-- Loading State -->
     <div id="loadingState" class="text-center py-12">
@@ -313,6 +295,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
 // Global variables
 let buildingsData = [];
 let currentDeleteId = null;
@@ -326,70 +309,114 @@ function initializePage() {
     loadRoomStatistics();
     loadRoomsData();
     loadBuildingsForSelect();
-    
-    // Setup form handlers
     setupFormHandlers();
     
-    // Setup search
-    document.getElementById('searchInput').addEventListener('input', searchRooms);
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', searchRooms);
+    }
+}
+
+// Utility function to show notification
+function displayNotification(message, type = 'info') {
+    // ใช้ระบบ notification จาก base template ถ้ามี
+    if (typeof window.showNotification === 'function') {
+        window.showNotification(message, type);
+    } else if (typeof showToast === 'function') {
+        showToast(message, type);
+    } else {
+        // Fallback เป็น alert
+        const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
+        alert(`${icon} ${message}`);
+    }
 }
 
 // Load room statistics
 function loadRoomStatistics() {
+    console.log('Loading room statistics...');
     fetch('/ajax/rooms/statistics/')
-        .then(response => response.json())
+        .then(response => {
+            console.log('Statistics response:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Statistics data:', data);
             if (data.success) {
                 updateStatistics(data.statistics);
             } else {
-                showNotification('ไม่สามารถโหลดสถิติได้', 'error');
+                console.error('Statistics failed:', data);
+                displayNotification('ไม่สามารถโหลดสถิติได้', 'error');
             }
         })
         .catch(error => {
             console.error('Error loading statistics:', error);
-            showNotification('เกิดข้อผิดพลาดในการโหลดสถิติ', 'error');
+            displayNotification('เกิดข้อผิดพลาดในการโหลดสถิติ: ' + error.message, 'error');
         });
 }
 
 // Update statistics display
 function updateStatistics(stats) {
-    document.getElementById('totalBuildings').textContent = stats.total_buildings;
-    document.getElementById('totalRooms').textContent = stats.total_rooms;
-    document.getElementById('totalCapacity').textContent = stats.total_capacity;
-    document.getElementById('roomsInUse').textContent = stats.rooms_in_use_today;
+    const totalBuildings = document.getElementById('totalBuildings');
+    const totalRooms = document.getElementById('totalRooms');
+    const totalCapacity = document.getElementById('totalCapacity');
+    
+    if (totalBuildings) totalBuildings.textContent = stats.total_buildings;
+    if (totalRooms) totalRooms.textContent = stats.total_rooms;
+    if (totalCapacity) totalCapacity.textContent = stats.total_capacity;
 }
 
 // Load rooms data
 function loadRoomsData() {
-    document.getElementById('loadingState').classList.remove('hidden');
-    document.getElementById('emptyState').classList.add('hidden');
-    document.getElementById('buildingsList').innerHTML = '';
+    console.log('Loading buildings data...');
+    const loadingState = document.getElementById('loadingState');
+    const emptyState = document.getElementById('emptyState');
+    const buildingsList = document.getElementById('buildingsList');
+    
+    if (loadingState) loadingState.classList.remove('hidden');
+    if (emptyState) emptyState.classList.add('hidden');
+    if (buildingsList) buildingsList.innerHTML = '';
     
     fetch('/ajax/buildings/')
-        .then(response => response.json())
+        .then(response => {
+            console.log('Buildings response:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Buildings data:', data);
             if (data.success) {
                 buildingsData = data.buildings;
                 displayBuildings(buildingsData);
             } else {
-                showNotification('ไม่สามารถโหลดข้อมูลได้', 'error');
+                console.error('Buildings failed:', data);
+                displayNotification('ไม่สามารถโหลดข้อมูลได้: ' + (data.error || 'Unknown error'), 'error');
+                if (emptyState) emptyState.classList.remove('hidden');
             }
         })
         .catch(error => {
             console.error('Error loading buildings:', error);
-            showNotification('เกิดข้อผิดพลาดในการโหลดข้อมูล', 'error');
+            displayNotification('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error.message, 'error');
+            if (emptyState) emptyState.classList.remove('hidden');
         })
         .finally(() => {
-            document.getElementById('loadingState').classList.add('hidden');
+            if (loadingState) loadingState.classList.add('hidden');
         });
 }
 
 // Display buildings
 function displayBuildings(buildings) {
     const buildingsList = document.getElementById('buildingsList');
+    const emptyState = document.getElementById('emptyState');
+    
+    if (!buildingsList) return;
     
     if (buildings.length === 0) {
-        document.getElementById('emptyState').classList.remove('hidden');
+        if (emptyState) emptyState.classList.remove('hidden');
         return;
     }
     
@@ -419,7 +446,7 @@ function displayBuildings(buildings) {
                 </div>
                 
                 <div class="flex space-x-2">
-                    <button onclick="editBuilding(${building.id}, '${building.code}', '${building.name}')" 
+                    <button onclick="editBuilding(${building.id}, '${building.code.replace(/'/g, "\\'")}', '${building.name.replace(/'/g, "\\'")}')" 
                         class="px-3 py-2 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 rounded-lg transition-colors" 
                         title="แก้ไขอาคาร">
                         <i class="fas fa-edit text-sm"></i>
@@ -429,7 +456,7 @@ function displayBuildings(buildings) {
                         title="เพิ่มห้อง">
                         <i class="fas fa-plus text-sm"></i>
                     </button>
-                    <button onclick="deleteBuilding(${building.id}, '${building.name}')" 
+                    <button onclick="deleteBuilding(${building.id}, '${building.name.replace(/'/g, "\\'")}')" 
                         class="px-3 py-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-lg transition-colors" 
                         title="ลบอาคาร">
                         <i class="fas fa-trash text-sm"></i>
@@ -456,12 +483,12 @@ function displayBuildings(buildings) {
                                         </div>
                                     </div>
                                     <div class="flex space-x-1">
-                                        <button onclick="editRoom(${room.id}, ${building.id}, '${room.name}', ${room.capacity})" 
+                                        <button onclick="editRoom(${room.id}, ${building.id}, '${room.name.replace(/'/g, "\\'")}', ${room.capacity})" 
                                             class="px-2 py-1 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 rounded transition-colors" 
                                             title="แก้ไขห้อง">
                                             <i class="fas fa-edit text-xs"></i>
                                         </button>
-                                        <button onclick="deleteRoom(${room.id}, '${building.name}', '${room.name}')" 
+                                        <button onclick="deleteRoom(${room.id}, '${building.name.replace(/'/g, "\\'")}', '${room.name.replace(/'/g, "\\'")}')" 
                                             class="px-2 py-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded transition-colors" 
                                             title="ลบห้อง">
                                             <i class="fas fa-times text-xs"></i>
@@ -487,7 +514,10 @@ function displayBuildings(buildings) {
 
 // Search rooms
 function searchRooms() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const searchInput = document.getElementById('searchInput');
+    if (!searchInput) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
     
     if (!searchTerm) {
         displayBuildings(buildingsData);
@@ -497,11 +527,9 @@ function searchRooms() {
     const filteredBuildings = buildingsData.filter(building => {
         const buildingMatch = building.name.toLowerCase().includes(searchTerm) ||
                              building.code.toLowerCase().includes(searchTerm);
-        
         const roomMatch = building.rooms.some(room =>
             room.name.toLowerCase().includes(searchTerm)
         );
-        
         return buildingMatch || roomMatch;
     }).map(building => ({
         ...building,
@@ -522,62 +550,86 @@ function loadBuildingsForSelect() {
         .then(data => {
             if (data.success) {
                 const select = document.getElementById('roomBuilding');
-                select.innerHTML = '<option value="">เลือกอาคาร</option>';
-                
-                data.buildings.forEach(building => {
-                    select.innerHTML += `<option value="${building.id}">${building.name} (${building.code})</option>`;
-                });
+                if (select) {
+                    select.innerHTML = '<option value="">เลือกอาคาร</option>';
+                    data.buildings.forEach(building => {
+                        select.innerHTML += `<option value="${building.id}">${building.name} (${building.code})</option>`;
+                    });
+                }
             }
         })
-        .catch(error => {
-            console.error('Error loading buildings for select:', error);
-        });
+        .catch(error => console.error('Error loading buildings for select:', error));
 }
 
 // Modal functions
 function openBuildingModal() {
-    document.getElementById('buildingModal').classList.remove('hidden');
+    const modal = document.getElementById('buildingModal');
+    const codeInput = document.getElementById('buildingCode');
+    
+    if (modal) modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-    document.getElementById('buildingCode').focus();
+    if (codeInput) codeInput.focus();
 }
 
 function closeBuildingModal() {
-    document.getElementById('buildingModal').classList.add('hidden');
-    document.body.style.overflow = 'auto';
-    document.getElementById('buildingForm').reset();
+    const modal = document.getElementById('buildingModal');
+    const modalHeading = document.querySelector('#buildingModal h3');
+    const submitText = document.getElementById('buildingSubmitText');
+    const form = document.getElementById('buildingForm');
     
-    // รีเซ็ตสถานะแก้ไข
+    if (modal) modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    if (form) form.reset();
+    
     isEditMode = false;
     currentEditId = null;
-    document.querySelector('#buildingModal h3').innerHTML = 
-        '<i class="fas fa-building mr-2"></i>เพิ่มอาคารใหม่';
-    document.getElementById('buildingSubmitText').textContent = 'เพิ่มอาคาร';
+    
+    if (modalHeading) {
+        modalHeading.innerHTML = '<i class="fas fa-building mr-2"></i>เพิ่มอาคารใหม่';
+    }
+    if (submitText) {
+        submitText.textContent = 'เพิ่มอาคาร';
+    }
 }
 
 function openRoomModal() {
-    document.getElementById('roomModal').classList.remove('hidden');
+    const modal = document.getElementById('roomModal');
+    const buildingSelect = document.getElementById('roomBuilding');
+    
+    if (modal) modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     loadBuildingsForSelect();
-    document.getElementById('roomBuilding').focus();
+    if (buildingSelect) buildingSelect.focus();
 }
 
 function closeRoomModal() {
-    document.getElementById('roomModal').classList.add('hidden');
-    document.body.style.overflow = 'auto';
-    document.getElementById('roomForm').reset();
+    const modal = document.getElementById('roomModal');
+    const modalHeading = document.querySelector('#roomModal h3');
+    const submitText = document.getElementById('roomSubmitText');
+    const form = document.getElementById('roomForm');
     
-    // รีเซ็ตสถานะแก้ไข
+    if (modal) modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    if (form) form.reset();
+    
     isEditMode = false;
     currentEditId = null;
-    document.querySelector('#roomModal h3').innerHTML = 
-        '<i class="fas fa-door-open mr-2"></i>เพิ่มห้องสอบใหม่';
-    document.getElementById('roomSubmitText').textContent = 'เพิ่มห้อง';
+    
+    if (modalHeading) {
+        modalHeading.innerHTML = '<i class="fas fa-door-open mr-2"></i>เพิ่มห้องสอบใหม่';
+    }
+    if (submitText) {
+        submitText.textContent = 'เพิ่มห้อง';
+    }
 }
 
 function addRoomToBuilding(buildingId) {
     openRoomModal();
     setTimeout(() => {
-        document.getElementById('roomBuilding').value = buildingId;
+        const buildingSelect = document.getElementById('roomBuilding');
+        if (buildingSelect) {
+            buildingSelect.value = buildingId;
+        }
     }, 100);
 }
 
@@ -586,46 +638,53 @@ function editBuilding(buildingId, buildingCode, buildingName) {
     isEditMode = true;
     currentEditId = buildingId;
     
-    // เปลี่ยนหัวข้อ modal
-    document.querySelector('#buildingModal h3').innerHTML = 
-        '<i class="fas fa-edit mr-2"></i>แก้ไขอาคาร';
+    const modalHeading = document.querySelector('#buildingModal h3');
+    const submitText = document.getElementById('buildingSubmitText');
+    const codeInput = document.getElementById('buildingCode');
+    const nameInput = document.getElementById('buildingName');
+    const modal = document.getElementById('buildingModal');
     
-    // เปลี่ยนข้อความปุ่ม
-    document.getElementById('buildingSubmitText').textContent = 'บันทึกการแก้ไข';
+    if (modalHeading) {
+        modalHeading.innerHTML = '<i class="fas fa-edit mr-2"></i>แก้ไขอาคาร';
+    }
+    if (submitText) {
+        submitText.textContent = 'บันทึกการแก้ไข';
+    }
+    if (codeInput) codeInput.value = buildingCode;
+    if (nameInput) nameInput.value = buildingName;
+    if (modal) modal.classList.remove('hidden');
     
-    // ใส่ข้อมูลเดิม
-    document.getElementById('buildingCode').value = buildingCode;
-    document.getElementById('buildingName').value = buildingName;
-    
-    // เปิด modal
-    document.getElementById('buildingModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-    document.getElementById('buildingCode').focus();
+    if (codeInput) codeInput.focus();
 }
 
 function editRoom(roomId, buildingId, roomName, roomCapacity) {
     isEditMode = true;
     currentEditId = roomId;
     
-    // เปลี่ยนหัวข้อ modal
-    document.querySelector('#roomModal h3').innerHTML = 
-        '<i class="fas fa-edit mr-2"></i>แก้ไขห้องสอบ';
+    const modalHeading = document.querySelector('#roomModal h3');
+    const submitText = document.getElementById('roomSubmitText');
+    const modal = document.getElementById('roomModal');
     
-    // เปลี่ยนข้อความปุ่ม
-    document.getElementById('roomSubmitText').textContent = 'บันทึกการแก้ไข';
+    if (modalHeading) {
+        modalHeading.innerHTML = '<i class="fas fa-edit mr-2"></i>แก้ไขห้องสอบ';
+    }
+    if (submitText) {
+        submitText.textContent = 'บันทึกการแก้ไข';
+    }
     
-    // โหลดรายการอาคาร
     loadBuildingsForSelect();
-    
-    // รอให้โหลดเสร็จแล้วใส่ข้อมูล
     setTimeout(() => {
-        document.getElementById('roomBuilding').value = buildingId;
-        document.getElementById('roomName').value = roomName;
-        document.getElementById('roomCapacity').value = roomCapacity;
+        const buildingSelect = document.getElementById('roomBuilding');
+        const nameInput = document.getElementById('roomName');
+        const capacityInput = document.getElementById('roomCapacity');
+        
+        if (buildingSelect) buildingSelect.value = buildingId;
+        if (nameInput) nameInput.value = roomName;
+        if (capacityInput) capacityInput.value = roomCapacity;
     }, 100);
     
-    // เปิด modal
-    document.getElementById('roomModal').classList.remove('hidden');
+    if (modal) modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
 
@@ -634,10 +693,13 @@ function deleteBuilding(buildingId, buildingName) {
     currentDeleteId = buildingId;
     currentDeleteType = 'building';
     
-    document.getElementById('deleteMessage').textContent = 
-        `คุณแน่ใจหรือไม่ที่จะลบอาคาร "${buildingName}"? การลบอาคารจะลบห้องทั้งหมดในอาคารด้วย`;
+    const deleteMessage = document.getElementById('deleteMessage');
+    const modal = document.getElementById('deleteModal');
     
-    document.getElementById('deleteModal').classList.remove('hidden');
+    if (deleteMessage) {
+        deleteMessage.textContent = `คุณแน่ใจหรือไม่ที่จะลบอาคาร "${buildingName}"? การลบอาคารจะลบห้องทั้งหมดในอาคารด้วย`;
+    }
+    if (modal) modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
 
@@ -645,15 +707,19 @@ function deleteRoom(roomId, buildingName, roomName) {
     currentDeleteId = roomId;
     currentDeleteType = 'room';
     
-    document.getElementById('deleteMessage').textContent = 
-        `คุณแน่ใจหรือไม่ที่จะลบห้อง "${roomName}" ในอาคาร "${buildingName}"?`;
+    const deleteMessage = document.getElementById('deleteMessage');
+    const modal = document.getElementById('deleteModal');
     
-    document.getElementById('deleteModal').classList.remove('hidden');
+    if (deleteMessage) {
+        deleteMessage.textContent = `คุณแน่ใจหรือไม่ที่จะลบห้อง "${roomName}" ในอาคาร "${buildingName}"?`;
+    }
+    if (modal) modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
 
 function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden');
+    const modal = document.getElementById('deleteModal');
+    if (modal) modal.classList.add('hidden');
     document.body.style.overflow = 'auto';
     currentDeleteId = null;
     currentDeleteType = null;
@@ -666,8 +732,6 @@ function confirmDelete() {
         ? `/ajax/buildings/${currentDeleteId}/delete/`
         : `/ajax/rooms/${currentDeleteId}/delete/`;
     
-    showLoading();
-    
     fetch(url, {
         method: 'POST',
         headers: {
@@ -675,140 +739,202 @@ function confirmDelete() {
             'Content-Type': 'application/json',
         }
     })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(data => {
-                throw new Error(data.error || `HTTP ${response.status}`);
-            });
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showNotification(data.message, 'success');
+            displayNotification(data.message, 'success');
             closeDeleteModal();
             loadRoomsData();
             loadRoomStatistics();
         } else {
-            showNotification(data.error, 'error');
+            displayNotification(data.error, 'error');
         }
     })
     .catch(error => {
         console.error('Error deleting:', error);
-        showNotification('เกิดข้อผิดพลาดในการลบ: ' + error.message, 'error');
-    })
-    .finally(() => {
-        hideLoading();
+        displayNotification('เกิดข้อผิดพลาดในการลบ', 'error');
     });
 }
 
 // Form handlers
 function setupFormHandlers() {
     // Building form
-    document.getElementById('buildingForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData();
-        formData.append('code', document.getElementById('buildingCode').value.trim());
-        formData.append('name', document.getElementById('buildingName').value.trim());
-        
-        if (!formData.get('code') || !formData.get('name')) {
-            showNotification('กรุณากรอกรหัสอาคารและชื่ออาคาร', 'warning');
-            return;
-        }
-        
-        showLoading();
-        
-        const url = isEditMode ? `/ajax/buildings/${currentEditId}/edit/` : '/ajax/buildings/add/';
-        
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-            },
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+    let buildingFormSubmitting = false;
+    const buildingForm = document.getElementById('buildingForm');
+    
+    if (buildingForm) {
+        buildingForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // ป้องกัน double submit
+            if (buildingFormSubmitting) {
+                console.log('Building form is already being submitted, ignoring...');
+                return false;
             }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                showNotification(data.message, 'success');
-                closeBuildingModal();
-                loadRoomsData();
-                loadRoomStatistics();
-                loadBuildingsForSelect();
-            } else {
-                showNotification(data.error, 'error');
+            
+            const codeInput = document.getElementById('buildingCode');
+            const nameInput = document.getElementById('buildingName');
+            
+            const code = codeInput ? codeInput.value.trim().toUpperCase() : '';
+            const name = nameInput ? nameInput.value.trim() : '';
+            
+            if (!code || !name) {
+                displayNotification('กรุณากรอกรหัสอาคารและชื่ออาคาร', 'warning');
+                return false;
             }
-        })
-        .catch(error => {
-            console.error('Error with building:', error);
-            showNotification('เกิดข้อผิดพลาดในการดำเนินการ: ' + error.message, 'error');
-        })
-        .finally(() => {
-            hideLoading();
+            
+            const formData = new FormData();
+            formData.append('code', code);
+            formData.append('name', name);
+            
+            const url = isEditMode ? `/ajax/buildings/${currentEditId}/edit/` : '/ajax/buildings/add/';
+            
+            // ตั้งค่าสถานะว่ากำลัง submit
+            buildingFormSubmitting = true;
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>กำลังบันทึก...';
+            }
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayNotification(data.message, 'success');
+                    closeBuildingModal();
+                    loadRoomsData();
+                    loadRoomStatistics();
+                    loadBuildingsForSelect();
+                } else {
+                    displayNotification(data.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error with building:', error);
+                displayNotification('เกิดข้อผิดพลาดในการดำเนินการ', 'error');
+            })
+            .finally(() => {
+                // คืนสถานะปกติ
+                buildingFormSubmitting = false;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            });
+            
+            return false;
         });
-    });
+    }
     
     // Room form
-    document.getElementById('roomForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData();
-        formData.append('building_id', document.getElementById('roomBuilding').value);
-        formData.append('name', document.getElementById('roomName').value.trim());
-        formData.append('capacity', document.getElementById('roomCapacity').value);
-        
-        if (!formData.get('building_id') || !formData.get('name') || !formData.get('capacity')) {
-            showNotification('กรุณากรอกข้อมูลให้ครบถ้วน', 'warning');
-            return;
-        }
-        
-        const capacity = parseInt(formData.get('capacity'));
-        if (capacity <= 0 || isNaN(capacity)) {
-            showNotification('ความจุต้องมากกว่า 0', 'warning');
-            return;
-        }
-        
-        showLoading();
-        
-        const url = isEditMode ? `/ajax/rooms/${currentEditId}/edit/` : '/ajax/rooms/add/';
-        
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-            },
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+    let roomFormSubmitting = false;
+    const roomForm = document.getElementById('roomForm');
+    
+    if (roomForm) {
+        roomForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // ป้องกัน double submit
+            if (roomFormSubmitting) {
+                console.log('Room form is already being submitted, ignoring...');
+                return false;
             }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                showNotification(data.message, 'success');
-                closeRoomModal();
-                loadRoomsData();
-                loadRoomStatistics();
-            } else {
-                showNotification(data.error, 'error');
+            
+            const buildingSelect = document.getElementById('roomBuilding');
+            const nameInput = document.getElementById('roomName');
+            const capacityInput = document.getElementById('roomCapacity');
+            
+            const buildingId = buildingSelect ? buildingSelect.value : '';
+            const name = nameInput ? nameInput.value.trim() : '';
+            const capacity = capacityInput ? capacityInput.value : '';
+            
+            if (!buildingId) {
+                displayNotification('กรุณาเลือกอาคาร', 'warning');
+                return false;
             }
-        })
-        .catch(error => {
-            console.error('Error with room:', error);
-            showNotification('เกิดข้อผิดพลาดในการดำเนินการ: ' + error.message, 'error');
-        })
-        .finally(() => {
-            hideLoading();
+            
+            if (!name) {
+                displayNotification('กรุณากรอกชื่อห้อง', 'warning');
+                return false;
+            }
+            
+            if (!capacity || parseInt(capacity) <= 0) {
+                displayNotification('กรุณากรอกความจุที่ถูกต้อง', 'warning');
+                return false;
+            }
+            
+            const formData = new FormData();
+            formData.append('building_id', buildingId);
+            formData.append('name', name);
+            formData.append('capacity', capacity);
+            
+            const url = isEditMode ? `/ajax/rooms/${currentEditId}/edit/` : '/ajax/rooms/add/';
+            
+            console.log('Submitting room form:', {
+                url: url,
+                building_id: buildingId,
+                name: name,
+                capacity: capacity,
+                isEditMode: isEditMode
+            });
+            
+            // ตั้งค่าสถานะว่ากำลัง submit
+            roomFormSubmitting = true;
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>กำลังบันทึก...';
+            }
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: formData
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    displayNotification(data.message, 'success');
+                    closeRoomModal();
+                    loadRoomsData();
+                    loadRoomStatistics();
+                } else {
+                    displayNotification(data.error || 'เกิดข้อผิดพลาด', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error with room:', error);
+                displayNotification('เกิดข้อผิดพลาดในการดำเนินการ: ' + error.message, 'error');
+            })
+            .finally(() => {
+                // คืนสถานะปกติ
+                roomFormSubmitting = false;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            });
+            
+            return false;
         });
-    });
+    }
 }
 
 // Utility function to get CSRF cookie
@@ -839,28 +965,21 @@ document.addEventListener('click', function(e) {
 // Keyboard shortcuts
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        if (!document.getElementById('buildingModal').classList.contains('hidden')) {
+        const buildingModal = document.getElementById('buildingModal');
+        const roomModal = document.getElementById('roomModal');
+        const deleteModal = document.getElementById('deleteModal');
+        
+        if (buildingModal && !buildingModal.classList.contains('hidden')) {
             closeBuildingModal();
-        } else if (!document.getElementById('roomModal').classList.contains('hidden')) {
+        } else if (roomModal && !roomModal.classList.contains('hidden')) {
             closeRoomModal();
-        } else if (!document.getElementById('deleteModal').classList.contains('hidden')) {
+        } else if (deleteModal && !deleteModal.classList.contains('hidden')) {
             closeDeleteModal();
         }
     }
-    
-    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-        e.preventDefault();
-        openBuildingModal();
-    }
-    
-    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        loadRoomsData();
-        loadRoomStatistics();
-    }
 });
 
-// Auto-uppercase building code
+// Auto-uppercase building code and validate capacity
 document.addEventListener('DOMContentLoaded', function() {
     const buildingCodeInput = document.getElementById('buildingCode');
     if (buildingCodeInput) {
@@ -883,4 +1002,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
     initializePage();
 });
+</script>
 {% endblock %}
