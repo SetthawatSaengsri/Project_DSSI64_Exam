@@ -1,0 +1,459 @@
+{% extends "app/base.html" %}
+
+{% block title %}วิชาที่ฉันคุมสอบ | ระบบจัดการการสอบ{% endblock %}
+{% block page_title %}วิชาที่ฉันคุมสอบ{% endblock %}
+{% block page_subtitle %}รายการวิชาที่คุณเป็นครูคุมสอบ (หลัก/สำรอง){% endblock %}
+{% block current_page %}teacher_exams{% endblock %}
+
+{% block extra_css %}
+<style>
+  .chip{display:inline-flex;align-items:center;padding:.25rem .625rem;border-radius:9999px;font-size:.75rem;line-height:1rem;font-weight:600;border-width:1px}
+  .chip-blue{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.1);color:#3b82f6}
+  .chip-green{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#22c55e}
+  .chip-yellow{border-color:rgba(234,179,8,.5);background:rgba(234,179,8,.12);color:#eab308}
+  .chip-red{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.1);color:#ef4444}
+  .chip-slate{border-color:rgba(148,163,184,.35);background:rgba(148,163,184,.12);color:#94a3b8}
+  .chip-purple{border-color:rgba(147,51,234,.5);background:rgba(147,51,234,.1);color:#9333ea}
+  .chip-cyan{border-color:rgba(6,182,212,.5);background:rgba(6,182,212,.1);color:#06b6d4}
+  .chip-orange{border-color:rgba(249,115,22,.5);background:rgba(249,115,22,.1);color:#f97316}
+  
+  .subject-row {
+    transition: all 0.3s ease;
+  }
+  .subject-row:hover {
+    background: rgba(59, 130, 246, 0.1);
+    transform: scale(1.01);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+  }
+
+  .empty-state {
+    background: rgba(71, 85, 105, 0.2);
+    border: 2px dashed rgba(148, 163, 184, 0.3);
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-label {
+    display: block;
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-input, .form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(51, 65, 85, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.75rem;
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+  }
+  
+  .form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    transform: translateY(-1px);
+  }
+  
+  .btn-secondary {
+    background: rgba(51, 65, 85, 0.8);
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+  }
+  
+  .btn-secondary:hover {
+    background: rgba(71, 85, 105, 0.8);
+    border-color: rgba(148, 163, 184, 0.5);
+  }
+
+  .pulse-animation {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: .5;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="mb-12 text-center space-y-6">
+    <div class="animate-slide-up">
+        <h2 class="text-4xl lg:text-5xl font-bold font-kanit mb-4">
+            <span class="text-gradient">วิชาที่ฉันคุมสอบ</span>
+        </h2>
+        <p class="text-xl text-slate-300 font-prompt">รายการวิชาสอบที่คุณเป็นครูคุมสอบหลักหรือครูคุมสอบสำรอง</p>
+    </div>
+    <div class="flex justify-center">
+        <div class="w-32 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+    </div>
+</div>
+
+<!-- Statistics Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+  <div class="glass rounded-2xl p-6 border border-white/20 hover:border-blue-500/50 transition-all duration-300 animate-float">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-sm mb-1">วิชาที่คุมทั้งหมด</p>
+        <p class="text-3xl font-bold text-blue-400">{{ subjects|length }}</p>
+      </div>
+      <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-book text-blue-400 text-xl"></i>
+      </div>
+    </div>
+  </div>
+  
+  <div class="glass rounded-2xl p-6 border border-white/20 hover:border-green-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.2s;">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-sm mb-1">นักเรียนที่ดูแล</p>
+        <p class="text-3xl font-bold text-green-400">{{ total_students|default:0 }}</p>
+      </div>
+      <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-users text-green-400 text-xl"></i>
+      </div>
+    </div>
+  </div>
+  
+  <div class="glass rounded-2xl p-6 border border-white/20 hover:border-purple-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.4s;">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-sm mb-1">ครูหลัก</p>
+        <p class="text-3xl font-bold text-purple-400">{{ primary_count|default:0 }}</p>
+      </div>
+      <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-user-check text-purple-400 text-xl"></i>
+      </div>
+    </div>
+  </div>
+  
+  <div class="glass rounded-2xl p-6 border border-white/20 hover:border-yellow-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.6s;">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-sm mb-1">ครูสำรอง</p>
+        <p class="text-3xl font-bold text-yellow-400">{{ secondary_count|default:0 }}</p>
+      </div>
+      <div class="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-user-shield text-yellow-400 text-xl"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="glass rounded-2xl p-6 border border-white/20 mb-8">
+  <h3 class="text-lg font-semibold mb-4 flex items-center">
+    <i class="fas fa-filter mr-2 text-blue-400"></i>
+    ตัวกรองและการค้นหา
+  </h3>
+  <form method="get" class="grid lg:grid-cols-5 md:grid-cols-2 gap-4">
+    <div class="form-group mb-0">
+      <label class="form-label">ปีการศึกษา</label>
+      <select name="year" class="form-input">
+        <option value="">ทั้งหมด</option>
+        {% for y in years %}
+          <option value="{{ y }}" {% if y == year_filter %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    
+    <div class="form-group mb-0">
+      <label class="form-label">เทอม</label>
+      <select name="term" class="form-input">
+        <option value="">ทั้งหมด</option>
+        <option value="1" {% if term_filter == "1" %}selected{% endif %}>เทอม 1</option>
+        <option value="2" {% if term_filter == "2" %}selected{% endif %}>เทอม 2</option>
+        <option value="3" {% if term_filter == "3" %}selected{% endif %}>เทอม 3</option>
+      </select>
+    </div>
+    
+    <div class="form-group mb-0">
+      <label class="form-label">ระดับชั้น</label>
+      <select name="class" class="form-input">
+        <option value="">ทั้งหมด</option>
+        {% for c in classes %}
+          <option value="{{ c }}" {% if c == class_filter %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    
+    <div class="form-group mb-0">
+      <label class="form-label">สถานะ</label>
+      <select name="status" class="form-input">
+        <option value="">ทั้งหมด</option>
+        <option value="upcoming" {% if status_filter == "upcoming" %}selected{% endif %}>จะมาถึง</option>
+        <option value="ongoing" {% if status_filter == "ongoing" %}selected{% endif %}>กำลังสอบ</option>
+        <option value="completed" {% if status_filter == "completed" %}selected{% endif %}>สิ้นสุดแล้ว</option>
+      </select>
+    </div>
+    
+    <div class="form-group mb-0 flex items-end gap-2">
+      <button type="submit" class="btn btn-primary flex-1">
+        <i class="fas fa-search mr-2"></i>
+        ค้นหา
+      </button>
+      <a href="{% url 'invigilated_subjects' %}" class="btn btn-secondary">
+        <i class="fas fa-redo mr-2"></i>
+        รีเซ็ต
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- Search Box -->
+<div class="glass rounded-2xl p-4 border border-white/20 mb-6">
+  <div class="flex items-center gap-4">
+    <div class="flex-1 relative">
+      <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+      <input 
+        type="text" 
+        id="searchInput"
+        class="w-full pl-12 pr-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl focus:border-blue-500 focus:outline-none text-white placeholder-slate-400"
+        placeholder="ค้นหาวิชา, รหัสวิชา, ห้อง, ระดับชั้น..."
+      >
+    </div>
+    <div class="text-slate-400 text-sm">
+      แสดง <span id="displayedCount">{{ subjects|length }}</span> วิชา
+    </div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="overflow-x-auto">
+  <div class="glass rounded-2xl border border-white/20 overflow-hidden">
+    <table class="w-full">
+      <thead class="bg-slate-800/50 backdrop-blur-sm border-b border-white/10">
+        <tr>
+          <th class="px-4 py-3 text-left text-sm font-semibold text-slate-300">วิชา/ปี/เทอม</th>
+          <th class="px-4 py-3 text-left text-sm font-semibold text-slate-300">วัน/เวลา</th>
+          <th class="px-4 py-3 text-left text-sm font-semibold text-slate-300">ห้องสอบ</th>
+          <th class="px-4 py-3 text-left text-sm font-semibold text-slate-300">ครูคุมสอบ</th>
+          <th class="px-4 py-3 text-center text-sm font-semibold text-slate-300">ระดับชั้น/นักเรียน</th>
+          <th class="px-4 py-3 text-center text-sm font-semibold text-slate-300">สถานะสอบ</th>
+          <th class="px-4 py-3 text-center text-sm font-semibold text-slate-300">การเช็คชื่อของฉัน</th>
+          <th class="px-4 py-3 text-right text-sm font-semibold text-slate-300">การทำงาน</th>
+        </tr>
+      </thead>
+      <tbody id="subjectTableBody" class="divide-y divide-white/5">
+        {% for s in subjects %}
+        <tr class="subject-row border-b border-slate-700/50 transition-all duration-300" data-search="
+          {{ s.subject_name }} {{ s.subject_code }}
+          {{ s.room.name|default_if_none:'' }} {{ s.room.building.name|default_if_none:'' }}
+          {% with student_class=s.students.first.student_class|default:'' %}{{ student_class }}{% endwith %}
+          {{ s.get_term_display }} {{ s.academic_year }}
+        ">
+          <!-- วิชา -->
+          <td class="px-4 py-4">
+            <div>
+              <p class="font-semibold text-white">{{ s.subject_name }}</p>
+              <p class="text-sm text-slate-400">{{ s.subject_code }}</p>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-2">
+              <span class="chip chip-blue">ปี {{ s.academic_year }}</span>
+              <span class="chip chip-purple">{{ s.get_term_display }}</span>
+            </div>
+          </td>
+
+          <!-- วัน/เวลา -->
+          <td class="px-4 py-4">
+            <div class="space-y-2">
+              <div class="flex items-center text-white">
+                <i class="fa-regular fa-calendar mr-2 text-blue-400"></i>
+                {{ s.exam_date|date:"d/m/Y" }}
+              </div>
+              <div class="flex items-center text-slate-300">
+                <i class="fa-regular fa-clock mr-2 text-green-400"></i>
+                {{ s.start_time|time:"H:i" }}–{{ s.end_time|time:"H:i" }}
+              </div>
+            </div>
+            {% if s.get_duration %}
+              <div class="text-xs text-slate-400 mt-2">ระยะเวลา {{ s.get_duration }} นาที</div>
+            {% endif %}
+          </td>
+
+          <!-- ห้องสอบ -->
+          <td class="px-4 py-4">
+            {% if s.room %}
+              <div>
+                <p class="font-medium text-white mb-1">{{ s.room.name }}</p>
+                <div class="text-xs text-slate-400 space-y-1">
+                  {% if s.room.building %}<div><i class="fa-solid fa-building mr-1"></i>{{ s.room.building.name }}</div>{% endif %}
+                  {% if s.room.capacity %}<div><i class="fa-solid fa-users mr-1"></i>จุได้ {{ s.room.capacity }} คน</div>{% endif %}
+                </div>
+              </div>
+            {% else %}
+              <span class="chip chip-yellow">
+                <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>ยังไม่ระบุห้อง
+              </span>
+            {% endif %}
+          </td>
+
+          <!-- ครูคุมสอบ -->
+          <td class="px-4 py-4">
+            <div class="space-y-2">
+              {% if s.invigilator %}
+                <div class="flex items-center">
+                  <i class="fa-solid fa-user-check mr-2 text-green-400"></i>
+                  <span class="text-white">{{ s.invigilator.user.get_full_name }}</span>
+                </div>
+              {% else %}
+                <div class="flex items-center">
+                  <i class="fa-solid fa-user-xmark mr-2 text-red-400"></i>
+                  <span class="text-red-400">ยังไม่จัดครูหลัก</span>
+                </div>
+              {% endif %}
+              
+              {% if s.secondary_invigilator %}
+                <div class="flex items-center text-sm">
+                  <i class="fa-regular fa-user mr-2 text-slate-400"></i>
+                  <span class="text-slate-300">{{ s.secondary_invigilator.user.get_full_name }}</span>
+                </div>
+              {% else %}
+                <div class="flex items-center text-sm">
+                  <i class="fa-solid fa-user-plus mr-2 text-yellow-400"></i>
+                  <span class="text-yellow-400">ไม่มีครูสำรอง</span>
+                </div>
+              {% endif %}
+            </div>
+          </td>
+
+          <!-- ระดับชั้น/นักเรียน -->
+          <td class="px-4 py-4 text-center">
+            {% with student_count=s.get_student_count %}
+              <div class="font-semibold text-white text-lg">{{ s.students.first.student_class|default:"–" }}</div>
+              <div class="text-xs text-slate-400 mt-1">
+                {% if student_count %}{{ student_count }} คน{% else %}ไม่มีนักเรียน{% endif %}
+              </div>
+            {% endwith %}
+          </td>
+
+          <!-- สถานะสอบ -->
+          <td class="px-4 py-4 text-center">
+            {% with st=s.get_status %}
+              {% if st == "กำลังสอบ" %}
+                <span class="chip chip-purple">
+                  <i class="fa-solid fa-bolt mr-1.5 pulse-animation"></i>กำลังสอบ
+                </span>
+              {% elif st == "สิ้นสุดแล้ว" %}
+                <span class="chip chip-slate"><i class="fa-solid fa-check mr-1.5"></i>สิ้นสุดแล้ว</span>
+              {% elif st == "จะมาถึง" %}
+                <span class="chip chip-green"><i class="fa-solid fa-clock mr-1.5"></i>จะมาถึง</span>
+              {% else %}
+                <span class="chip chip-yellow"><i class="fa-solid fa-question mr-1.5"></i>ไม่ทราบสถานะ</span>
+              {% endif %}
+            {% endwith %}
+          </td>
+
+          <!-- สถานะการเช็คชื่อของครู -->
+          <td class="px-4 py-4 text-center">
+            {% if s.my_check_in_status == 'checked_in' %}
+              <span class="chip chip-green">
+                <i class="fa-solid fa-user-check mr-1.5"></i>เช็คชื่อแล้ว
+              </span>
+              {% if s.my_check_in_time %}
+                <div class="text-xs text-slate-400 mt-1">{{ s.my_check_in_time|date:"H:i น." }}</div>
+              {% endif %}
+            {% elif s.my_check_in_status == 'not_checked_in' %}
+              <span class="chip chip-yellow">
+                <i class="fa-solid fa-clock mr-1.5"></i>ยังไม่เช็คชื่อ
+              </span>
+              <div class="text-xs text-slate-400 mt-1">
+                {% if s.my_role == 'primary' %}ครูหลัก{% elif s.my_role == 'secondary' %}ครูสำรอง{% endif %}
+              </div>
+            {% else %}
+              <span class="chip chip-slate">
+                <i class="fa-solid fa-question mr-1.5"></i>ไม่ทราบสถานะ
+              </span>
+            {% endif %}
+          </td>
+
+          <!-- การทำงาน -->
+          <td class="px-4 py-4">
+            <div class="flex flex-wrap gap-2 justify-end">
+              <a href="{% url 'exam_attendance' s.id %}" class="px-3 py-2 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 rounded-lg transition-colors" title="เช็คชื่อนักเรียน">
+                <i class="fa-solid fa-clipboard-check"></i>
+              </a>
+              <a href="{% url 'exam_seating_view' s.id %}" class="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/40 text-purple-400 rounded-lg transition-colors" title="ผังที่นั่ง">
+                <i class="fa-solid fa-th-large"></i>
+              </a>
+              <a href="{% url 'generate_qr_code' s.id %}" class="px-3 py-2 bg-green-500/20 hover:bg-green-500/40 text-green-400 rounded-lg transition-colors" title="QR เข้าสอบ">
+                <i class="fa-solid fa-qrcode"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="px-6 py-16 text-center">
+            <div class="empty-state rounded-xl p-8 mx-auto max-w-md">
+              <i class="fa-regular fa-folder-open text-4xl text-slate-400 mb-4"></i>
+              <p class="text-slate-400 text-lg mb-2">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</p>
+              <p class="text-slate-500 text-sm">ลองปรับเงื่อนไขการค้นหาหรือรีเซ็ตตัวกรอง</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+/* ====== การค้นหาในตาราง ====== */
+document.getElementById('searchInput')?.addEventListener('input', function(){
+  const q = this.value.trim().toLowerCase();
+  const rows = document.querySelectorAll('#subjectTableBody tr.subject-row');
+  let shown = 0;
+  
+  rows.forEach(tr => {
+    const hay = (tr.getAttribute('data-search') || '').toLowerCase();
+    const ok = !q || hay.includes(q);
+    tr.style.display = ok ? '' : 'none';
+    if(ok) shown++;
+  });
+  
+  const counter = document.getElementById('displayedCount');
+  if (counter) counter.textContent = shown.toString();
+});
+
+/* ====== Init ====== */
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('Invigilated subjects page loaded');
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,402 @@
+{% extends 'app/base.html' %}
+
+{% block title %}รายงานการทุจริต - {{ subject.subject_name }}{% endblock %}
+
+{% block current_page %}cheating-report{% endblock %}
+
+{% block page_title %}รายงานการทุจริตในการสอบ{% endblock %}
+{% block page_subtitle %}บันทึกข้อมูลการทุจริตและมาตรการที่ดำเนินการ{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-control {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: 12px;
+        padding: 12px 16px;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        color: white;
+        outline: none;
+    }
+
+    .form-control option {
+        background: #1e293b;
+        color: white;
+    }
+
+    .form-label {
+        color: #e2e8f0;
+        font-weight: 500;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .alert-danger {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+        border-radius: 12px;
+        padding: 16px;
+    }
+
+    .cheating-type-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+
+    .cheating-type-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .cheating-type-card.selected {
+        border-color: #ef4444;
+        background: rgba(239, 68, 68, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ==================== HEADER SECTION ==================== -->
+<div class="mb-8">
+    <div class="glass rounded-3xl p-6 border border-red-500/30">
+        <div class="flex items-center space-x-4 mb-4">
+            <div class="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-2xl text-white"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold font-kanit text-red-300">รายงานการทุจริต</h2>
+                <p class="text-slate-400">{{ subject.subject_name }} - {{ subject.exam_date }}</p>
+            </div>
+        </div>
+        
+        <div class="bg-red-500/20 border border-red-500/30 rounded-xl p-4">
+            <div class="flex items-start space-x-3">
+                <i class="fas fa-info-circle text-red-400 mt-1"></i>
+                <div class="text-red-200 text-sm">
+                    <div class="font-semibold mb-2">ข้อมูลสำคัญ:</div>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>การรายงานทุจริตจะถูกบันทึกในระบบและส่งต่อให้ผู้บริหาร</li>
+                        <li>กรุณาระบุข้อมูลให้ครบถ้วนและแม่นยำ</li>
+                        <li>หลักฐานที่แนบควรชัดเจนและเกี่ยวข้องกับเหตุการณ์</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== FORM SECTION ==================== -->
+<div class="max-w-4xl mx-auto">
+    <form method="post" enctype="multipart/form-data" class="space-y-8">
+        {% csrf_token %}
+        
+        <div class="glass rounded-3xl p-8 border border-white/20">
+            <!-- Student Selection -->
+            <div class="mb-8">
+                <div class="flex items-center mb-6">
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mr-4">
+                        <i class="fas fa-user text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold font-kanit text-gradient">เลือกนักเรียน</h3>
+                </div>
+                
+                <div>
+                    <label class="form-label">นักเรียนที่ทุจริต <span class="text-red-400">*</span></label>
+                    {{ form.student }}
+                    {% if form.student.errors %}
+                        <div class="alert-danger mt-2">{{ form.student.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Cheating Type -->
+            <div class="mb-8 border-t border-white/10 pt-8">
+                <div class="flex items-center mb-6">
+                    <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-4">
+                        <i class="fas fa-list-ul text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold font-kanit text-gradient">ประเภทการทุจริต</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    {% for value, label in form.cheating_type.field.choices %}
+                    <div class="cheating-type-card glass rounded-xl p-4 border border-white/20" 
+                         onclick="selectCheatingType('{{ value }}')">
+                        <div class="flex items-center space-x-3">
+                            <input type="radio" name="cheating_type" value="{{ value }}" 
+                                   id="type_{{ value }}" class="hidden">
+                            <div class="w-8 h-8 border-2 border-red-400 rounded-full flex items-center justify-center radio-indicator">
+                                <div class="w-4 h-4 bg-red-400 rounded-full hidden"></div>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-white">{{ label }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if form.cheating_type.errors %}
+                    <div class="alert-danger">{{ form.cheating_type.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Description -->
+            <div class="mb-8 border-t border-white/10 pt-8">
+                <div class="flex items-center mb-6">
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-4">
+                        <i class="fas fa-file-alt text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold font-kanit text-gradient">รายละเอียด</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <label class="form-label">รายละเอียดการทุจริต <span class="text-red-400">*</span></label>
+                        {{ form.description }}
+                        <div class="text-slate-400 text-sm mt-2">
+                            อธิบายสิ่งที่เกิดขึ้นอย่างละเอียด เวลา สถานที่ และพฤติกรรมที่สังเกตเห็น
+                        </div>
+                        {% if form.description.errors %}
+                            <div class="alert-danger mt-2">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="form-label">มาตรการที่ดำเนินการ <span class="text-red-400">*</span></label>
+                        {{ form.action_taken }}
+                        <div class="text-slate-400 text-sm mt-2">
+                            ระบุสิ่งที่ได้ดำเนินการแล้ว เช่น ตักเตือน, ยึดกระดาษคำตอบ, ฯลฯ
+                        </div>
+                        {% if form.action_taken.errors %}
+                            <div class="alert-danger mt-2">{{ form.action_taken.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Witness -->
+            <div class="border-t border-white/10 pt-8">
+                <div class="flex items-center mb-6">
+                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-4">
+                        <i class="fas fa-eye text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold font-kanit text-gradient">พยานและเอกสาร</h3>
+                </div>
+                
+                <div>
+                    <label class="form-label">พยาน</label>
+                    {{ form.witness }}
+                    <div class="text-slate-400 text-sm mt-2">
+                        ชื่อครูหรือเจ้าหน้าที่ที่เป็นพยานในเหตุการณ์ (ถ้ามี)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Section -->
+        <div class="glass rounded-3xl p-8 border border-white/20">
+            <div class="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0 lg:space-x-6">
+                <div class="flex items-center text-slate-300">
+                    <i class="fas fa-shield-alt mr-2 text-red-400"></i>
+                    <span>ข้อมูลจะถูกเก็บเป็นความลับและใช้เพื่อการดำเนินการทางวินัยเท่านั้น</span>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button type="button" onclick="goBack()" 
+                            class="px-8 py-3 glass border border-white/20 hover:border-white/40 rounded-xl transition-all duration-300">
+                        <i class="fas fa-arrow-left mr-2"></i>กลับ
+                    </button>
+                    <button type="submit" id="submit-btn"
+                            class="px-8 py-3 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-glow-red">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>รายงานทุจริต
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ==================== CHEATING TYPE SELECTION ====================
+    function selectCheatingType(value) {
+        // Clear all selections
+        document.querySelectorAll('.cheating-type-card').forEach(card => {
+            card.classList.remove('selected');
+            const indicator = card.querySelector('.radio-indicator div');
+            indicator.classList.add('hidden');
+        });
+        
+        // Clear radio buttons
+        document.querySelectorAll('input[name="cheating_type"]').forEach(radio => {
+            radio.checked = false;
+        });
+        
+        // Set new selection
+        const selectedCard = event.currentTarget;
+        const selectedRadio = selectedCard.querySelector('input[type="radio"]');
+        
+        selectedCard.classList.add('selected');
+        selectedRadio.checked = true;
+        
+        const indicator = selectedCard.querySelector('.radio-indicator div');
+        indicator.classList.remove('hidden');
+        
+        showNotification(`เลือกประเภท: ${selectedRadio.nextElementSibling.nextElementSibling.querySelector('div').textContent}`, 'info');
+    }
+
+    // ==================== NAVIGATION ====================
+    function goBack() {
+        showConfirmModal('คุณต้องการยกเลิกการรายงานทุจริตหรือไม่?', () => {
+            window.history.back();
+        });
+    }
+
+    // ==================== FORM VALIDATION ====================
+    function validateForm() {
+        const student = document.querySelector('select[name="student"]').value;
+        const cheatingType = document.querySelector('input[name="cheating_type"]:checked');
+        const description = document.querySelector('textarea[name="description"]').value.trim();
+        const actionTaken = document.querySelector('textarea[name="action_taken"]').value.trim();
+
+        if (!student) {
+            showNotification('กรุณาเลือกนักเรียน', 'error');
+            return false;
+        }
+
+        if (!cheatingType) {
+            showNotification('กรุณาเลือกประเภทการทุจริต', 'error');
+            return false;
+        }
+
+        if (!description) {
+            showNotification('กรุณาระบุรายละเอียดการทุจริต', 'error');
+            return false;
+        }
+
+        if (!actionTaken) {
+            showNotification('กรุณาระบุมาตรการที่ดำเนินการ', 'error');
+            return false;
+        }
+
+        return true;
+    }
+
+    // ==================== FORM SUBMISSION ====================
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (!validateForm()) {
+            return false;
+        }
+
+        showConfirmModal(
+            'คุณแน่ใจหรือไม่ที่จะส่งรายงานการทุจริต? ข้อมูลจะถูกบันทึกในระบบและส่งต่อให้ผู้เกี่ยวข้อง', 
+            () => {
+                const submitBtn = document.getElementById('submit-btn');
+                
+                showLoading();
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>กำลังส่งรายงาน...';
+                
+                showNotification('กำลังบันทึกรายงานการทุจริต...', 'info');
+                
+                // Submit the form
+                e.target.submit();
+            }
+        );
+    });
+
+    // ==================== CHARACTER COUNTERS ====================
+    function addCharacterCounter(textareaId, maxLength = 500) {
+        const textarea = document.getElementById(textareaId);
+        if (!textarea) return;
+
+        const counter = document.createElement('div');
+        counter.className = 'text-slate-400 text-xs mt-1 text-right';
+        counter.id = textareaId + '_counter';
+        
+        textarea.parentNode.appendChild(counter);
+        
+        function updateCounter() {
+            const remaining = maxLength - textarea.value.length;
+            counter.textContent = `${textarea.value.length}/${maxLength} ตัวอักษร`;
+            
+            if (remaining < 50) {
+                counter.classList.add('text-yellow-400');
+                counter.classList.remove('text-slate-400');
+            } else {
+                counter.classList.add('text-slate-400');
+                counter.classList.remove('text-yellow-400');
+            }
+        }
+        
+        textarea.addEventListener('input', updateCounter);
+        updateCounter();
+    }
+
+    // ==================== PAGE INITIALIZATION ====================
+    function initializePage() {
+        console.log('⚠️ Cheating Report page loaded!');
+        
+        // Add character counters to textareas
+        addCharacterCounter('id_description', 1000);
+        addCharacterCounter('id_action_taken', 500);
+        
+        // Show warning message
+        setTimeout(() => {
+            showNotification('⚠️ การรายงานทุจริตเป็นเรื่องจริงจัง กรุณาตรวจสอบข้อมูลให้ถูกต้อง', 'warning', 8000);
+        }, 1000);
+        
+        // Auto-save draft (optional feature)
+        setInterval(() => {
+            const formData = new FormData(document.querySelector('form'));
+            const draftData = {};
+            for (let [key, value] of formData.entries()) {
+                draftData[key] = value;
+            }
+            localStorage.setItem('cheating_report_draft', JSON.stringify(draftData));
+        }, 30000); // Save every 30 seconds
+    }
+
+    // ==================== LOAD DRAFT ====================
+    function loadDraft() {
+        const draft = localStorage.getItem('cheating_report_draft');
+        if (draft && confirm('พบข้อมูลที่บันทึกไว้ล่าสุด ต้องการโหลดข้อมูลนั้นหรือไม่?')) {
+            const draftData = JSON.parse(draft);
+            
+            Object.keys(draftData).forEach(key => {
+                const element = document.querySelector(`[name="${key}"]`);
+                if (element) {
+                    if (element.type === 'radio') {
+                        const radio = document.querySelector(`[name="${key}"][value="${draftData[key]}"]`);
+                        if (radio) {
+                            radio.checked = true;
+                            radio.closest('.cheating-type-card').classList.add('selected');
+                        }
+                    } else {
+                        element.value = draftData[key];
+                    }
+                }
+            });
+        }
+    }
+
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        initializePage();
+        loadDraft();
+    });
+</script>
+{% endblock %}

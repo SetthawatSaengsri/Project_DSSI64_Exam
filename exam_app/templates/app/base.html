@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="th" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ระบบจัดการการสอบ{% endblock %}</title>
+
+    <!-- External CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'kanit': ['Kanit', 'sans-serif'],
+                        'prompt': ['Prompt', 'sans-serif'],
+                    },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'slide-up': 'slideUp 0.8s ease-out forwards',
+                        'slide-in': 'slideIn 0.5s ease-out forwards',
+                        'bounce-slow': 'bounce 3s infinite',
+                        'pulse-slow': 'pulse 3s infinite',
+                        'spin-slow': 'spin 3s linear infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+                    },
+                    boxShadow: {
+                        'glow-blue': '0 0 20px rgba(59, 130, 246, 0.5)',
+                        'glow-purple': '0 0 20px rgba(147, 51, 234, 0.5)',
+                        'glow-pink': '0 0 20px rgba(236, 72, 153, 0.5)',
+                        'glow-green': '0 0 20px rgba(34, 197, 94, 0.5)',
+                        'glow-orange': '0 0 20px rgba(249, 115, 22, 0.5)',
+                        'inner-glow': 'inset 0 0 20px rgba(255, 255, 255, 0.1)',
+                    },
+                }
+            }
+        }
+    </script>
+
+    <!-- Base Styles -->
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+        }
+
+        /* ==================== ANIMATIONS ==================== */
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            }
+            to {
+                box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes wiggle {
+            0%, 100% {
+                transform: rotate(-3deg);
+            }
+            50% {
+                transform: rotate(3deg);
+            }
+        }
+
+        /* ==================== GLASS EFFECTS ==================== */
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-dark {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* ==================== TEXT EFFECTS ==================== */
+        .text-gradient {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ==================== BACKGROUND PATTERNS ==================== */
+        .bg-mesh {
+            background-image:
+                radial-gradient(at 40% 20%, hsla(228, 100%, 74%, 1) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 1) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, hsla(355, 100%, 93%, 1) 0px, transparent 50%),
+                radial-gradient(at 80% 50%, hsla(340, 100%, 76%, 1) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, hsla(22, 100%, 77%, 1) 0px, transparent 50%),
+                radial-gradient(at 80% 100%, hsla(242, 100%, 70%, 1) 0px, transparent 50%),
+                radial-gradient(at 0% 0%, hsla(343, 100%, 76%, 1) 0px, transparent 50%);
+        }
+
+        .pattern-grid {
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* ==================== SIDEBAR ==================== */
+        .sidebar {
+            width: 280px;
+            transition: all 0.3s ease;
+            z-index: 40;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar-item {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            margin: 4px 8px;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateX(5px);
+        }
+
+        .sidebar-item.active {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .sidebar-text {
+            transition: all 0.3s ease;
+        }
+
+        .sidebar.collapsed .sidebar-text {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .sidebar.collapsed .sidebar-item {
+            justify-content: center;
+        }
+
+        /* ==================== MAIN CONTENT ==================== */
+        .main-content {
+            margin-left: 280px;
+            transition: all 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .main-content.sidebar-collapsed {
+            margin-left: 80px;
+        }
+
+        /* ==================== MOBILE RESPONSIVE ==================== */
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                height: 100vh;
+                z-index: 50;
+            }
+
+            .sidebar.mobile-open {
+                left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .main-content.sidebar-collapsed {
+                margin-left: 0;
+            }
+        }
+
+        /* ==================== SCROLLBAR ==================== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+        }
+
+        /* ==================== CUSTOM COMPONENTS ==================== */
+        .loading-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="bg-slate-900 text-white overflow-x-hidden">
+    <!-- ==================== BACKGROUND ELEMENTS ==================== -->
+    <div class="fixed inset-0 bg-mesh opacity-40 pointer-events-none"></div>
+    <div class="fixed inset-0 pattern-grid pointer-events-none"></div>
+
+    <!-- ==================== MOBILE OVERLAY ==================== -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden lg:hidden"></div>
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside id="sidebar" class="sidebar fixed left-0 top-0 h-full glass-dark border-r border-white/20 flex flex-col">
+        <!-- Sidebar Header -->
+        <div class="p-6 border-b border-white/10">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-glow-blue animate-glow">
+                        <i class="fas fa-graduation-cap text-white text-xl"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <h1 class="text-lg font-bold font-kanit text-gradient">ระบบจัดการการสอบ</h1>
+                        <p class="text-xs text-slate-400 font-prompt">Exam Management System</p>
+                    </div>
+                </div>
+                <button id="sidebarToggle" class="w-8 h-8 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg flex items-center justify-center transition-colors lg:flex hidden">
+                    <i class="fas fa-bars text-slate-400"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar Navigation -->
+        <nav class="flex-1 p-4 overflow-y-auto">
+            <div class="space-y-2">
+                {% if user.is_authenticated %}
+                {% if user.is_superuser %}
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">เครื่องมือ</p>
+                </div>
+
+                <a href="{% url 'dashboard_staff' %}" class="sidebar-item flex items-center p-3 group" data-page="dashboard">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-tachometer-alt text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">หน้าหลัก</span>
+                        <p class="text-xs text-slate-400">Dashboard</p>
+                    </div>
+                </a>
+
+                <a href="{% url 'qr_scanner' %}" class="sidebar-item flex items-center p-3 group" data-page="qr-scanner">
+                    <div class="w-10 h-10 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-qrcode text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">สแกน QR Code</span>
+                        <p class="text-xs text-slate-400">QR Scanner</p>
+                    </div>
+                </a>
+
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">จัดการการสอบ</p>
+                </div>
+
+                <a href="{% url 'exam_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="exams">
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-calendar-alt text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">จัดการการสอบ</span>
+                        <p class="text-xs text-slate-400">Exam Management</p>
+                    </div>
+                </a>
+
+                <a href="{% url 'add_exam_subject' %}" class="sidebar-item flex items-center p-3 group" data-page="add-exam">
+                    <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-plus-circle text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">เพิ่มรายวิชาสอบ</span>
+                        <p class="text-xs text-slate-400">Add Exam Subject</p>
+                    </div>
+                </a>
+
+                <a href="{% url 'import_exam_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="import-subject">
+                    <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-chalkboard-teacher text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">นำเข้าข้อมูลรายวิชา</span>
+                        <p class="text-xs text-slate-400">Subject Import</p>
+                    </div>
+                </a>
+                
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">จัดการผู้ใช้</p>
+                </div>
+
+                <a href="{% url 'user_list' %}" class="sidebar-item flex items-center p-3 group" data-page="users">
+                    <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-users text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">รายชื่อผู้ใช้</span>
+                        <p class="text-xs text-slate-400">User List</p>
+                    </div>
+                </a>
+
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2 mt-4">นำเข้าข้อมูล</p>
+                </div>
+
+                <a href="{% url 'import_teachers' %}" class="sidebar-item flex items-center p-3 group" data-page="import-teachers">
+                    <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-chalkboard-teacher text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">นำเข้าข้อมูลครู</span>
+                        <p class="text-xs text-slate-400">Teacher Import</p>
+                    </div>
+                </a>
+
+                <a href="{% url 'import_students' %}" class="sidebar-item flex items-center p-3 group" data-page="import-students">
+                    <div class="w-10 h-10 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-user-graduate text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">นำเข้าข้อมูลนักเรียน</span>
+                        <p class="text-xs text-slate-400">Student Import</p>
+                    </div>
+                </a>
+
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">จัดการระบบ</p>
+                </div>
+
+                <a href="{% url 'manage_rooms' %}" class="sidebar-item flex items-center p-3 group" data-page="rooms">
+                    <div class="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-building text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">จัดการห้องสอบ</span>
+                        <p class="text-xs text-slate-400">Room Management</p>
+                    </div>
+                </a>
+
+                {% elif user.is_teacher %}
+                <!-- TEACHER MENU -->
+                <a href="{% url 'dashboard_teacher' %}" class="sidebar-item flex items-center p-3 group" data-page="dashboard">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-tachometer-alt text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">หน้าหลัก</span>
+                        <p class="text-xs text-slate-400">Dashboard</p>
+                    </div>
+                </a>
+
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">การคุมสอบของฉัน</p>
+                </div>
+
+                <a href="{% url 'invigilated_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="exams">
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-calendar-check text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">วิชาที่คุมสอบ</span>
+                        <p class="text-xs text-slate-400">ดูรายการและประวัติการคุมสอบ</p>
+                    </div>
+                </a>
+
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">เครื่องมือ</p>
+                </div>
+                <a href="{% url 'exam_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="qr-scanner">
+                    <div class="w-10 h-10 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-qrcode text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">สแกน QR Code</span>
+                        <p class="text-xs text-slate-400">QR Scanner</p>
+                    </div>
+                </a>
+
+                {% elif user.is_student %}
+                <!-- STUDENT MENU -->
+                <a href="{% url 'dashboard_student' %}" class="sidebar-item flex items-center p-3 group" data-page="dashboard">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-tachometer-alt text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">หน้าหลัก</span>
+                        <p class="text-xs text-slate-400">Dashboard</p>
+                    </div>
+                </a>
+
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">การสอบของฉัน</p>
+                </div>
+
+                <a href="{% url 'student_exam_schedule' %}" class="sidebar-item flex items-center p-3 group" data-page="schedule">
+                    <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-calendar text-white"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">ตารางสอบ</span>
+                        <p class="text-xs text-slate-400">Exam Schedule</p>
+                    </div>
+                </a>
+
+                <div class="border-t border-white/10 my-4 mx-2"></div>
+                <div class="sidebar-text">
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">เครื่องมือ</p>
+                </div>
+
+                <a href="{% url 'dashboard_student' %}" class="sidebar-item flex items-center p-3 group" data-page="qr-scan">
+                    <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-qrcode text-white">
+                            </i>
+                    </div>
+                    <div class="sidebar-text">
+                        <span class="font-semibold">สแกน QR เข้าสอบ</span>
+                        <p class="text-xs text-slate-400">QR Check-in</p>
+                    </div>
+                </a>
+                {% endif %}
+                {% endif %}
+            </div>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="p-4 border-t border-white/10">
+            <div class="sidebar-item flex items-center p-3 cursor-pointer group" onclick="confirmLogout()">
+                <div class="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <i class="fas fa-sign-out-alt text-white"></i>
+                </div>
+                <div class="sidebar-text">
+                    <span class="font-semibold">ออกจากระบบ</span>
+                    <p class="text-xs text-slate-400">Logout</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ==================== MAIN CONTENT AREA ==================== -->
+    <div id="mainContent" class="main-content">
+        <!-- Top Bar -->
+        <header class="sticky top-0 z-30 glass-dark border-b border-white/10 backdrop-blur-sm">
+            <div class="flex items-center justify-between h-16 px-6">
+                <!-- Mobile Menu Button -->
+                <button id="mobileSidebarToggle" class="lg:hidden w-10 h-10 bg-slate-700/50 hover:bg-slate-600/50 rounded-lg flex items-center justify-center transition-colors">
+                    <i class="fas fa-bars text-slate-400"></i>
+                </button>
+
+                <!-- Page Title -->
+                <div class="flex-1 lg:ml-0 ml-4">
+                    <h1 class="text-xl font-bold font-kanit text-gradient">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <p class="text-sm text-slate-400 font-prompt">{% block page_subtitle %}ระบบจัดการการสอบ{% endblock %}</p>
+                </div>
+
+                <!-- Top Bar Actions -->
+                <div class="flex items-center space-x-4">
+                    <!-- User Profile -->
+                    {% if user.is_authenticated %}
+                    <div class="flex items-center space-x-3 glass px-4 py-2 rounded-full border border-white/20">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-white text-sm"></i>
+                        </div>
+                        <div class="hidden md:block">
+                            <p class="text-sm font-medium">{{ user.get_full_name|default:user.username }}</p>
+                            <p class="text-xs text-slate-400">
+                                {% if user.is_superuser %}
+                                แอดมินระบบ (Administrator)
+                                {% elif user.is_staff %}
+                                เจ้าหน้าที่ (Staff Member)
+                                {% elif user.is_teacher %}
+                                ครู (Teacher)
+                                {% elif user.is_student %}
+                                นักเรียน (Student)
+                                {% else %}
+                                ผู้ใช้ทั่วไป (User)
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="p-6">
+            {% block content %}
+            <!-- Default content -->
+            <div class="text-center py-16">
+                <div class="glass rounded-3xl p-12 border border-white/20 max-w-md mx-auto">
+                    <i class="fas fa-home text-6xl text-slate-400 mb-6"></i>
+                    <h3 class="text-2xl font-bold mb-4">ยินดีต้อนรับ</h3>
+                    <p class="text-slate-400">สู่ระบบจัดการการสอบออนไลน์</p>
+                </div>
+            </div>
+            {% endblock %}
+        </main>
+    </div>
+
+    <!-- ==================== NOTIFICATION SYSTEM ==================== -->
+    <div id="notifications" class="fixed top-20 right-6 z-50 space-y-3 max-w-sm"></div>
+
+    <!-- ==================== LOADING OVERLAY ==================== -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="glass rounded-2xl p-8 text-center">
+            <div class="w-16 h-16 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-spin-slow">
+                <i class="fas fa-graduation-cap text-white text-2xl"></i>
+            </div>
+            <p class="text-white font-medium">กำลังโหลด...</p>
+        </div>
+    </div>
+
+    <!-- ==================== CONFIRMATION MODAL ==================== -->
+    <div id="confirmModal" class="fixed inset-0 hidden bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="modal-content glass-dark rounded-3xl p-8 w-full max-w-md border border-white/20 transform scale-75 opacity-0 transition-all duration-300">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-exclamation-triangle text-2xl text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold font-kanit mb-2">ยืนยันการดำเนินการ</h3>
+                <p class="text-slate-400 font-prompt" id="confirmMessage">คุณแน่ใจหรือไม่ที่จะดำเนินการนี้?</p>
+            </div>
+
+            <div class="flex space-x-4">
+                <button onclick="closeConfirmModal()" class="flex-1 px-6 py-3 glass border border-white/20 hover:border-white/40 rounded-xl transition-all duration-300">
+                    <i class="fas fa-times mr-2"></i>ยกเลิก
+                </button>
+                <button id="confirmAction" class="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 rounded-xl transition-all duration-300">
+                    <i class="fas fa-check mr-2"></i>ยืนยัน
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== BASE JAVASCRIPT ==================== -->
+    <script>
+        // Global variables
+        let sidebarCollapsed = false;
+        let isMobile = window.innerWidth < 1024;
+
+        // ==================== SIDEBAR MANAGEMENT ====================
+        function initializeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+            const mobileOverlay = document.getElementById('mobileOverlay');
+
+            sidebarToggle?.addEventListener('click', toggleSidebar);
+            mobileSidebarToggle?.addEventListener('click', toggleMobileSidebar);
+            mobileOverlay?.addEventListener('click', closeMobileSidebar);
+
+            window.addEventListener('resize', function() {
+                const newIsMobile = window.innerWidth < 1024;
+                if (newIsMobile !== isMobile) {
+                    isMobile = newIsMobile;
+                    if (!isMobile) closeMobileSidebar();
+                }
+            });
+
+            setActiveMenuItem();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebarCollapsed = !sidebarCollapsed;
+
+            if (sidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('sidebar-collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('sidebar-collapsed');
+            }
+
+            localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
+        }
+
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('hidden');
+            document.body.style.overflow = sidebar.classList.contains('mobile-open') ? 'hidden' : 'auto';
+        }
+
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function setActiveMenuItem() {
+            const currentPage = '{% block current_page %}{% endblock %}';
+            const menuItems = document.querySelectorAll('.sidebar-item[data-page]');
+            menuItems.forEach(item => {
+                const page = item.getAttribute('data-page');
+                if (page === currentPage) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        // ==================== NOTIFICATION SYSTEM ====================
+        function showNotification(message, type = 'info', duration = 5000) {
+            const notificationsContainer = document.getElementById('notifications');
+            const notification = document.createElement('div');
+
+            notification.className = `notification glass-dark rounded-xl p-4 border-l-4 transform translate-x-full opacity-0 transition-all duration-500 ${
+                type === 'success' ? 'border-green-400' :
+                type === 'error' ? 'border-red-400' :
+                type === 'warning' ? 'border-yellow-400' : 'border-blue-400'
+            }`;
+
+            notification.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 mt-0.5">
+                        <div class="w-6 h-6 ${
+                            type === 'success' ? 'bg-green-500' :
+                            type === 'error' ? 'bg-red-500' :
+                            type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+                        } rounded-full flex items-center justify-center">
+                            <i class="fas ${
+                                type === 'success' ? 'fa-check' :
+                                type === 'error' ? 'fa-times' :
+                                type === 'warning' ? 'fa-exclamation' : 'fa-info'
+                            } text-white text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white">${message}</p>
+                    </div>
+                    <button onclick="removeNotification(this)" class="flex-shrink-0 text-slate-400 hover:text-white transition-colors">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `;
+
+            notificationsContainer.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+                notification.style.opacity = '1';
+            }, 100);
+
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    removeNotification(notification.querySelector('button'));
+                }
+            }, duration);
+        }
+
+        function removeNotification(button) {
+            const notification = button.closest('.notification');
+            notification.style.transform = 'translateX(100%)';
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                if (notification.parentNode) notification.remove();
+            }, 300);
+        }
+
+        // ==================== LOADING FUNCTIONS ====================
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        // ==================== MODAL FUNCTIONS ====================
+        function showConfirmModal(message, callback) {
+            const modal = document.getElementById('confirmModal');
+            const modalContent = modal.querySelector('.modal-content');
+            const messageElement = document.getElementById('confirmMessage');
+            const confirmButton = document.getElementById('confirmAction');
+
+            messageElement.textContent = message;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+
+            setTimeout(() => {
+                modalContent.style.transform = 'scale(1)';
+                modalContent.style.opacity = '1';
+            }, 10);
+
+            confirmButton.onclick = () => {
+                closeConfirmModal();
+                callback();
+            };
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirmModal');
+            const modalContent = modal.querySelector('.modal-content');
+            modalContent.style.transform = 'scale(0.75)';
+            modalContent.style.opacity = '0';
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }, 300);
+        }
+
+        // ==================== USER ACTIONS ====================
+        function confirmLogout() {
+            showConfirmModal('คุณแน่ใจหรือไม่ที่จะออกจากระบบ?', () => {
+                showLoading();
+                showNotification('กำลังออกจากระบบ...', 'info');
+                setTimeout(() => {
+                    window.location.href = '{% url "logout_user" %}';
+                }, 1000);
+            });
+        }
+
+        // ==================== KEYBOARD SHORTCUTS ====================
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (!document.getElementById('confirmModal').classList.contains('hidden')) {
+                    closeConfirmModal();
+                } else if (document.getElementById('sidebar').classList.contains('mobile-open')) {
+                    closeMobileSidebar();
+                }
+            }
+
+            if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                e.preventDefault();
+                if (isMobile) {
+                    toggleMobileSidebar();
+                } else {
+                    toggleSidebar();
+                }
+            }
+        });
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Base Template loaded successfully!');
+            initializeSidebar();
+
+            const savedState = localStorage.getItem('sidebarCollapsed');
+            if (savedState === 'true' && !isMobile) {
+                toggleSidebar();
+            }
+
+            if (typeof initializePage === 'function') {
+                initializePage();
+            }
+
+            setTimeout(() => {
+                showNotification('ยินดีต้อนรับสู่ระบบจัดการการสอบ', 'success');
+            }, 500);
+        });
+
+        // ==================== ERROR HANDLING ====================
+        window.addEventListener('error', function(e) {
+            console.error('JavaScript error:', e.error);
+            showNotification('เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง', 'error');
+            hideLoading();
+        });
+    </script>
+
+    <!-- ==================== PAGE SPECIFIC FUNCTIONS ====================-->
+    {% block extra_js %}{% endblock %}
+
+    <!-- Page specific scripts -->
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

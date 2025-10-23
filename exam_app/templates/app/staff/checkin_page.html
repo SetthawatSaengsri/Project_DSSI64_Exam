@@ -1,0 +1,491 @@
+{% extends 'app/base.html' %}
+
+{% block title %}เช็คชื่อเข้าสอบ - {{ subject.subject_name }}{% endblock %}
+
+{% block page_title %}เช็คชื่อเข้าสอบ{% endblock %}
+{% block page_subtitle %}{{ subject.subject_name }} - {{ subject.subject_code }}{% endblock %}
+
+{% block current_page %}checkin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .checkin-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .status-badge {
+        animation: pulse 2s infinite;
+    }
+    
+    .scan-animation {
+        animation: scan 2s ease-in-out infinite;
+    }
+    
+    @keyframes scan {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    
+    .floating-orb {
+        position: absolute;
+        border-radius: 50%;
+        background: linear-gradient(45deg, rgba(59, 130, 246, 0.3), rgba(147, 51, 234, 0.3));
+        filter: blur(1px);
+        animation: float 6s ease-in-out infinite;
+    }
+    
+    .floating-orb:nth-child(1) {
+        width: 80px;
+        height: 80px;
+        top: 20%;
+        left: 10%;
+        animation-delay: 0s;
+    }
+    
+    .floating-orb:nth-child(2) {
+        width: 60px;
+        height: 60px;
+        top: 60%;
+        right: 15%;
+        animation-delay: 2s;
+    }
+    
+    .floating-orb:nth-child(3) {
+        width: 100px;
+        height: 100px;
+        bottom: 20%;
+        left: 20%;
+        animation-delay: 4s;
+    }
+
+    .current-time {
+        font-family: 'Courier New', monospace;
+        font-size: 1.2rem;
+        color: #60a5fa;
+        text-align: center;
+        padding: 0.5rem;
+        background: rgba(59, 130, 246, 0.1);
+        border-radius: 0.5rem;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- CSRF Token -->
+{% csrf_token %}
+
+<!-- Floating Background Elements -->
+<div class="floating-orb"></div>
+<div class="floating-orb"></div>
+<div class="floating-orb"></div>
+
+<div class="min-h-screen flex items-center justify-center relative">
+    <div class="w-full max-w-2xl mx-auto p-6">
+        <!-- Main Check-in Card -->
+        <div class="checkin-card rounded-3xl p-8 shadow-2xl border border-white/20 relative overflow-hidden">
+            <!-- Header Section -->
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-glow-blue animate-glow">
+                    <i class="fas fa-qrcode text-white text-3xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold font-kanit text-gradient mb-2">เช็คชื่อเข้าสอบ</h1>
+                <p class="text-slate-400 font-prompt">กรุณาแสกน QR Code หรือกดปุ่มเพื่อเช็คชื่อ</p>
+                
+                <!-- Current Time Display -->
+                <div class="current-time mt-4">
+                    เวลาปัจจุบัน: <span id="currentTime"></span>
+                </div>
+            </div>
+
+            <!-- Exam Information Card -->
+            <div class="glass-dark rounded-2xl p-6 mb-6 border border-white/10">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Left Column -->
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-book text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400">รายวิชา</p>
+                                <p class="font-semibold text-white">{{ subject.subject_name }}</p>
+                                <p class="text-sm text-slate-300">{{ subject.subject_code }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-calendar text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400">วันที่สอบ</p>
+                                <p class="font-semibold text-white">{{ subject.exam_date|date:"j F Y" }}</p>
+                                <p class="text-sm text-slate-300">{{ subject.exam_date|date:"l" }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-clock text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400">เวลาสอบ</p>
+                                <p class="font-semibold text-white">{{ subject.start_time|time:"H:i" }} - {{ subject.end_time|time:"H:i" }}</p>
+                                <p class="text-sm text-slate-300">{{ subject.get_duration }} นาที</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="space-y-4">
+                        {% if subject.room %}
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-door-open text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400">ห้องสอบ</p>
+                                <p class="font-semibold text-white">{{ subject.room.name }}</p>
+                                <p class="text-sm text-slate-300">{{ subject.room.building.name }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-chalkboard-teacher text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400">ครูผู้คุมสอบ</p>
+                                {% if subject.invigilator %}
+                                <p class="font-semibold text-white">{{ subject.invigilator.user.get_full_name }}</p>
+                                {% else %}
+                                <p class="font-semibold text-slate-500">ยังไม่ระบุ</p>
+                                {% endif %}
+                                {% if subject.secondary_invigilator %}
+                                <p class="text-sm text-slate-300">{{ subject.secondary_invigilator.user.get_full_name }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if user_type == 'student' and seat_number %}
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-chair text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400">เลขที่นั่ง</p>
+                                <p class="font-semibold text-white text-2xl">{{ seat_number }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Information -->
+            <div class="glass rounded-xl p-4 mb-6 border border-white/10">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center">
+                        {% if user_type == 'student' %}
+                            <i class="fas fa-user-graduate text-white"></i>
+                        {% elif user_type == 'teacher' %}
+                            <i class="fas fa-user-tie text-white"></i>
+                        {% else %}
+                            <i class="fas fa-user-shield text-white"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400">ผู้เข้าสอบ</p>
+                        <p class="font-semibold text-white">{{ profile.user.get_full_name }}</p>
+                        <div class="text-sm text-slate-300">
+                            {% if user_type == 'student' %}
+                                <p>รหัสนักเรียน: {{ profile.student_id }}</p>
+                                <p>เลขที่: {{ profile.student_number }} ชั้น: {{ profile.student_class }}</p>
+                            {% elif user_type == 'teacher' %}
+                                <p>ครู - รหัส: {{ profile.teacher_id }}</p>
+                            {% else %}
+                                <p>เจ้าหน้าที่</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Check-in Status -->
+            {% if already_checked %}
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center space-x-2 bg-green-500/20 border border-green-400/30 rounded-full px-6 py-3 status-badge">
+                    <i class="fas fa-check-circle text-green-400"></i>
+                    <span class="text-green-300 font-medium">เช็คชื่อเรียบร้อยแล้ว</span>
+                </div>
+                <p class="text-slate-400 mt-2">เวลาเช็คชื่อ: {{ checkin_time|time:"H:i" }} น.</p>
+            </div>
+            {% else %}
+            <!-- Check-in Button -->
+            <div class="text-center mb-6">
+                <button id="checkinBtn" 
+                        class="inline-flex items-center space-x-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 px-8 py-4 rounded-2xl font-semibold text-white transition-all duration-300 transform hover:scale-105 shadow-glow-blue scan-animation">
+                    <i class="fas fa-qrcode text-xl"></i>
+                    <span class="text-lg">เช็คชื่อเข้าสอบ</span>
+                </button>
+                <p class="text-slate-400 mt-3 text-sm">กดเพื่อยืนยันการเข้าสอบ</p>
+            </div>
+            {% endif %}
+
+            <!-- Instructions -->
+            <div class="glass rounded-xl p-4 border border-white/10">
+                <h3 class="font-semibold text-white mb-3 flex items-center">
+                    <i class="fas fa-info-circle text-blue-400 mr-2"></i>
+                    คำแนะนำ
+                </h3>
+                <ul class="text-sm text-slate-300 space-y-2">
+                    <li class="flex items-start space-x-2">
+                        <i class="fas fa-check text-green-400 mt-1"></i>
+                        <span>สามารถเช็คชื่อได้ตั้งแต่เวลาสอบเริ่มต้น ถึง เวลาสอบสิ้นสุดเท่านั้น</span>
+                    </li>
+                    <li class="flex items-start space-x-2">
+                        <i class="fas fa-clock text-yellow-400 mt-1"></i>
+                        <span>เช็คชื่อหลังเริ่มสอบ 30 นาที จะถือเป็น "มาสาย"</span>
+                    </li>
+                    <li class="flex items-start space-x-2">
+                        <i class="fas fa-times text-red-400 mt-1"></i>
+                        <span>หากไม่เช็คชื่อจนหมดเวลาสอบ จะถือเป็น "ขาดสอบ"</span>
+                    </li>
+                    <li class="flex items-start space-x-2">
+                        <i class="fas fa-user-tie text-blue-400 mt-1"></i>
+                        <span>กรณี "ลาป่วย" หรือ "ทุจริต" ครูผู้คุมสอบจะบันทึกในระบบ</span>
+                    </li>
+                    {% if user_type == 'student' %}
+                    <li class="flex items-start space-x-2">
+                        <i class="fas fa-exclamation-triangle text-yellow-400 mt-1"></i>
+                        <span>ห้ามนำอุปกรณ์อิเล็กทรอนิกส์เข้าห้องสอบ</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-3 gap-4 mt-6">
+            <div class="glass rounded-xl p-4 text-center border border-white/10">
+                <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-users text-white text-sm"></i>
+                </div>
+                <p class="text-xs text-slate-400">จำนวนผู้เข้าสอบ</p>
+                <p class="font-bold text-white">{{ subject.students.count }}</p>
+            </div>
+            
+            {% if subject.room %}
+            <div class="glass rounded-xl p-4 text-center border border-white/10">
+                <div class="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-chair text-white text-sm"></i>
+                </div>
+                <p class="text-xs text-slate-400">ความจุห้อง</p>
+                <p class="font-bold text-white">{{ subject.room.capacity }}</p>
+            </div>
+            {% else %}
+            <div class="glass rounded-xl p-4 text-center border border-white/10">
+                <div class="w-8 h-8 bg-gradient-to-r from-gray-500 to-slate-500 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-question text-white text-sm"></i>
+                </div>
+                <p class="text-xs text-slate-400">ห้องสอบ</p>
+                <p class="font-bold text-white">ยังไม่ระบุ</p>
+            </div>
+            {% endif %}
+            
+            <div class="glass rounded-xl p-4 text-center border border-white/10">
+                <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-clock text-white text-sm"></i>
+                </div>
+                <p class="text-xs text-slate-400">ระยะเวลา</p>
+                <p class="font-bold text-white">{{ subject.get_duration }} น.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div id="successModal" class="fixed inset-0 hidden bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="glass-dark rounded-3xl p-8 w-full max-w-md border border-white/20 text-center">
+        <div class="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-6 animate-bounce">
+            <i class="fas fa-check text-white text-3xl"></i>
+        </div>
+        <h3 class="text-2xl font-bold font-kanit text-green-400 mb-4">เช็คชื่อสำเร็จ!</h3>
+        <p class="text-slate-300 mb-2">เวลาเช็คชื่อ: <span id="checkinTime" class="font-semibold"></span></p>
+        <p class="text-slate-300 mb-6">สถานะ: <span id="checkinStatus" class="font-semibold"></span></p>
+        <button onclick="closeSuccessModal()" 
+                class="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300">
+            ปิด
+        </button>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div id="errorModal" class="fixed inset-0 hidden bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="glass-dark rounded-3xl p-8 w-full max-w-md border border-white/20 text-center">
+        <div class="w-20 h-20 bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-exclamation-triangle text-white text-3xl"></i>
+        </div>
+        <h3 class="text-2xl font-bold font-kanit text-red-400 mb-4">ไม่สามารถเช็คชื่อได้</h3>
+        <p class="text-slate-300 mb-6" id="errorMessage"></p>
+        <button onclick="closeErrorModal()" 
+                class="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300">
+            ปิด
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ตัวแปรสำหรับ timezone offset และเวลาจากเซิร์ฟเวอร์
+let serverTimeOffset = 0;
+
+// ฟังก์ชันดึงเวลาจากเซิร์ฟเวอร์เพื่อซิงค์
+async function syncServerTime() {
+    try {
+        const response = await fetch('/api/server-time/');
+        if (response.ok) {
+            const data = await response.json();
+            const serverTime = new Date(data.server_time);
+            const clientTime = new Date();
+            serverTimeOffset = serverTime.getTime() - clientTime.getTime();
+        }
+    } catch (error) {
+        console.log('ไม่สามารถซิงค์เวลากับเซิร์ฟเวอร์ได้:', error);
+    }
+}
+
+// Update current time every second โดยใช้เวลาที่ซิงค์กับเซิร์ฟเวอร์
+function updateCurrentTime() {
+    const now = new Date();
+    const syncedTime = new Date(now.getTime() + serverTimeOffset);
+    
+    const timeString = syncedTime.toLocaleTimeString('th-TH', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    
+    const currentTimeElement = document.getElementById('currentTime');
+    if (currentTimeElement) {
+        currentTimeElement.textContent = timeString;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // ซิงค์เวลากับเซิร์ฟเวอร์ก่อน
+    syncServerTime().then(() => {
+        updateCurrentTime();
+        setInterval(updateCurrentTime, 1000);
+    });
+    
+    const checkinBtn = document.getElementById('checkinBtn');
+    
+    if (checkinBtn) {
+        checkinBtn.addEventListener('click', function() {
+            performCheckin();
+        });
+    }
+});
+
+function performCheckin() {
+    const checkinBtn = document.getElementById('checkinBtn');
+    
+    // Disable button and show loading
+    checkinBtn.disabled = true;
+    checkinBtn.innerHTML = `
+        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+        <span>กำลังเช็คชื่อ...</span>
+    `;
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showSuccessModal(data.time, data.status_text);
+            // Hide the check-in button and show success status
+            checkinBtn.parentElement.innerHTML = `
+                <div class="inline-flex items-center space-x-2 bg-green-500/20 border border-green-400/30 rounded-full px-6 py-3 status-badge">
+                    <i class="fas fa-check-circle text-green-400"></i>
+                    <span class="text-green-300 font-medium">เช็คชื่อเรียบร้อยแล้ว</span>
+                </div>
+                <p class="text-slate-400 mt-2">เวลาเช็คชื่อ: ${data.time} น.</p>
+            `;
+        } else if (data.status === 'info') {
+            showErrorModal(data.message);
+            resetCheckinButton();
+        } else {
+            showErrorModal(data.message);
+            resetCheckinButton();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showErrorModal('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+        resetCheckinButton();
+    });
+}
+
+function resetCheckinButton() {
+    const checkinBtn = document.getElementById('checkinBtn');
+    if (checkinBtn) {
+        checkinBtn.disabled = false;
+        checkinBtn.innerHTML = `
+            <i class="fas fa-qrcode text-xl"></i>
+            <span class="text-lg">เช็คชื่อเข้าสอบ</span>
+        `;
+    }
+}
+
+function showSuccessModal(time, status) {
+    const modal = document.getElementById('successModal');
+    const timeElement = document.getElementById('checkinTime');
+    const statusElement = document.getElementById('checkinStatus');
+    
+    // ใช้เวลาจากเซิร์ฟเวอร์ที่ส่งมา ไม่ใช่เวลาจาก JavaScript
+    timeElement.textContent = time + ' น.';
+    statusElement.textContent = status;
+    
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function showErrorModal(message) {
+    const modal = document.getElementById('errorModal');
+    const messageElement = document.getElementById('errorMessage');
+    
+    messageElement.textContent = message;
+    
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeSuccessModal() {
+    const modal = document.getElementById('successModal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+function closeErrorModal() {
+    const modal = document.getElementById('errorModal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+</script>
+{% endblock %}

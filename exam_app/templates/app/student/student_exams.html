@@ -1,0 +1,915 @@
+{% extends "app/base.html" %}
+
+{% block title %}วิชาสอบของฉัน | ระบบจัดการการสอบ{% endblock %}
+{% block page_title %}วิชาสอบของฉัน{% endblock %}
+{% block page_subtitle %}ตารางสอบและประวัติการเข้าสอบทั้งหมดของคุณ{% endblock %}
+{% block current_page %}student_exams{% endblock %}
+
+{% block extra_css %}
+<style>
+  .glass-dark {
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .chip{display:inline-flex;align-items:center;padding:.25rem .625rem;border-radius:9999px;font-size:.75rem;line-height:1rem;font-weight:600;border-width:1px}
+  .chip-blue{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.1);color:#3b82f6}
+  .chip-green{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#22c55e}
+  .chip-yellow{border-color:rgba(234,179,8,.5);background:rgba(234,179,8,.12);color:#eab308}
+  .chip-red{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.1);color:#ef4444}
+  .chip-slate{border-color:rgba(148,163,184,.35);background:rgba(148,163,184,.12);color:#94a3b8}
+  .chip-purple{border-color:rgba(147,51,234,.5);background:rgba(147,51,234,.1);color:#9333ea}
+  .chip-cyan{border-color:rgba(6,182,212,.5);background:rgba(6,182,212,.1);color:#06b6d4}
+  .chip-orange{border-color:rgba(249,115,22,.5);background:rgba(249,115,22,.1);color:#f97316}
+  
+  .row-hover {
+    transition: all 0.3s ease;
+  }
+  .row-hover:hover {
+    background: rgba(59, 130, 246, 0.1);
+    transform: scale(1.01);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+  }
+
+  .empty-state {
+    background: rgba(71, 85, 105, 0.2);
+    border: 2px dashed rgba(148, 163, 184, 0.3);
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-label {
+    display: block;
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-input, .form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(51, 65, 85, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.75rem;
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+  }
+  
+  .form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    transform: translateY(-1px);
+  }
+  
+  .btn-secondary {
+    background: rgba(51, 65, 85, 0.8);
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+  }
+  
+  .btn-secondary:hover {
+    background: rgba(71, 85, 105, 0.8);
+    border-color: rgba(148, 163, 184, 0.5);
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .status-attended {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+
+  .status-absent {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .status-excused {
+    background: rgba(6, 182, 212, 0.2);
+    color: #06b6d4;
+    border: 1px solid rgba(6, 182, 212, 0.3);
+  }
+
+  .status-late {
+    background: rgba(234, 179, 8, 0.2);
+    color: #eab308;
+    border: 1px solid rgba(234, 179, 8, 0.3);
+  }
+
+  .status-cheating {
+    background: rgba(249, 115, 22, 0.2);
+    color: #f97316;
+    border: 1px solid rgba(249, 115, 22, 0.3);
+  }
+
+  .pulse-animation {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: .5;
+    }
+  }
+
+  /* Tab Styles */
+  .tab-btn {
+    padding: 0.75rem 1.5rem;
+    background: rgba(51, 65, 85, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.75rem;
+    color: #94a3b8;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .tab-btn.active {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  }
+
+  .tab-btn:hover:not(.active) {
+    background: rgba(71, 85, 105, 0.8);
+    border-color: rgba(148, 163, 184, 0.5);
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="mb-12 text-center space-y-6">
+    <div class="animate-slide-up">
+        <h2 class="text-4xl lg:text-5xl font-bold font-kanit mb-4">
+            <span class="text-gradient">วิชาสอบของฉัน</span>
+        </h2>
+        <p class="text-xl text-slate-300 font-prompt">ตารางสอบและประวัติการเข้าสอบทั้งหมดของคุณ</p>
+    </div>
+    <div class="flex justify-center">
+        <div class="w-32 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+    </div>
+</div>
+
+<!-- Tab Navigation -->
+<div class="flex justify-center gap-4 mb-8">
+  <button class="tab-btn active" onclick="switchTab('schedule')">
+    <i class="fas fa-calendar-days mr-2"></i>ตารางสอบ
+  </button>
+  <button class="tab-btn" onclick="switchTab('history')">
+    <i class="fas fa-history mr-2"></i>ประวัติการสอบ
+  </button>
+</div>
+
+<!-- Schedule Tab -->
+<div id="scheduleTab" class="tab-content active">
+  <!-- Statistics Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="glass rounded-2xl p-6 border border-white/20 hover:border-blue-500/50 transition-all duration-300 animate-float">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-400 text-sm mb-1">วิชาทั้งหมด</p>
+          <p class="text-3xl font-bold text-blue-400">{{ total_subjects }}</p>
+        </div>
+        <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+          <i class="fa-solid fa-book text-blue-400 text-xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="glass rounded-2xl p-6 border border-white/20 hover:border-green-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.2s;">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-400 text-sm mb-1">สอบแล้ว</p>
+          <p class="text-3xl font-bold text-green-400">{{ completed_count }}</p>
+        </div>
+        <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+          <i class="fa-solid fa-check-circle text-green-400 text-xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="glass rounded-2xl p-6 border border-white/20 hover:border-purple-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.4s;">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-400 text-sm mb-1">กำลังจะสอบ</p>
+          <p class="text-3xl font-bold text-purple-400">{{ upcoming_count }}</p>
+        </div>
+        <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+          <i class="fa-solid fa-calendar-days text-purple-400 text-xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="glass rounded-2xl p-6 border border-white/20 hover:border-yellow-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.6s;">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-400 text-sm mb-1">อัตราเข้าสอบ</p>
+          <p class="text-3xl font-bold text-yellow-400">{{ attendance_rate }}%</p>
+        </div>
+        <div class="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+          <i class="fa-solid fa-percentage text-yellow-400 text-xl"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search and Filter -->
+  <div class="glass rounded-2xl p-6 border border-white/20 mb-8">
+    <h3 class="text-lg font-semibold mb-4 flex items-center">
+      <i class="fas fa-filter mr-2 text-blue-400"></i>
+      ตัวกรองและการค้นหา
+    </h3>
+    <form method="get" class="grid lg:grid-cols-4 md:grid-cols-2 gap-4">
+      <input type="hidden" name="view" value="schedule">
+      <div class="form-group mb-0">
+        <label class="form-label">ปีการศึกษา</label>
+        <select name="year" class="form-input">
+          <option value="">ทั้งหมด</option>
+          {% for y in years %}
+            <option value="{{ y }}" {% if y == year_filter %}selected{% endif %}>ปี {{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div class="form-group mb-0">
+        <label class="form-label">เทอม</label>
+        <select name="term" class="form-input">
+          <option value="">ทั้งหมด</option>
+          <option value="1" {% if "1" == term_filter %}selected{% endif %}>เทอม 1</option>
+          <option value="2" {% if "2" == term_filter %}selected{% endif %}>เทอม 2</option>
+          <option value="3" {% if "3" == term_filter %}selected{% endif %}>เทอม 3</option>
+        </select>
+      </div>
+
+      <div class="form-group mb-0">
+        <label class="form-label">สถานะ</label>
+        <select name="status" class="form-input">
+          <option value="">ทั้งหมด</option>
+          <option value="upcoming" {% if status_filter == "upcoming" %}selected{% endif %}>กำลังจะสอบ</option>
+          <option value="ongoing" {% if status_filter == "ongoing" %}selected{% endif %}>กำลังสอบ</option>
+          <option value="completed" {% if status_filter == "completed" %}selected{% endif %}>สอบแล้ว</option>
+        </select>
+      </div>
+      
+      <div class="form-group mb-0">
+        <label class="form-label">&nbsp;</label>
+        <div class="flex gap-3">
+          <button type="submit" class="btn btn-primary flex-1">
+            <i class="fa-solid fa-filter mr-2"></i>กรองข้อมูล
+          </button>
+          <a href="{% url 'student_exams' %}" class="btn btn-secondary">
+            <i class="fa-solid fa-rotate-right mr-2"></i>รีเซ็ต
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="flex flex-wrap gap-4 mb-8">
+    <button onclick="location.reload()" class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg">
+      <i class="fas fa-sync-alt mr-2"></i>รีเฟรชข้อมูล
+    </button>
+  </div>
+
+  <!-- Subjects Table -->
+  <div class="glass rounded-2xl border border-white/20 overflow-hidden">
+    <div class="p-6 border-b border-white/10">
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <h3 class="text-xl font-bold text-white flex items-center">
+          <i class="fas fa-list mr-3 text-blue-400"></i>
+          ตารางสอบของฉัน
+        </h3>
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <input id="scheduleSearch" type="text" placeholder="ค้นหา ชื่อวิชา/รหัสวิชา/ห้อง..."
+                   class="w-80 pl-10 pr-4 py-2.5 form-input">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          </div>
+        </div>
+      </div>
+      
+      <div class="text-sm text-slate-400">
+        แสดง <span id="scheduleDisplayedCount">{{ subjects|length }}</span> จาก {{ subjects|length }} รายการ
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-800/50">
+            <th class="text-left px-4 py-3 text-slate-300 font-semibold">วิชา</th>
+            <th class="text-left px-4 py-3 text-slate-300 font-semibold">วัน/เวลา</th>
+            <th class="text-left px-4 py-3 text-slate-300 font-semibold">ห้องสอบ</th>
+            <th class="text-left px-4 py-3 text-slate-300 font-semibold">ครูผู้คุมสอบ</th>
+            <th class="text-center px-4 py-3 text-slate-300 font-semibold">สถานะ</th>
+          </tr>
+        </thead>
+        <tbody id="scheduleTableBody" class="divide-y divide-white/5">
+          {% for s in subjects %}
+          <tr class="row-hover border-b border-slate-700/50 transition-all duration-300" data-search="
+            {{ s.subject_name }} {{ s.subject_code }}
+            {{ s.room.name|default_if_none:'' }} {{ s.room.building.name|default_if_none:'' }}
+            {{ s.get_term_display }} {{ s.academic_year }}
+          ">
+            <!-- วิชา -->
+            <td class="px-4 py-4">
+              <div>
+                <p class="font-semibold text-white">{{ s.subject_name }}</p>
+                <p class="text-sm text-slate-400">{{ s.subject_code }}</p>
+              </div>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <span class="chip chip-blue">ปี {{ s.academic_year }}</span>
+                <span class="chip chip-purple">{{ s.get_term_display }}</span>
+              </div>
+            </td>
+
+            <!-- วัน/เวลา -->
+            <td class="px-4 py-4">
+              <div class="space-y-2">
+                <div class="flex items-center text-white">
+                  <i class="fa-regular fa-calendar mr-2 text-blue-400"></i>
+                  {{ s.exam_date|date:"d/m/Y" }}
+                </div>
+                <div class="flex items-center text-slate-300">
+                  <i class="fa-regular fa-clock mr-2 text-green-400"></i>
+                  {{ s.start_time|time:"H:i" }}—{{ s.end_time|time:"H:i" }}
+                </div>
+              </div>
+              {% if s.get_duration %}
+                <div class="text-xs text-slate-400 mt-2">
+                  <i class="fa-solid fa-hourglass-half mr-1"></i>{{ s.get_duration }} นาที
+                </div>
+              {% endif %}
+            </td>
+
+            <!-- ห้องสอบ -->
+            <td class="px-4 py-4">
+              {% if s.room %}
+                <div>
+                  <p class="font-medium text-white mb-1">
+                    <i class="fa-solid fa-door-open mr-2 text-blue-400"></i>{{ s.room.name }}
+                  </p>
+                  <div class="text-xs text-slate-400 space-y-1">
+                    {% if s.room.building %}
+                      <div><i class="fa-solid fa-building mr-1"></i>{{ s.room.building.name }}</div>
+                    {% endif %}
+                    {% if s.room.capacity %}
+                      <div><i class="fa-solid fa-users mr-1"></i>จุได้ {{ s.room.capacity }} คน</div>
+                    {% endif %}
+                  </div>
+                </div>
+              {% else %}
+                <span class="chip chip-yellow">
+                  <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>ยังไม่ระบุห้อง
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- ครูคุมสอบ -->
+            <td class="px-4 py-4">
+              <div class="space-y-2">
+                {% if s.invigilator %}
+                  <div class="flex items-center">
+                    <i class="fa-solid fa-user-check mr-2 text-green-400"></i>
+                    <span class="text-white">{{ s.invigilator.user.get_full_name }}</span>
+                  </div>
+                {% else %}
+                  <div class="flex items-center">
+                    <i class="fa-solid fa-user-xmark mr-2 text-red-400"></i>
+                    <span class="text-red-400">ยังไม่จัดครูหลัก</span>
+                  </div>
+                {% endif %}
+                
+                {% if s.secondary_invigilator %}
+                  <div class="flex items-center text-sm">
+                    <i class="fa-regular fa-user mr-2 text-slate-400"></i>
+                    <span class="text-slate-300">{{ s.secondary_invigilator.user.get_full_name }}</span>
+                  </div>
+                {% endif %}
+              </div>
+            </td>
+
+            <!-- สถานะ -->
+            <td class="px-4 py-4 text-center">
+              {% with st=s.get_status %}
+                {% if st == "กำลังสอบ" %}
+                  <span class="chip chip-purple">
+                    <i class="fa-solid fa-bolt mr-1.5 pulse-animation"></i>กำลังสอบ
+                  </span>
+                {% elif st == "สิ้นสุดแล้ว" %}
+                  <span class="chip chip-slate">
+                    <i class="fa-solid fa-check mr-1.5"></i>สิ้นสุดแล้ว
+                  </span>
+                {% elif st == "จะมาถึง" %}
+                  <span class="chip chip-green">
+                    <i class="fa-solid fa-clock mr-1.5"></i>จะมาถึง
+                  </span>
+                {% else %}
+                  <span class="chip chip-yellow">
+                    <i class="fa-solid fa-question mr-1.5"></i>ไม่ทราบสถานะ
+                  </span>
+                {% endif %}
+              {% endwith %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="px-6 py-16 text-center">
+              <div class="empty-state rounded-xl p-8 mx-auto max-w-md">
+                <i class="fa-regular fa-folder-open text-4xl text-slate-400 mb-4"></i>
+                <p class="text-slate-400 text-lg mb-2">ไม่พบข้อมูลตารางสอบ</p>
+                <p class="text-slate-500 text-sm">ยังไม่มีวิชาสอบที่ลงทะเบียนหรือลองปรับเงื่อนไขการค้นหา</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- History Tab -->
+<div id="historyTab" class="tab-content">
+  <!-- History Statistics Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+    <div class="glass rounded-2xl p-6 border border-white/20 hover:border-blue-500/50 transition-all duration-300 animate-float">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-400 text-sm mb-1">ทั้งหมด</p>
+          <p class="text-3xl font-bold text-blue-400">{{ history_stats.total }}</p>
+        </div>
+        <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+          <i class="fa-solid fa-list-check text-blue-400 text-xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="glass rounded-2xl p-6 border border-white/20 hover:border-green-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.1s;">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-400 text-sm mb-1">ตรงเวลา</p>
+          <p class="text-3xl font-bold text-green-400">{{ history_stats.on_time }}</p>
+        </div>
+        <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+          <i class="fa-solid fa-check-circle text-green-400 text-xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="glass rounded-2xl p-6 border border-white/20 hover:border-yellow-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.2s;">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-400 text-sm mb-1">สาย</p>
+          <p class="text-3xl font-bold text-yellow-400">{{ history_stats.late }}</p>
+        </div>
+        <div class="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+          <i class="fa-solid fa-clock text-yellow-400 text-xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="glass rounded-2xl p-6 border border-white/20 hover:border-red-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.3s;">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-400 text-sm mb-1">ขาดสอบ</p>
+          <p class="text-3xl font-bold text-red-400">{{ history_stats.absent }}</p>
+        </div>
+        <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
+          <i class="fa-solid fa-user-xmark text-red-400 text-xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass rounded-2xl p-6 border border-white/20 hover:border-cyan-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.4s;">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-400 text-sm mb-1">ลาป่วย/ลากิจ</p>
+          <p class="text-3xl font-bold text-cyan-400">{{ history_stats.excused }}</p>
+        </div>
+        <div class="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center">
+          <i class="fa-solid fa-notes-medical text-cyan-400 text-xl"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Search and Filter -->
+  <div class="glass rounded-2xl p-6 border border-white/20 mb-8">
+    <h3 class="text-lg font-semibold mb-4 flex items-center">
+      <i class="fas fa-filter mr-2 text-blue-400"></i>
+      ตัวกรองและการค้นหา
+    </h3>
+    <form method="get" class="grid lg:grid-cols-4 md:grid-cols-2 gap-4">
+      <input type="hidden" name="view" value="history">
+      <div class="form-group mb-0">
+        <label class="form-label">ปีการศึกษา</label>
+        <select name="history_year" class="form-select">
+          <option value="">ทั้งหมด</option>
+          {% for y in years %}
+            <option value="{{ y }}" {% if y == history_year_filter %}selected{% endif %}>ปี {{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div class="form-group mb-0">
+        <label class="form-label">เทอม</label>
+        <select name="history_term" class="form-select">
+          <option value="">ทั้งหมด</option>
+          <option value="1" {% if "1" == history_term_filter %}selected{% endif %}>เทอม 1</option>
+          <option value="2" {% if "2" == history_term_filter %}selected{% endif %}>เทอม 2</option>
+          <option value="3" {% if "3" == history_term_filter %}selected{% endif %}>เทอม 3</option>
+        </select>
+      </div>
+
+      <div class="form-group mb-0">
+        <label class="form-label">สถานะ</label>
+        <select name="history_status" class="form-select">
+          <option value="">ทั้งหมด</option>
+          <option value="on_time" {% if history_status_filter == "on_time" %}selected{% endif %}>เข้าสอบตรงเวลา</option>
+          <option value="late" {% if history_status_filter == "late" %}selected{% endif %}>เข้าสอบสาย</option>
+          <option value="absent" {% if history_status_filter == "absent" %}selected{% endif %}>ขาดสอบ</option>
+          <option value="excused" {% if history_status_filter == "excused" %}selected{% endif %}>ลาป่วย/ลากิจ</option>
+          <option value="cheating" {% if history_status_filter == "cheating" %}selected{% endif %}>ทุจริต</option>
+        </select>
+      </div>
+      
+      <div class="form-group mb-0">
+        <label class="form-label">&nbsp;</label>
+        <div class="flex gap-3">
+          <button type="submit" class="btn btn-primary flex-1">
+            <i class="fa-solid fa-filter mr-2"></i>กรองข้อมูล
+          </button>
+          <a href="{% url 'student_exams' %}?view=history" class="btn btn-secondary">
+            <i class="fa-solid fa-rotate-right mr-2"></i>รีเซ็ต
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- History Table -->
+  <div class="glass rounded-2xl border border-white/20 overflow-hidden">
+    <div class="p-6 border-b border-white/10">
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <h3 class="text-xl font-bold text-white flex items-center">
+          <i class="fas fa-history mr-3 text-blue-400"></i>
+          ประวัติการเข้าสอบ
+        </h3>
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <input id="historySearch" type="text" placeholder="ค้นหา ชื่อวิชา/รหัสวิชา/ห้อง..."
+                   class="w-80 pl-10 pr-4 py-2.5 form-input">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          </div>
+        </div>
+      </div>
+      
+      <div class="text-sm text-slate-400">
+        แสดง <span id="historyDisplayedCount">{{ attendance_list|length }}</span> จาก {{ attendance_list|length }} รายการ
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-800/50">
+            <th class="text-left px-4 py-3 text-slate-300 font-semibold">ลำดับ</th>
+            <th class="text-left px-4 py-3 text-slate-300 font-semibold">วิชา</th>
+            <th class="text-left px-4 py-3 text-slate-300 font-semibold">วันที่สอบ</th>
+            <th class="text-left px-4 py-3 text-slate-300 font-semibold">ห้องสอบ</th>
+            <th class="text-center px-4 py-3 text-slate-300 font-semibold">ที่นั่ง</th>
+            <th class="text-center px-4 py-3 text-slate-300 font-semibold">สถานะ</th>
+            <th class="text-left px-4 py-3 text-slate-300 font-semibold">เวลาเช็คอิน</th>
+          </tr>
+        </thead>
+        <tbody id="historyTableBody" class="divide-y divide-white/5">
+          {% for att in attendance_list %}
+          <tr class="row-hover border-b border-slate-700/50 transition-all duration-300" data-search="
+            {{ att.subject.subject_name }} {{ att.subject.subject_code }}
+            {{ att.subject.room.name|default_if_none:'' }}
+            {{ att.subject.get_term_display }} {{ att.subject.academic_year }}
+          ">
+            <!-- ลำดับ -->
+            <td class="px-4 py-4 text-slate-300">
+              {{ forloop.counter }}
+            </td>
+
+            <!-- วิชา -->
+            <td class="px-4 py-4">
+              <div>
+                <p class="font-semibold text-white">{{ att.subject.subject_name }}</p>
+                <p class="text-sm text-slate-400">{{ att.subject.subject_code }}</p>
+              </div>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <span class="chip chip-blue">ปี {{ att.subject.academic_year }}</span>
+                <span class="chip chip-purple">{{ att.subject.get_term_display }}</span>
+              </div>
+            </td>
+
+            <!-- วันที่สอบ -->
+            <td class="px-4 py-4">
+              <div class="space-y-2">
+                <div class="flex items-center text-white">
+                  <i class="fa-regular fa-calendar mr-2 text-blue-400"></i>
+                  {{ att.subject.exam_date|date:"d/m/Y" }}
+                </div>
+                <div class="flex items-center text-slate-300">
+                  <i class="fa-regular fa-clock mr-2 text-green-400"></i>
+                  {{ att.subject.start_time|time:"H:i" }}—{{ att.subject.end_time|time:"H:i" }}
+                </div>
+              </div>
+            </td>
+
+            <!-- ห้องสอบ -->
+            <td class="px-4 py-4">
+              {% if att.subject.room %}
+                <div>
+                  <p class="font-medium text-white mb-1">
+                    <i class="fa-solid fa-door-open mr-2 text-blue-400"></i>{{ att.subject.room.name }}
+                  </p>
+                  {% if att.subject.room.building %}
+                    <div class="text-xs text-slate-400">
+                      <i class="fa-solid fa-building mr-1"></i>{{ att.subject.room.building.name }}
+                    </div>
+                  {% endif %}
+                </div>
+              {% else %}
+                <span class="chip chip-yellow">
+                  <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>ไม่ระบุ
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- ที่นั่ง -->
+            <td class="px-4 py-4 text-center">
+              {% if att.seat_number %}
+                <div class="inline-flex items-center px-3 py-2 bg-blue-500/20 rounded-lg border border-blue-500/30">
+                  <i class="fa-solid fa-chair mr-2 text-blue-400"></i>
+                  <span class="text-white font-semibold">{{ att.seat_number }}</span>
+                </div>
+              {% else %}
+                <span class="text-slate-500">-</span>
+              {% endif %}
+            </td>
+
+            <!-- สถานะ -->
+            <td class="px-4 py-4 text-center">
+              {% if att.status == "on_time" %}
+                <span class="status-badge status-attended">
+                  <i class="fa-solid fa-check"></i>
+                  เข้าสอบตรงเวลา
+                </span>
+              {% elif att.status == "late" %}
+                <span class="status-badge status-late">
+                  <i class="fa-solid fa-clock"></i>
+                  เข้าสอบสาย
+                </span>
+              {% elif att.status == "absent" %}
+                <span class="status-badge status-absent">
+                  <i class="fa-solid fa-xmark"></i>
+                  ขาดสอบ
+                </span>
+              {% elif att.status == "excused" %}
+                <span class="status-badge status-excused">
+                  <i class="fa-solid fa-notes-medical"></i>
+                  ลาป่วย/ลากิจ
+                </span>
+              {% elif att.status == "cheating" %}
+                <span class="status-badge status-cheating">
+                  <i class="fa-solid fa-exclamation-triangle"></i>
+                  ทุจริต
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- เวลาเช็คอิน -->
+            <td class="px-4 py-4">
+              {% if att.checkin_time %}
+                <div class="text-white">
+                  <i class="fa-regular fa-clock mr-2 text-green-400"></i>
+                  {{ att.checkin_time|date:"d/m/Y H:i" }} น.
+                </div>
+              {% else %}
+                <span class="text-slate-500">-</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-6 py-16 text-center">
+              <div class="empty-state rounded-xl p-8 mx-auto max-w-md">
+                <i class="fa-regular fa-folder-open text-4xl text-slate-400 mb-4"></i>
+                <p class="text-slate-400 text-lg mb-2">ไม่พบข้อมูลประวัติการสอบ</p>
+                <p class="text-slate-500 text-sm">ยังไม่มีบันทึกการเข้าสอบหรือลองปรับเงื่อนไขการค้นหา</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ====== Tab Switching ====== */
+function switchTab(tab) {
+  // Hide all tabs
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+  
+  // Remove active from all buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Show selected tab
+  if (tab === 'schedule') {
+    document.getElementById('scheduleTab').classList.add('active');
+    event.target.classList.add('active');
+  } else {
+    document.getElementById('historyTab').classList.add('active');
+    event.target.classList.add('active');
+  }
+}
+
+/* ====== Search for Schedule Table ====== */
+document.getElementById('scheduleSearch')?.addEventListener('input', function(){
+  const q = this.value.trim().toLowerCase();
+  const rows = document.querySelectorAll('#scheduleTableBody tr.row-hover');
+  let shown = 0;
+  
+  rows.forEach(tr => {
+    const hay = (tr.getAttribute('data-search') || '').toLowerCase();
+    const ok = !q || hay.includes(q);
+    tr.style.display = ok ? '' : 'none';
+    if(ok) shown++;
+  });
+  
+  const counter = document.getElementById('scheduleDisplayedCount');
+  if (counter) counter.textContent = shown.toString();
+});
+
+/* ====== Search for History Table ====== */
+document.getElementById('historySearch')?.addEventListener('input', function(){
+  const q = this.value.trim().toLowerCase();
+  const rows = document.querySelectorAll('#historyTableBody tr.row-hover');
+  let shown = 0;
+  
+  rows.forEach(tr => {
+    const hay = (tr.getAttribute('data-search') || '').toLowerCase();
+    const ok = !q || hay.includes(q);
+    tr.style.display = ok ? '' : 'none';
+    if(ok) shown++;
+  });
+  
+  const counter = document.getElementById('historyDisplayedCount');
+  if (counter) counter.textContent = shown.toString();
+});
+
+/* ====== Notification System (แบบเดียวกับครู) ====== */
+function showNotification(message, type = 'info', duration = 5000) {
+  const notificationsContainer = document.getElementById('notifications') || createNotificationsContainer();
+  const notification = document.createElement('div');
+
+  notification.className = `notification glass-dark rounded-xl p-4 border-l-4 transform translate-x-full opacity-0 transition-all duration-500 ${
+    type === 'success' ? 'border-green-400' :
+    type === 'error' ? 'border-red-400' :
+    type === 'warning' ? 'border-yellow-400' : 'border-blue-400'
+  }`;
+
+  notification.innerHTML = `
+    <div class="flex items-start space-x-3">
+      <div class="flex-shrink-0 mt-0.5">
+        <div class="w-6 h-6 ${
+          type === 'success' ? 'bg-green-500' :
+          type === 'error' ? 'bg-red-500' :
+          type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+        } rounded-full flex items-center justify-center">
+          <i class="fas ${
+            type === 'success' ? 'fa-check' :
+            type === 'error' ? 'fa-times' :
+            type === 'warning' ? 'fa-exclamation' : 'fa-info'
+          } text-white text-xs"></i>
+        </div>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-white">${message}</p>
+      </div>
+      <button onclick="removeNotification(this)" class="flex-shrink-0 text-slate-400 hover:text-white transition-colors">
+        <i class="fas fa-times text-xs"></i>
+      </button>
+    </div>
+  `;
+
+  notificationsContainer.appendChild(notification);
+
+  setTimeout(() => {
+    notification.style.transform = 'translateX(0)';
+    notification.style.opacity = '1';
+  }, 100);
+
+  setTimeout(() => {
+    if (notification.parentNode) {
+      removeNotification(notification.querySelector('button'));
+    }
+  }, duration);
+}
+
+function createNotificationsContainer() {
+  const container = document.createElement('div');
+  container.id = 'notifications';
+  container.className = 'fixed top-20 right-6 z-50 space-y-3 max-w-sm';
+  document.body.appendChild(container);
+  return container;
+}
+
+function removeNotification(button) {
+  const notification = button.closest('.notification');
+  if (notification) {
+    notification.style.transform = 'translateX(100%)';
+    notification.style.opacity = '0';
+    setTimeout(() => {
+      if (notification.parentNode) notification.remove();
+    }, 300);
+  }
+}
+
+/* ====== Init ====== */
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('Student exams page loaded');
+  
+  // Check URL parameter to determine which tab to show
+  const urlParams = new URLSearchParams(window.location.search);
+  const view = urlParams.get('view');
+  
+  if (view === 'history') {
+    // Switch to history tab
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    
+    document.getElementById('historyTab').classList.add('active');
+    document.querySelectorAll('.tab-btn')[1].classList.add('active');
+  }
+});
+</script>
+
+{% endblock %}
