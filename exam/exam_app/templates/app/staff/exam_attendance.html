@@ -1,0 +1,1097 @@
+{% extends "app/base.html" %}
+
+{% block title %}การเช็คชื่อ - {{ subject.subject_name }} | ระบบจัดการการสอบ{% endblock %}
+{% block page_title %}การเช็คชื่อ - {{ subject.subject_name }}{% endblock %}
+{% block page_subtitle %}ติดตามสถานะการเข้าสอบของนักเรียนและครูแบบเรียลไทม์{% endblock %}
+{% block current_page %}exams{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ===== ใช้โทนสีเดียวกันกับ exam_subjects ===== */
+  .chip{display:inline-flex;align-items:center;padding:.25rem .625rem;border-radius:9999px;font-size:.75rem;line-height:1rem;font-weight:600;border-width:1px}
+  .chip-blue{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.1);color:#3b82f6}
+  .chip-green{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#22c55e}
+  .chip-yellow{border-color:rgba(234,179,8,.5);background:rgba(234,179,8,.12);color:#eab308}
+  .chip-red{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.1);color:#ef4444}
+  .chip-slate{border-color:rgba(148,163,184,.35);background:rgba(148,163,184,.12);color:#94a3b8}
+  .chip-purple{border-color:rgba(147,51,234,.5);background:rgba(147,51,234,.1);color:#9333ea}
+  .chip-orange{border-color:rgba(249,115,22,.5);background:rgba(249,115,22,.12);color:#fb923c}
+
+  .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.625rem 1rem;border-radius:.75rem;font-weight:600;transition:.2s;text-decoration:none;border:none;cursor:pointer}
+  .btn:hover{transform:translateY(-1px)}
+  .btn-sm{padding:.375rem .75rem;font-size:.875rem}
+  .btn-xs{padding:.25rem .5rem;font-size:.75rem}
+  
+  .btn-primary{background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff}
+  .btn-secondary{background:linear-gradient(135deg,#64748b,#475569);color:#fff}
+  .btn-success{background:linear-gradient(135deg,#10b981,#22c55e);color:#fff}
+  .btn-warning{background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff}
+  .btn-danger{background:linear-gradient(135deg,#ef4444,#f97316);color:#fff}
+  .btn-info{background:linear-gradient(135deg,#06b6d4,#3b82f6);color:#fff}
+
+  .user-row,.teacher-row,.student-row{transition:all .3s ease}
+  .user-row:hover,.teacher-row:hover,.student-row:hover{background:rgba(59,130,246,.08);transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.15)}
+
+  .status-dot{width:8px;height:8px;border-radius:9999px;display:inline-block;margin-right:.5rem}
+  .dot-on_time{background:#22c55e}
+  .dot-late{background:#eab308}
+  .dot-absent{background:#ef4444}
+  .dot-excused{background:#06b6d4}
+  .dot-cheating{background:#f97316}
+
+  .animate-float{animation:float 6s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0px)}50%{transform:translateY(-10px)}}
+
+  .text-gradient{background:linear-gradient(135deg,#3b82f6,#8b5cf6,#06b6d4);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  
+  .shadow-glow-blue{box-shadow:0 0 20px rgba(59,130,246,.3)}
+  .shadow-glow-green{box-shadow:0 0 20px rgba(34,197,94,.3)}
+  .shadow-glow-yellow{box-shadow:0 0 20px rgba(234,179,8,.3)}
+  .shadow-glow-red{box-shadow:0 0 20px rgba(239,68,68,.3)}
+  .shadow-glow-purple{box-shadow:0 0 20px rgba(147,51,234,.3)}
+
+  /* Glass effect - เหมือน exam_subjects */
+  .glass{background:linear-gradient(135deg,rgba(15,23,42,.65),rgba(30,41,59,.65));border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(16px)}
+  .glass-soft{background:linear-gradient(135deg,rgba(15,23,42,.45),rgba(30,41,59,.45));border:1px solid rgba(255,255,255,.12)}
+
+  /* สถิติแบบ Cards */
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem}
+  .stat-card{position:relative;overflow:hidden}
+  
+  /* เฉพาะ summary section */
+  .exam-summary{background:linear-gradient(135deg,rgba(15,23,42,.8),rgba(30,41,59,.8));border:2px solid rgba(59,130,246,.3);position:relative;overflow:hidden}
+  .exam-summary::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(45deg,rgba(59,130,246,.1),rgba(139,92,246,.1));pointer-events:none}
+  .exam-summary.completed{border-color:rgba(34,197,94,.5)}
+  .exam-summary.completed::before{background:linear-gradient(45deg,rgba(34,197,94,.1),rgba(16,185,129,.1))}
+
+  /* ปุ่มสถานะ */
+  .status-buttons{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center}
+  .status-btn{padding:.25rem .75rem;border-radius:.5rem;font-size:.75rem;font-weight:600;border:none;cursor:pointer;transition:all .2s}
+  .status-btn:hover{transform:scale(1.05)}
+  .status-btn.on_time{background:rgba(34,197,94,.2);color:#22c55e;border:1px solid rgba(34,197,94,.3)}
+  .status-btn.late{background:rgba(234,179,8,.2);color:#eab308;border:1px solid rgba(234,179,8,.3)}
+  .status-btn.absent{background:rgba(239,68,68,.2);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+  .status-btn.excused{background:rgba(6,182,212,.2);color:#06b6d4;border:1px solid rgba(6,182,212,.3)}
+  .status-btn.cheating{background:rgba(249,115,22,.2);color:#f97316;border:1px solid rgba(249,115,22,.3)}
+
+  /* ตารางที่ปรับปรุง - ใช้สไตล์เดียวกับ exam_subjects */
+  .enhanced-table{border-radius:1rem;overflow:hidden}
+  .enhanced-table thead tr{background:rgba(51,65,85,.8)}
+  .enhanced-table tbody tr{border-bottom:1px solid rgba(148,163,184,.1)}
+  .enhanced-table tbody tr:last-child{border-bottom:none}
+
+  /* เวลาแก้ไข */
+  .edit-timestamp{font-size:.75rem;color:#94a3b8;font-style:italic}
+
+  /* Loading overlay */
+  .loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);z-index:9999;display:none;align-items:center;justify-content:center}
+  .loading-overlay.active{display:flex}
+
+  .loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Form inputs - เหมือน exam_subjects */
+  .form-input, .form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(51, 65, 85, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.75rem;
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+  }
+  
+  .form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  /* Empty state */
+  .empty-state {
+    background: rgba(71, 85, 105, 0.2);
+    border: 2px dashed rgba(148, 163, 184, 0.3);
+  }
+
+  /* Action buttons styling */
+  .action-button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .action-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .action-button:hover {
+    transform: translateY(-1px) scale(1.05);
+  }
+
+  /* Grid auto fit */
+  .grid-auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+
+  /* Notification styles */
+  .notification-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .notification {
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    backdrop-filter: blur(16px);
+    border: 1px solid;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 300px;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+  }
+
+  .notification.show {
+    transform: translateX(0);
+  }
+
+  .notification.success {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.5);
+    color: #22c55e;
+  }
+
+  .notification.error {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+  }
+
+  .notification.warning {
+    background: rgba(234, 179, 8, 0.2);
+    border-color: rgba(234, 179, 8, 0.5);
+    color: #eab308;
+  }
+
+  .notification.info {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.5);
+    color: #3b82f6;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- CSRF Token สำหรับ AJAX -->
+{% csrf_token %}
+
+<!-- Header -->
+<div class="mb-12 text-center space-y-6">
+    <div class="animate-slide-up">
+        <h2 class="text-4xl lg:text-5xl font-bold font-kanit mb-4">
+            <span class="text-gradient">{{ subject.subject_name }}</span>
+        </h2>
+        <div class="flex items-center justify-center flex-wrap gap-2 text-slate-300">
+            <span class="chip chip-blue"><i class="fa-solid fa-hashtag mr-1.5"></i>{{ subject.subject_code }}</span>
+            <span class="chip chip-slate"><i class="fa-solid fa-calendar-day mr-1.5"></i>{{ subject.exam_date|date:"d/m/Y" }}</span>
+            <span class="chip chip-purple"><i class="fa-regular fa-clock mr-1.5"></i>{{ subject.start_time|time:"H:i" }}–{{ subject.end_time|time:"H:i" }}</span>
+            {% if subject.room %}
+                <span class="chip chip-slate"><i class="fa-solid fa-building-columns mr-1.5"></i>{{ subject.room.building.name }} ห้อง {{ subject.room.name }}</span>
+            {% endif %}
+            {% if subject.students.first.student_class %}
+                <span class="chip chip-green"><i class="fa-solid fa-layer-group mr-1.5"></i>{{ subject.students.first.student_class }}</span>
+            {% else %}
+                <span class="chip chip-yellow"><i class="fa-solid fa-layer-group mr-1.5"></i>หลายระดับชั้น</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="flex justify-center">
+        <div class="w-32 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="action-button-group mb-8">
+  <div class="flex flex-wrap gap-3">
+    <a href="{% url 'generate_qr_code' subject.id %}" class="action-button bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-glow-blue">
+      <i class="fa-solid fa-qrcode"></i>QR เช็คชื่อ
+    </a>
+    <a href="{% url 'exam_seating_view' subject.id %}" class="action-button bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-glow-purple">
+      <i class="fa-solid fa-th-large"></i>ผังที่นั่ง
+    </a>
+    <button type="button" onclick="refreshData()" class="action-button bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-glow-green">
+      <i class="fa-solid fa-rotate"></i>รีเฟรช
+    </button>
+  </div>
+
+  {% if request.user.is_staff %}
+  <div class="flex flex-wrap gap-2">
+    <button class="btn btn-success btn-sm" onclick="bulkUpdateStudents('on_time')">
+      <i class="fa-solid fa-user-check"></i> ทั้งหมด: ตรงเวลา
+    </button>
+    <button class="btn btn-warning btn-sm" onclick="bulkUpdateStudents('late')">
+      <i class="fa-solid fa-person-running"></i> ทั้งหมด: มาสาย
+    </button>
+    <button class="btn btn-danger btn-sm" onclick="bulkUpdateStudents('absent')">
+      <i class="fa-solid fa-user-xmark"></i> ทั้งหมด: ขาดสอบ
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- สรุปผลการสอบ -->
+<div class="glass exam-summary rounded-2xl p-6 mb-8 border border-white/20 {% if exam_completed %}completed{% endif %}">
+  <div class="relative z-10">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-2xl font-bold text-white flex items-center gap-3">
+        <i class="fas fa-chart-bar text-blue-400"></i> 
+        สรุปผลการเข้าสอบ
+        {% if exam_completed %}
+          <span class="chip chip-green"><i class="fa-solid fa-check-circle mr-1.5"></i>สิ้นสุดการสอบ</span>
+        {% else %}
+          <span class="chip chip-yellow"><i class="fa-solid fa-clock mr-1.5"></i>กำลังดำเนินการ</span>
+        {% endif %}
+      </h3>
+      <button onclick="exportAttendanceReport()" class="btn btn-info btn-sm shadow-glow-blue">
+        <i class="fa-solid fa-download"></i> ส่งออกรายงาน
+      </button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card glass rounded-2xl p-6 border border-white/20 hover:border-green-500/50 transition-all duration-300 animate-float">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-sm mb-1">เข้าสอบตรงเวลา</p>
+            <p class="text-3xl font-bold text-green-400" data-stat="on_time">{{ stats.on_time }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ stats.on_time_percentage|floatformat:1 }}% ของทั้งหมด</p>
+          </div>
+          <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-user-check text-green-400 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card glass rounded-2xl p-6 border border-white/20 hover:border-yellow-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.2s;">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-sm mb-1">เข้าสอบสาย</p>
+            <p class="text-3xl font-bold text-yellow-400" data-stat="late">{{ stats.late }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ stats.late_percentage|floatformat:1 }}% ของทั้งหมด</p>
+          </div>
+          <div class="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-clock text-yellow-400 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card glass rounded-2xl p-6 border border-white/20 hover:border-red-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.4s;">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-sm mb-1">ขาดสอบ</p>
+            <p class="text-3xl font-bold text-red-400" data-stat="absent">{{ stats.absent }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ stats.absent_percentage|floatformat:1 }}% ของทั้งหมด</p>
+          </div>
+          <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-user-xmark text-red-400 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card glass rounded-2xl p-6 border border-white/20 hover:border-cyan-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.6s;">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-sm mb-1">ลาป่วย</p>
+            <p class="text-3xl font-bold text-cyan-400" data-stat="excused">{{ stats.excused }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ stats.excused_percentage|floatformat:1 }}% ของทั้งหมด</p>
+          </div>
+          <div class="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-notes-medical text-cyan-400 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card glass rounded-2xl p-6 border border-white/20 hover:border-orange-500/50 transition-all duration-300 animate-float" style="animation-delay: 0.8s;">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-slate-400 text-sm mb-1">ทุจริต</p>
+            <p class="text-3xl font-bold text-orange-400" data-stat="cheating">{{ stats.cheating }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ stats.cheating_percentage|floatformat:1 }}% ของทั้งหมด</p>
+          </div>
+          <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-exclamation-triangle text-orange-400 text-xl"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ครูคุมสอบ -->
+<div class="glass rounded-2xl border border-white/20 mb-8">
+  <div class="p-6 border-b border-white/10">
+    <h3 class="text-xl font-bold text-white flex items-center gap-3">
+      <i class="fas fa-user-tie text-purple-400"></i> ครูคุมสอบ
+    </h3>
+  </div>
+  
+  <div class="p-6">
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- ครูหลัก -->
+      <div class="teacher-row glass-soft rounded-xl p-4 border border-white/10">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <i class="fas fa-user-tie text-white"></i>
+            </div>
+            <div>
+              <h4 class="font-semibold text-white">ครูหลัก</h4>
+              <p class="text-slate-300">{{ subject.invigilator.user.get_full_name|default:"ยังไม่ระบุ" }}</p>
+              {% if subject.invigilator %}
+                <p class="text-xs text-slate-400">{{ subject.invigilator.teacher_id }}</p>
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="text-right">
+            {% if subject.invigilator %}
+              {% if subject.invigilator_checkin %}
+                <span class="chip chip-green">
+                  <span class="status-dot dot-on_time"></span>
+                  เข้าหน้าที่แล้ว
+                </span>
+                <div class="text-xs text-slate-400 mt-1">
+                  {{ subject.invigilator_checkin_time|time:"H:i" }} น.
+                </div>
+              {% else %}
+                <span class="chip chip-red">
+                  <span class="status-dot dot-absent"></span>
+                  ยังไม่เข้าหน้าที่
+                </span>
+                {% if request.user.is_staff %}
+                  <button onclick="checkInTeacher('primary')" class="btn btn-success btn-xs mt-2">
+                    <i class="fa-solid fa-check"></i> เช็คชื่อ
+                  </button>
+                {% endif %}
+              {% endif %}
+            {% else %}
+              <span class="chip chip-slate">ยังไม่ระบุครู</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ครูสำรอง -->
+      <div class="teacher-row glass-soft rounded-xl p-4 border border-white/10">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center">
+              <i class="fas fa-user-tie text-white"></i>
+            </div>
+            <div>
+              <h4 class="font-semibold text-white">ครูสำรอง</h4>
+              <p class="text-slate-300">{{ subject.secondary_invigilator.user.get_full_name|default:"ยังไม่ระบุ" }}</p>
+              {% if subject.secondary_invigilator %}
+                <p class="text-xs text-slate-400">{{ subject.secondary_invigilator.teacher_id }}</p>
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="text-right">
+            {% if subject.secondary_invigilator %}
+              {% if subject.secondary_invigilator_checkin %}
+                <span class="chip chip-green">
+                  <span class="status-dot dot-on_time"></span>
+                  เข้าหน้าที่แล้ว
+                </span>
+                <div class="text-xs text-slate-400 mt-1">
+                  {{ subject.secondary_invigilator_checkin_time|time:"H:i" }} น.
+                </div>
+              {% else %}
+                <span class="chip chip-red">
+                  <span class="status-dot dot-absent"></span>
+                  ยังไม่เข้าหน้าที่
+                </span>
+                {% if request.user.is_staff %}
+                  <button onclick="checkInTeacher('secondary')" class="btn btn-success btn-xs mt-2">
+                    <i class="fa-solid fa-check"></i> เช็คชื่อ
+                  </button>
+                {% endif %}
+              {% endif %}
+            {% else %}
+              <span class="chip chip-slate">ยังไม่ระบุครู</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ตารางนักเรียน -->
+<div class="glass rounded-2xl border border-white/20 overflow-hidden enhanced-table">
+  <div class="p-6 border-b border-white/10">
+    <div class="flex items-center justify-between gap-4 mb-4">
+      <h3 class="text-xl font-bold text-white flex items-center">
+        <i class="fas fa-users mr-3 text-blue-400"></i>
+        รายชื่อนักเรียน
+      </h3>
+      <div class="flex items-center gap-3">
+        <label class="flex items-center gap-2 text-sm text-slate-300">
+          <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="rounded">
+          เลือกทั้งหมด
+        </label>
+        <div class="relative">
+          <input id="studentSearch" type="text" placeholder="ค้นหา ชื่อ/รหัส/ห้อง/ครู..."
+                 class="w-80 pl-10 pr-4 py-2.5 form-input">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        </div>
+        <select id="statusFilter" class="form-select">
+          <option value="">ทุกสถานะ</option>
+          <option value="on_time">เข้าสอบตรงเวลา</option>
+          <option value="late">เข้าสอบสาย</option>
+          <option value="absent">ขาดสอบ</option>
+          <option value="excused">ลาป่วย</option>
+          <option value="cheating">ทุจริต</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="text-sm text-slate-400">
+      แสดง <span id="displayedCount">{{ students|length }}</span> จาก {{ students|length }} รายการ
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-800/50">
+          {% if request.user.is_staff %}
+            <th class="text-center px-4 py-3 w-12">
+              <input type="checkbox" id="selectAll" class="rounded">
+            </th>
+          {% endif %}
+          <th class="text-left px-4 py-3 text-slate-300 font-semibold">#</th>
+          <th class="text-left px-4 py-3 text-slate-300 font-semibold">นักเรียน</th>
+          <th class="text-center px-4 py-3 text-slate-300 font-semibold">ห้อง/เลขที่</th>
+          <th class="text-center px-4 py-3 text-slate-300 font-semibold">สถานะ</th>
+          <th class="text-center px-4 py-3 text-slate-300 font-semibold">เวลาเช็คชื่อ</th>
+          {% if request.user.is_staff %}
+            <th class="text-center px-4 py-3 text-slate-300 font-semibold">จัดการสถานะ</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody id="studentTableBody" class="divide-y divide-white/5">
+        {% for student in students %}
+        <tr class="student-row border-b border-slate-700/50 transition-all duration-300" data-search="
+          {{ student.user.get_full_name }} {{ student.student_id }} {{ student.student_class }}
+        " data-student-id="{{ student.id }}">
+          {% if request.user.is_staff %}
+            <td class="px-4 py-3 text-center">
+              <input type="checkbox" class="student-checkbox rounded" value="{{ student.id }}" onchange="updateBulkActions()">
+            </td>
+          {% endif %}
+          
+          <td class="px-4 py-3 text-slate-300">{{ forloop.counter }}</td>
+          
+          <!-- นักเรียน -->
+          <td class="px-4 py-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                <i class="fas fa-user-graduate text-blue-400"></i>
+              </div>
+              <div>
+                <p class="font-semibold text-white">{{ student.user.get_full_name }}</p>
+                <p class="text-sm text-slate-400">{{ student.student_id }}</p>
+              </div>
+            </div>
+          </td>
+          
+          <!-- ห้อง/เลขที่ -->
+          <td class="px-4 py-4 text-center">
+            <div>
+              <p class="font-semibold text-white text-lg">{{ student.student_class }}</p>
+              <div class="text-xs text-slate-400 mt-1">เลขที่ {{ student.student_number }}</div>
+            </div>
+          </td>
+          
+          <!-- สถานะ -->
+          <td class="px-4 py-4 text-center">
+            <div class="status-display">
+              {% if student.attendance_record %}
+                {% with student.attendance_record as attendance %}
+                  {% if attendance.status == 'on_time' %}
+                    <span class="chip chip-green"><i class="fa-solid fa-check mr-1.5"></i>เข้าสอบตรงเวลา</span>
+                  {% elif attendance.status == 'late' %}
+                    <span class="chip chip-yellow"><i class="fa-solid fa-clock mr-1.5"></i>เข้าสอบสาย</span>
+                  {% elif attendance.status == 'excused' %}
+                    <span class="chip chip-blue"><i class="fa-solid fa-notes-medical mr-1.5"></i>ลาป่วย</span>
+                  {% elif attendance.status == 'cheating' %}
+                    <span class="chip chip-orange"><i class="fa-solid fa-exclamation-triangle mr-1.5"></i>ทุจริต</span>
+                  {% else %}
+                    <span class="chip chip-red"><i class="fa-solid fa-user-xmark mr-1.5"></i>ขาดสอบ</span>
+                  {% endif %}
+                  {% if attendance.last_modified_by and attendance.manually_updated %}
+                    <div class="edit-timestamp">
+                      แก้ไขโดย {{ attendance.last_modified_by.get_full_name }} 
+                      <br>{{ attendance.updated_at|date:"d/m/Y H:i" }}
+                    </div>
+                  {% endif %}
+                {% endwith %}
+              {% else %}
+                <span class="chip chip-red"><i class="fa-solid fa-user-xmark mr-1.5"></i>ขาดสอบ</span>
+              {% endif %}
+            </div>
+          </td>
+          
+          <!-- เวลาเช็คชื่อ -->
+          <td class="px-4 py-4 text-center">
+            {% if student.attendance_record and student.attendance_record.checkin_time %}
+              <div class="space-y-2">
+                <div class="flex items-center text-white">
+                  <i class="fa-regular fa-clock mr-2 text-green-400"></i>
+                  {{ student.attendance_record.checkin_time|time:"H:i" }}
+                </div>
+                <div class="flex items-center text-slate-300">
+                  <i class="fa-regular fa-calendar mr-2 text-blue-400"></i>
+                  {{ student.attendance_record.checkin_time|date:"d/m/Y" }}
+                </div>
+              </div>
+            {% else %}
+              <span class="text-slate-500">—</span>
+            {% endif %}
+          </td>
+
+          {% if request.user.is_staff %}
+            <!-- การทำงาน -->
+            <td class="px-4 py-4">
+              <div class="flex flex-wrap gap-2 justify-end">
+                <button onclick="updateStudentStatus({{ student.id }}, 'on_time')" 
+                        class="px-3 py-2 bg-green-500/20 hover:bg-green-500/40 text-green-400 rounded-lg transition-colors" title="ตรงเวลา">
+                  <i class="fa-solid fa-check"></i>
+                </button>
+                <button onclick="updateStudentStatus({{ student.id }}, 'late')" 
+                        class="px-3 py-2 bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 rounded-lg transition-colors" title="มาสาย">
+                  <i class="fa-solid fa-clock"></i>
+                </button>
+                <button onclick="updateStudentStatus({{ student.id }}, 'absent')" 
+                        class="px-3 py-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-lg transition-colors" title="ขาดสอบ">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+                <button onclick="updateStudentStatus({{ student.id }}, 'excused')" 
+                        class="px-3 py-2 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 rounded-lg transition-colors" title="ลาป่วย">
+                  <i class="fa-solid fa-notes-medical"></i>
+                </button>
+                <button onclick="updateStudentStatus({{ student.id }}, 'cheating')" 
+                        class="px-3 py-2 bg-orange-500/20 hover:bg-orange-500/40 text-orange-400 rounded-lg transition-colors" title="ทุจริต">
+                  <i class="fa-solid fa-exclamation-triangle"></i>
+                </button>
+              </div>
+            </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="{% if request.user.is_staff %}7{% else %}6{% endif %}" class="px-6 py-16 text-center">
+            <div class="empty-state rounded-xl p-8 mx-auto max-w-md">
+              <i class="fa-regular fa-folder-open text-4xl text-slate-400 mb-4"></i>
+              <p class="text-slate-400 text-lg mb-2">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</p>
+              <p class="text-slate-500 text-sm">ลองปรับเงื่อนไขการค้นหาหรือเพิ่มนักเรียนใหม่</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="glass rounded-2xl p-6 text-center border border-white/20">
+    <div class="loading-spinner mb-4"></div>
+    <p class="text-white font-medium">กำลังโหลด...</p>
+  </div>
+</div>
+
+<!-- แจ้งเตือน -->
+<div id="notificationContainer" class="notification-container"></div>
+
+<script>
+  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+  
+  // ตัวแปรสำหรับเก็บสถานะ
+  let examCompleted = {{ exam_completed|yesno:"true,false" }};
+  let refreshInterval;
+
+  // เริ่มต้น
+  document.addEventListener('DOMContentLoaded', function() {
+    initializeEventListeners();
+    startAutoRefresh();
+    filterTable();
+  });
+
+  function initializeEventListeners() {
+    // ค้นหาและกรอง
+    const searchInput = document.getElementById('studentSearch');
+    const statusFilter = document.getElementById('statusFilter');
+    
+    if (searchInput) searchInput.addEventListener('input', filterTable);
+    if (statusFilter) statusFilter.addEventListener('change', filterTable);
+    
+    // เลือกทั้งหมด
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+      selectAll.addEventListener('change', function(e) {
+        const checkboxes = document.querySelectorAll('.student-checkbox');
+        checkboxes.forEach(cb => {
+          cb.checked = e.target.checked;
+        });
+      });
+    }
+  }
+
+  // ฟังก์ชั่นค้นหาและกรอง
+  function filterTable() {
+    const searchTerm = (document.getElementById('studentSearch')?.value || '').toLowerCase();
+    const statusFilter = document.getElementById('statusFilter')?.value || '';
+    const rows = document.querySelectorAll('#studentTableBody .student-row');
+    const displayedCount = document.getElementById('displayedCount');
+    
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+      const searchText = (row.getAttribute('data-search') || '').toLowerCase();
+      const statusElement = row.querySelector('.status-display .chip');
+      const currentStatus = getStatusFromElement(statusElement);
+      
+      const matchesSearch = !searchTerm || searchText.includes(searchTerm);
+      const matchesStatus = !statusFilter || currentStatus === statusFilter;
+      
+      if (matchesSearch && matchesStatus) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+    
+    if (displayedCount) {
+      displayedCount.textContent = visibleCount;
+    }
+    
+    console.log(`แสดง ${visibleCount} จาก ${rows.length} รายการ`);
+  }
+
+  // การจัดการ Bulk Actions
+  function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.student-checkbox');
+    checkboxes.forEach(cb => {
+      cb.checked = checkbox.checked;
+    });
+    updateBulkActions();
+  }
+
+  function updateBulkActions() {
+    const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const headerCheckbox = document.getElementById('selectAll');
+    
+    // อัปเดตสถานะ checkbox หลัก
+    const allCheckboxes = document.querySelectorAll('.student-checkbox');
+    if (checkedBoxes.length === allCheckboxes.length && allCheckboxes.length > 0) {
+      if (selectAllCheckbox) selectAllCheckbox.checked = true;
+      if (headerCheckbox) headerCheckbox.checked = true;
+      if (selectAllCheckbox) selectAllCheckbox.indeterminate = false;
+      if (headerCheckbox) headerCheckbox.indeterminate = false;
+    } else if (checkedBoxes.length > 0) {
+      if (selectAllCheckbox) selectAllCheckbox.checked = false;
+      if (headerCheckbox) headerCheckbox.checked = false;
+      if (selectAllCheckbox) selectAllCheckbox.indeterminate = true;
+      if (headerCheckbox) headerCheckbox.indeterminate = true;
+    } else {
+      if (selectAllCheckbox) selectAllCheckbox.checked = false;
+      if (headerCheckbox) headerCheckbox.checked = false;
+      if (selectAllCheckbox) selectAllCheckbox.indeterminate = false;
+      if (headerCheckbox) headerCheckbox.indeterminate = false;
+    }
+
+    // แสดง/ซ่อนปุ่ม bulk actions (ถ้ามี)
+    const bulkButtons = document.querySelectorAll('.btn-sm');
+    bulkButtons.forEach(btn => {
+      if (btn.textContent.includes('ทั้งหมด:')) {
+        if (checkedBoxes.length > 0) {
+          btn.style.opacity = '1';
+          btn.disabled = false;
+        } else {
+          btn.style.opacity = '0.5';
+          btn.disabled = true;
+        }
+      }
+    });
+  }
+
+  function getStatusFromElement(element) {
+    if (!element) return 'absent';
+    const text = element.textContent.trim();
+    if (text.includes('ตรงเวลา')) return 'on_time';
+    if (text.includes('มาสาย') || text.includes('สาย')) return 'late';
+    if (text.includes('ลาป่วย')) return 'excused';
+    if (text.includes('ทุจริต')) return 'cheating';
+    return 'absent';
+  }
+
+  // อัปเดตสถานะนักเรียนรายคน
+  async function updateStudentStatus(studentId, status) {
+    if (examCompleted && !confirm('การสอบสิ้นสุดแล้ว ต้องการแก้ไขสถานะหรือไม่?')) {
+      return;
+    }
+
+    try {
+      showLoading(`กำลังอัปเดตสถานะ...`);
+      
+      const response = await fetch("{% url 'manual_checkin' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+          student_id: studentId,
+          subject_id: {{ subject.id }},
+          status: status
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        updateStudentRowDisplay(studentId, status);
+        showNotification(`อัปเดตสถานะสำเร็จ`, 'success');
+        
+        // รีเฟรชสถิติ
+        setTimeout(refreshStats, 1000);
+      } else {
+        showNotification(data.message || 'เกิดข้อผิดพลาด', 'error');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showNotification('เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+    } finally {
+      hideLoading();
+    }
+  }
+
+  // อัปเดตแสดงผลในตาราง
+  function updateStudentRowDisplay(studentId, status) {
+    const row = document.querySelector(`[data-student-id="${studentId}"]`);
+    if (!row) return;
+
+    const statusDisplay = row.querySelector('.status-display');
+    const timeDisplay = row.querySelector('td:nth-last-child(2)'); // คอลัมน์เวลา
+    
+    // อัปเดตสถานะ
+    const statusMap = {
+      'on_time': '<span class="chip chip-green"><span class="status-dot dot-on_time"></span>เข้าสอบตรงเวลา</span>',
+      'late': '<span class="chip chip-yellow"><span class="status-dot dot-late"></span>เข้าสอบสาย</span>',
+      'absent': '<span class="chip chip-red"><span class="status-dot dot-absent"></span>ขาดสอบ</span>',
+      'excused': '<span class="chip chip-blue"><span class="status-dot dot-excused"></span>ลาป่วย</span>',
+      'cheating': '<span class="chip chip-orange"><span class="status-dot dot-cheating"></span>ทุจริต</span>'
+    };
+    
+    let statusHtml = statusMap[status] || statusMap['absent'];
+    statusHtml += '<div class="edit-timestamp">แก้ไขโดยระบบ<br>' + new Date().toLocaleString('th-TH') + '</div>';
+    
+    if (statusDisplay) {
+      statusDisplay.innerHTML = statusHtml;
+    }
+    
+    // อัปเดตเวลา
+    if (timeDisplay && status !== 'absent') {
+      const now = new Date();
+      timeDisplay.innerHTML = `
+        <div>
+          <p class="text-white font-medium">${now.toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit'})}</p>
+          <p class="text-xs text-slate-400">${now.toLocaleDateString('th-TH', {day: '2-digit', month: '2-digit'})}</p>
+        </div>
+      `;
+    } else if (timeDisplay && status === 'absent') {
+      timeDisplay.innerHTML = '<span class="text-slate-500">—</span>';
+    }
+  }
+
+  // อัปเดตหลายคนพร้อมกัน
+  async function bulkUpdateStudents(status) {
+    const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+    const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    if (selectedIds.length === 0) {
+      showNotification('กรุณาเลือกนักเรียนที่ต้องการอัปเดต', 'warning');
+      return;
+    }
+
+    if (!confirm(`ต้องการอัปเดตสถานะนักเรียน ${selectedIds.length} คน เป็น "${getStatusText(status)}" หรือไม่?`)) {
+      return;
+    }
+
+    try {
+      showLoading(`กำลังอัปเดตสถานะ ${selectedIds.length} คน...`);
+      
+      // อัปเดตทีละคน
+      let successCount = 0;
+      for (const studentId of selectedIds) {
+        try {
+          const response = await fetch("{% url 'manual_checkin' %}", {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({
+              student_id: studentId,
+              subject_id: {{ subject.id }},
+              status: status
+            })
+          });
+
+          const data = await response.json();
+          
+          if (data.status === 'success') {
+            updateStudentRowDisplay(studentId, status);
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`Error updating student ${studentId}:`, error);
+        }
+      }
+      
+      if (successCount > 0) {
+        showNotification(`อัปเดตสถานะ ${successCount} คนสำเร็จ`, 'success');
+        
+        // ยกเลิกการเลือกทั้งหมด
+        checkboxes.forEach(cb => cb.checked = false);
+        const selectAll = document.getElementById('selectAll');
+        if (selectAll) selectAll.checked = false;
+        
+        // รีเฟรชสถิติ
+        setTimeout(refreshStats, 1000);
+      } else {
+        showNotification('ไม่สามารถอัปเดตได้', 'error');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showNotification('เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+    } finally {
+      hideLoading();
+    }
+  }
+
+  // เช็คชื่อครู
+  async function checkInTeacher(type) {
+    if (!confirm(`ต้องการเช็คชื่อครู${type === 'primary' ? 'หลัก' : 'สำรอง'}หรือไม่?`)) {
+      return;
+    }
+
+    try {
+      showLoading('กำลังเช็คชื่อครู...');
+      
+      const response = await fetch("{% url 'teacher_manual_checkin' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+          subject_id: {{ subject.id }},
+          teacher_type: type
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        showNotification('เช็คชื่อครูสำเร็จ', 'success');
+        setTimeout(() => location.reload(), 1000);
+      } else {
+        showNotification(data.error || 'เกิดข้อผิดพลาด', 'error');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showNotification('เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+    } finally {
+      hideLoading();
+    }
+  }
+
+  // รีเฟรชข้อมูล
+  function refreshData() {
+    showLoading('กำลังรีเฟรชข้อมูล...');
+    setTimeout(() => {
+      location.reload();
+    }, 500);
+  }
+
+  // รีเฟรชสถิติ
+  async function refreshStats() {
+    try {
+      const response = await fetch(`/ajax/exam-stats/{{ subject.id }}/`);
+      const data = await response.json();
+      
+      if (data.success) {
+        updateStatsDisplay(data.stats);
+      }
+    } catch (error) {
+      console.log('Failed to refresh stats:', error);
+    }
+  }
+
+  function updateStatsDisplay(stats) {
+    const elements = {
+      'on_time': stats.on_time,
+      'late': stats.late,
+      'absent': stats.absent,
+      'excused': stats.excused,
+      'cheating': stats.cheating
+    };
+
+    Object.entries(elements).forEach(([key, value]) => {
+      const element = document.querySelector(`[data-stat="${key}"]`);
+      if (element) {
+        animateNumber(element, value);
+      }
+    });
+  }
+
+  function animateNumber(element, targetValue) {
+    const currentValue = parseInt(element.textContent) || 0;
+    const difference = targetValue - currentValue;
+    const steps = 20;
+    const stepValue = difference / steps;
+    let current = currentValue;
+    
+    const interval = setInterval(() => {
+      current += stepValue;
+      if ((stepValue > 0 && current >= targetValue) || (stepValue < 0 && current <= targetValue)) {
+        element.textContent = targetValue;
+        clearInterval(interval);
+      } else {
+        element.textContent = Math.round(current);
+      }
+    }, 50);
+  }
+
+  // Auto refresh ทุก 30 วินาที
+  function startAutoRefresh() {
+    if (!examCompleted) {
+      refreshInterval = setInterval(refreshStats, 30000);
+    }
+  }
+
+  // ส่งออกรายงาน
+  function exportAttendanceReport() {
+    const url = `{% url 'export_attendance_report' subject.id %}`;
+    window.open(url, '_blank');
+  }
+
+  // ฟังก์ชั่นช่วยเหลือ
+  function getStatusText(status) {
+    const statusTexts = {
+      'on_time': 'เข้าสอบตรงเวลา',
+      'late': 'เข้าสอบสาย', 
+      'absent': 'ขาดสอบ',
+      'excused': 'ลาป่วย',
+      'cheating': 'ทุจริต'
+    };
+    return statusTexts[status] || 'ไม่ระบุ';
+  }
+
+  // แจ้งเตือน
+  function showNotification(message, type = 'info', duration = 3000) {
+    const container = document.getElementById('notificationContainer');
+    if (!container) return;
+
+    const colors = {
+      success: 'success',
+      error: 'error', 
+      warning: 'warning',
+      info: 'info'
+    };
+    
+    const icons = {
+      success: 'fa-check-circle',
+      error: 'fa-exclamation-circle',
+      warning: 'fa-exclamation-triangle',
+      info: 'fa-info-circle'
+    };
+
+    const notification = document.createElement('div');
+    notification.className = `notification ${colors[type]}`;
+    notification.innerHTML = `
+      <i class="fas ${icons[type]}"></i>
+      <span class="font-medium">${message}</span>
+    `;
+
+    container.appendChild(notification);
+    
+    // แสดงการแจ้งเตือน
+    setTimeout(() => notification.classList.add('show'), 50);
+    
+    // ซ่อนหลัง duration
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => notification.remove(), 300);
+    }, duration);
+  }
+
+  function showLoading(message = 'กำลังโหลด...') {
+    const loader = document.getElementById('loadingOverlay');
+    if (loader) {
+      loader.querySelector('p').textContent = message;
+      loader.classList.add('active');
+    }
+  }
+
+  function hideLoading() {
+    const loader = document.getElementById('loadingOverlay');
+    if (loader) {
+      loader.classList.remove('active');
+    }
+  }
+
+  // ปิด auto refresh เมื่อออกจากหน้า
+  window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+    }
+  });
+</script>
+{% endblock %}

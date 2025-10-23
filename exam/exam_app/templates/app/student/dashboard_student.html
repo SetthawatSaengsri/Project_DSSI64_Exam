@@ -1,0 +1,442 @@
+{% extends "app/base.html" %}
+
+{% block title %}แดชบอร์ดนักเรียน | ระบบจัดการการสอบ{% endblock %}
+{% block page_title %}แดชบอร์ดนักเรียน{% endblock %}
+{% block page_subtitle %}ตารางสอบของฉัน และสถานะการเข้าสอบ{% endblock %}
+{% block current_page %}dashboard_student{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stat-card {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.4);
+  }
+  
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .stat-card:hover::before {
+    opacity: 1;
+  }
+
+  .exam-card {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .exam-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 10px 30px rgba(147, 51, 234, 0.3);
+  }
+  
+  .exam-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(147, 51, 234, 0.05), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .exam-card:hover::before {
+    opacity: 1;
+  }
+
+  .attendance-card {
+    transition: all 0.3s ease;
+  }
+  
+  .attendance-card:hover {
+    transform: translateX(3px);
+    background: rgba(51, 65, 85, 0.6);
+  }
+
+  @keyframes countUp { 
+    from { transform: scale(.5); opacity: 0; } 
+    to { transform: scale(1); opacity: 1; } 
+  }
+  
+  .counter { 
+    animation: countUp .8s ease-out; 
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: .25rem .625rem;
+    border-radius: 9999px;
+    font-size: .75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    border-width: 1px;
+  }
+  
+  .chip-blue { border-color: rgba(59,130,246,.5); background: rgba(59,130,246,.1); color: #3b82f6; }
+  .chip-green { border-color: rgba(34,197,94,.5); background: rgba(34,197,94,.1); color: #22c55e; }
+  .chip-yellow { border-color: rgba(234,179,8,.5); background: rgba(234,179,8,.12); color: #eab308; }
+  .chip-red { border-color: rgba(239,68,68,.5); background: rgba(239,68,68,.1); color: #ef4444; }
+
+  .shadow-glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+  .shadow-glow-green { box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
+  .shadow-glow-purple { box-shadow: 0 0 20px rgba(147, 51, 234, 0.3); }
+  .shadow-glow-indigo { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+
+  /* Status badges */
+  .status-upcoming { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+  .status-completed { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+  .status-missed { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+  /* Responsive improvements */
+  @media (max-width: 768px) {
+    .grid.md\\:grid-cols-3 {
+      grid-template-columns: 1fr;
+    }
+    
+    .lg\\:col-span-2 {
+      grid-column: span 1;
+    }
+    
+    .px-6.py-3 {
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+    }
+  }
+
+  /* Animation for slide up */
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out;
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="mb-8 text-center space-y-6">
+    <div class="animate-slide-up">
+        <h2 class="text-4xl lg:text-5xl font-bold font-kanit mb-4">
+            <span class="text-gradient">แดชบอร์ดนักเรียน</span>
+        </h2>
+        <p class="text-xl text-slate-300 font-prompt">ภาพรวมและสถิติการจัดการการสอบแบบเรียลไทม์</p>
+    </div>
+    <div class="flex justify-center">
+        <div class="w-32 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+    </div>
+</div>
+
+
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+  <!-- จำนวนวิชาของฉัน -->
+  <div class="stat-card glass rounded-2xl p-4 lg:p-6 border border-white/20 hover:border-indigo-500/50 animate-float">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-xs lg:text-sm mb-1">วิชาของฉัน</p>
+        <p class="text-2xl lg:text-3xl font-bold text-indigo-400 counter" data-count="{{ my_exams|length }}">0</p>
+        <div class="text-xs text-indigo-300 mt-1">วิชาทั้งหมด</div>
+      </div>
+      <div class="w-10 h-10 lg:w-12 lg:h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-book-open text-indigo-400 text-lg lg:text-xl"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- การเข้าสอบ -->
+  <div class="stat-card glass rounded-2xl p-4 lg:p-6 border border-white/20 hover:border-green-500/50 animate-float" style="animation-delay: 0.1s;">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-xs lg:text-sm mb-1">การเข้าสอบ</p>
+        <p class="text-2xl lg:text-3xl font-bold text-green-400 counter" data-count="{{ my_attendance|length }}">0</p>
+        <div class="text-xs text-green-300 mt-1">ครั้งล่าสุด</div>
+      </div>
+      <div class="w-10 h-10 lg:w-12 lg:h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-clipboard-check text-green-400 text-lg lg:text-xl"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <!-- Upcoming Exams -->
+  <div class="lg:col-span-2">
+    <div class="glass rounded-2xl border border-white/20 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-white flex items-center">
+          <i class="fas fa-calendar-alt mr-3 text-purple-400"></i>
+          วิชาที่กำลังจะมาถึง
+        </h3>
+        <div class="text-sm text-slate-400">
+          อัปเดตล่าสุด: {{ "now"|date:"d/m/Y H:i" }}
+        </div>
+      </div>
+
+      {% if my_exams %}
+        <div class="space-y-4">
+          {% for exam in my_exams|slice:":6" %}
+            <div class="exam-card glass rounded-xl p-4 border border-white/10 hover:border-purple-500/30">
+              <div class="flex items-center justify-between">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center space-x-2 mb-2">
+                    <h4 class="text-white font-semibold truncate">{{ exam.subject_name }}</h4>
+                    {% if exam.exam_date >= "now"|date:"Y-m-d" %}
+                      <span class="chip chip-blue">กำลังจะมาถึง</span>
+                    {% else %}
+                      <span class="chip chip-green">เสร็จสิ้นแล้ว</span>
+                    {% endif %}
+                  </div>
+                  <div class="text-slate-300 text-sm space-y-1">
+                    <div class="flex items-center">
+                      <i class="fas fa-calendar text-slate-400 w-4 mr-2"></i>
+                      {{ exam.exam_date|date:"j F Y" }}
+                    </div>
+                    <div class="flex items-center">
+                      <i class="fas fa-clock text-slate-400 w-4 mr-2"></i>
+                      {{ exam.start_time }} - {{ exam.end_time }}
+                    </div>
+                    {% if exam.room %}
+                    <div class="flex items-center">
+                      <i class="fas fa-door-open text-slate-400 w-4 mr-2"></i>
+                      ห้อง {{ exam.room.name }}
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="text-right ml-4">
+                  <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-file-alt text-purple-400 text-lg"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        
+        {% if my_exams|length > 6 %}
+          <div class="text-center mt-4">
+            <button class="text-blue-400 hover:text-blue-300 text-sm font-medium">
+              ดูทั้งหมด ({{ my_exams|length }} วิชา) <i class="fas fa-arrow-right ml-1"></i>
+            </button>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="text-center py-8">
+          <div class="w-16 h-16 bg-slate-700/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-calendar-times text-slate-400 text-2xl"></i>
+          </div>
+          <p class="text-slate-400 text-lg mb-2">ยังไม่มีตารางสอบ</p>
+          <p class="text-slate-500 text-sm">ตารางสอบจะแสดงที่นี่เมื่อมีการอัปเดต</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recent Attendance -->
+  <div>
+    <div class="glass rounded-2xl border border-white/20 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-white flex items-center">
+          <i class="fas fa-history mr-3 text-green-400"></i>
+          การเข้าสอบล่าสุด
+        </h3>
+      </div>
+
+      <div class="space-y-3">
+        {% for att in my_attendance %}
+          <div class="attendance-card glass rounded-xl p-3 border border-white/5">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-check text-green-400"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="text-white text-sm font-medium truncate">{{ att.subject.subject_name }}</p>
+                <p class="text-slate-400 text-xs">{{ att.checkin_time|date:"j M Y, H:i น." }}</p>
+              </div>
+              <div class="text-right">
+                <span class="chip chip-green text-xs">เข้าสอบ</span>
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-center py-6">
+            <div class="w-12 h-12 bg-slate-700/50 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <i class="fas fa-clipboard text-slate-400"></i>
+            </div>
+            <p class="text-slate-400">ยังไม่มีประวัติการเข้าสอบ</p>
+            <p class="text-slate-500 text-sm">ประวัติจะแสดงที่นี่หลังจากเข้าสอบ</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Quick Info Card -->
+    <div class="glass rounded-2xl border border-white/20 p-6 mt-6">
+      <div class="flex items-center justify-between mb-4">
+        <h4 class="text-lg font-bold text-white flex items-center">
+          <i class="fas fa-info-circle mr-2 text-blue-400"></i>
+          คำแนะนำ
+        </h4>
+      </div>
+      <div class="space-y-3">
+        <div class="flex items-start space-x-2">
+          <div class="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+          <p class="text-slate-300 text-sm">มาถึงห้องสอบก่อนเวลาอย่างน้อย 15 นาที</p>
+        </div>
+        <div class="flex items-start space-x-2">
+          <div class="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
+          <p class="text-slate-300 text-sm">นำบัตรประชาชนหรือบัตรนักเรียนมาแสดงต่อคุมสอบ</p>
+        </div>
+        <div class="flex items-start space-x-2">
+          <div class="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
+          <p class="text-slate-300 text-sm">เตรียมอุปกรณ์การสอบให้พร้อมก่อนเข้าห้อง</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}{% endblock %}
+<script>
+// Counter animation
+function animateCounters() {
+  const counters = document.querySelectorAll('.counter');
+  counters.forEach(counter => {
+    const target = parseInt(counter.getAttribute('data-count')) || 0;
+    const increment = Math.max(1, Math.floor(target / 50));
+    let current = 0;
+    
+    const tick = () => {
+      if (current < target) {
+        current += increment;
+        counter.textContent = Math.min(current, target);
+        requestAnimationFrame(tick);
+      } else {
+        counter.textContent = target;
+      }
+    };
+    tick();
+  });
+}
+
+// Export my exams function
+function exportMyExams() {
+  const examData = [
+    ['วิชา', 'วันที่สอบ', 'เวลาเริ่ม', 'เวลาสิ้นสุด', 'ห้องสอบ']
+  ];
+  
+  {% for exam in my_exams %}
+    examData.push([
+      '{{ exam.subject_name|escapejs }}',
+      '{{ exam.exam_date|date:"j/m/Y"|escapejs }}',
+      '{{ exam.start_time|escapejs }}',
+      '{{ exam.end_time|escapejs }}',
+      '{{ exam.room.name|default:"ไม่ระบุ"|escapejs }}'
+    ]);
+  {% endfor %}
+  
+  const csvContent = examData.map(row => row.join(',')).join('\n');
+  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', `ตารางสอบของฉัน_${new Date().toLocaleDateString('th-TH')}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  showNotification('ส่งออกข้อมูลเรียบร้อยแล้ว', 'success');
+}
+
+// Show notification function
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+    type === 'success' ? 'bg-green-500' : 
+    type === 'error' ? 'bg-red-500' : 
+    'bg-blue-500'
+  } text-white font-semibold animate-slide-down`;
+  
+  notification.innerHTML = `
+    <div class="flex items-center">
+      <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'} mr-2"></i>
+      ${message}
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'p') {
+    e.preventDefault();
+    window.print();
+  }
+  
+  if (e.ctrlKey && e.key === 'e') {
+    e.preventDefault();
+    exportMyExams();
+  }
+  
+  if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+    e.preventDefault();
+    location.reload();
+  }
+});
+
+// Initialize animations on page load
+document.addEventListener('DOMContentLoaded', () => {
+  animateCounters();
+});
+
+// Auto-refresh every 5 minutes
+setInterval(() => {
+  if (!document.hidden) {
+    location.reload();
+  }
+}, 300000);
+</script>
+{% endblock %}

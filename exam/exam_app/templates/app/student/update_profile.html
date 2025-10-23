@@ -1,0 +1,45 @@
+{% extends "app/base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+  <h2 class="text-4xl font-extrabold text-indigo-700 text-center mb-10">📝 ปรับปรุงโปรไฟล์ของฉัน</h2>
+  <div class="bg-white shadow-2xl rounded-xl p-10">
+    <form method="POST" class="space-y-8">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 gap-6">
+        <div>
+          <label class="block text-lg font-medium text-gray-700">ชื่อ</label>
+          {{ user_form.first_name }}
+        </div>
+        <div>
+          <label class="block text-lg font-medium text-gray-700">นามสกุล</label>
+          {{ user_form.last_name }}
+        </div>
+        <div>
+          <label class="block text-lg font-medium text-gray-700">อีเมล</label>
+          {{ user_form.email }}
+        </div>
+        <div>
+          <label class="block text-lg font-medium text-gray-700">รหัสนักเรียน</label>
+          {{ profile_form.student_id }}
+        </div>
+        <div>
+          <label class="block text-lg font-medium text-gray-700">หมายเลขประจำตัวนักเรียน</label>
+          {{ profile_form.no_student }}
+        </div>
+        <div>
+          <label class="block text-lg font-medium text-gray-700">ระดับชั้น</label>
+          {{ profile_form.student_class }}
+        </div>
+      </div>
+      <div class="flex justify-end space-x-6 mt-8">
+        <a href="{% url 'dashboard_student' %}" class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-8 py-3 rounded-lg transition duration-300">
+          ยกเลิก
+        </a>
+        <button type="submit" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-8 py-3 rounded-lg transition duration-300">
+          บันทึกการเปลี่ยนแปลง
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

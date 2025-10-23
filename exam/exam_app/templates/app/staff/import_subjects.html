@@ -1,0 +1,1046 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Import ข้อมูลรายวิชาสอบ - ระบบจัดการการสอบ{% endblock %}
+
+{% block current_page %}import-subjects{% endblock %}
+
+{% block page_title %}Import ข้อมูลรายวิชาสอบ{% endblock %}
+{% block page_subtitle %}อัพโหลดไฟล์ Excel หรือ CSV เพื่อนำเข้าข้อมูลรายวิชาสอบจำนวนมาก{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ==================== CUSTOM COMPONENTS ==================== */
+    .upload-area {
+        transition: all 0.3s ease;
+        border: 2px dashed rgba(147, 51, 234, 0.3);
+    }
+
+    .upload-area:hover {
+        border-color: rgba(147, 51, 234, 0.6);
+        background: rgba(147, 51, 234, 0.05);
+    }
+
+    .upload-area.dragover {
+        border-color: rgba(147, 51, 234, 1);
+        background: rgba(147, 51, 234, 0.1);
+        transform: scale(1.02);
+    }
+
+    .progress-bar {
+        transition: width 0.3s ease;
+        background: linear-gradient(45deg,
+                rgba(147, 51, 234, 1) 25%,
+                rgba(168, 85, 247, 1) 25%,
+                rgba(168, 85, 247, 1) 50%,
+                rgba(147, 51, 234, 1) 50%,
+                rgba(147, 51, 234, 1) 75%,
+                rgba(168, 85, 247, 1) 75%);
+        background-size: 20px 20px;
+        animation: progress-stripes 1s linear infinite;
+    }
+
+    @keyframes progress-stripes {
+        0% {
+            background-position: 0 0;
+        }
+
+        100% {
+            background-position: 20px 0;
+        }
+    }
+
+    @keyframes pulse-success {
+
+        0%,
+        100% {
+            background: rgba(147, 51, 234, 0.2);
+            box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7);
+        }
+
+        50% {
+            background: rgba(147, 51, 234, 0.4);
+            box-shadow: 0 0 0 10px rgba(147, 51, 234, 0);
+        }
+    }
+
+    .animate-pulse-success {
+        animation: pulse-success 2s infinite;
+    }
+
+    /* ==================== FILE INPUT STYLING ==================== */
+    .file-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ==================== HEADER SECTION ==================== -->
+<div class="mb-12 text-center space-y-6">
+    <div class="animate-slide-up">
+        <h2 class="text-4xl lg:text-5xl font-bold font-kanit mb-4">
+            <span class="text-gradient">นำเข้าข้อมูลรายวิชาสอบ</span>
+        </h2>
+        <p class="text-xl text-slate-300 font-prompt">อัพโหลดไฟล์ Excel หรือ CSV เพื่อนำเข้าข้อมูลรายวิชาสอบจำนวนมาก</p>
+    </div>
+    <div class="flex justify-center">
+        <div class="w-32 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 rounded-full"></div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+    <!-- ==================== UPLOAD SECTION ==================== -->
+    <div class="glass rounded-3xl p-8 border border-white/20">
+        <div class="text-center mb-8">
+            <h3 class="text-2xl font-bold font-kanit mb-4">
+                <span class="text-gradient">อัพโหลดไฟล์ข้อมูล</span>
+            </h3>
+            <p class="text-slate-300 font-prompt">เลือกไฟล์ Excel (.xlsx, .xls) หรือ CSV เพื่อนำเข้าข้อมูล</p>
+        </div>
+
+        <!-- Upload Form -->
+        <form method="post" enctype="multipart/form-data" id="importForm">
+            {% csrf_token %}
+
+            <!-- File Upload Area -->
+            <div class="upload-area rounded-2xl p-8 text-center mb-6" id="uploadArea">
+                <div class="mb-6">
+                    <div
+                        class="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-float shadow-glow-purple">
+                        <i class="fas fa-book text-3xl text-white"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-2 font-kanit">ลากไฟล์มาวางที่นี่</h4>
+                    <p class="text-slate-400 mb-4">หรือคลิกเพื่อเลือกไฟล์</p>
+                </div>
+
+                <input type="file" name="file" id="fileInput" class="file-input" accept=".xlsx,.xls,.csv" required>
+                <button type="button" onclick="document.getElementById('fileInput').click()"
+                    class="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold">
+                    <i class="fas fa-folder-open mr-2"></i>เลือกไฟล์
+                </button>
+
+                <!-- File Info Display -->
+                <div id="fileInfo" class="hidden mt-4 p-4 glass-dark rounded-xl">
+                    <div class="flex items-center justify-center space-x-3">
+                        <i class="fas fa-file-excel text-purple-400 text-2xl"></i>
+                        <div class="text-left">
+                            <p class="font-medium" id="fileName"></p>
+                            <p class="text-sm text-slate-400" id="fileSize"></p>
+                        </div>
+                        <button type="button" onclick="removeFile()"
+                            class="ml-4 text-red-400 hover:text-red-300 transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Options -->
+            <div class="space-y-4 mb-6">
+                <div class="flex items-center space-x-3">
+                    <input type="checkbox" name="overwrite_existing" id="overwrite"
+                        class="w-4 h-4 text-purple-500 bg-slate-700 border-slate-600 rounded focus:ring-purple-500">
+                    <label for="overwrite" class="text-slate-300">อัปเดตข้อมูลที่มีอยู่แล้ว</label>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <input type="checkbox" name="auto_assign_resources" id="autoAssign"
+                        class="w-4 h-4 text-purple-500 bg-slate-700 border-slate-600 rounded focus:ring-purple-500"
+                        checked>
+                    <label for="autoAssign" class="text-slate-300">จัดครูและห้องสอบอัตโนมัติ</label>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div id="progressContainer" class="hidden mb-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-slate-300">กำลังอัพโหลด...</span>
+                    <span class="text-sm text-slate-400" id="progressText">0%</span>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-2">
+                    <div class="progress-bar h-2 rounded-full" id="progressBar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="submitBtn"
+                class="w-full px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold font-kanit text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+                <i class="fas fa-upload mr-2"></i>เริ่มนำเข้าข้อมูล
+            </button>
+        </form>
+    </div>
+
+    <!-- ==================== INSTRUCTIONS & TEMPLATE ==================== -->
+    <div class="space-y-8">
+
+        <!-- Download Template -->
+        <div class="glass rounded-3xl p-8 border border-white/20">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold font-kanit mb-4">
+                    <span class="text-gradient">ดาวน์โหลด Template</span>
+                </h3>
+                <p class="text-slate-300 font-prompt">ดาวน์โหลดไฟล์ตัวอย่างพร้อมรูปแบบที่ถูกต้อง</p>
+            </div>
+
+            <div class="space-y-4">
+                <a href="{% url 'download_subject_template' %}"
+                    class="block w-full px-6 py-4 glass border border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/10 rounded-xl transition-all duration-300 group">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div
+                                class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                <i class="fas fa-file-excel text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold font-kanit">Template Excel</h4>
+                                <p class="text-sm text-slate-400">ไฟล์ตัวอย่าง .xlsx พร้อมข้อมูลตัวอย่าง</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-download text-purple-400 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </a>
+
+                <a href="{% url 'exam_subjects' %}"
+                    class="block w-full px-6 py-4 glass border border-blue-500/30 hover:border-blue-500/50 hover:bg-blue-500/10 rounded-xl transition-all duration-300 group">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div
+                                class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                <i class="fas fa-list text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold font-kanit">ดูรายวิชาปัจจุบัน</h4>
+                                <p class="text-sm text-slate-400">ดูรายการวิชาสอบที่มีอยู่ในระบบ</p>
+                            </div>
+                        </div>
+                        <i
+                            class="fas fa-external-link-alt text-blue-400 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="glass rounded-3xl p-8 border border-white/20">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold font-kanit mb-4">
+                    <span class="text-gradient-orange">คำแนะนำการใช้งาน</span>
+                </h3>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex items-start space-x-4">
+                    <div
+                        class="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <span class="text-white text-sm font-bold">1</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold mb-2">ดาวน์โหลด Template</h4>
+                        <p class="text-slate-400 text-sm">ดาวน์โหลดไฟล์ตัวอย่างเพื่อดูรูปแบบที่ถูกต้อง</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4">
+                    <div
+                        class="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <span class="text-white text-sm font-bold">2</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold mb-2">เตรียมข้อมูล</h4>
+                        <p class="text-slate-400 text-sm">กรอกข้อมูลตามคอลัมน์ที่กำหนด รูปแบบเวลาและวันที่ให้ถูกต้อง</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4">
+                    <div
+                        class="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <span class="text-white text-sm font-bold">3</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold mb-2">อัพโหลดไฟล์</h4>
+                        <p class="text-slate-400 text-sm">เลือกไฟล์ที่เตรียมไว้และกำหนดตัวเลือกต่างๆ</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4">
+                    <div
+                        class="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <span class="text-white text-sm font-bold">4</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold mb-2">ตรวจสอบผลลัพธ์</h4>
+                        <p class="text-slate-400 text-sm">รอให้ระบบประมวลผลและตรวจสอบรายงานผลลัพธ์</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Required Fields -->
+            <div class="mt-6 p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                <div class="flex items-center space-x-2 mb-3">
+                    <i class="fas fa-exclamation-triangle text-purple-400"></i>
+                    <h4 class="font-bold text-purple-400">ข้อมูลที่จำเป็น</h4>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>subject_name (ชื่อวิชา)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>subject_code (รหัสวิชา)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>academic_year (ปีการศึกษา)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>term (ภาคเรียน 1,2,3)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>exam_date (วันสอบ YYYY-MM-DD)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>start_time (เวลาเริ่ม HH:MM)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>end_time (เวลาสิ้นสุด HH:MM)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-asterisk text-red-400 text-xs"></i>
+                        <span>student_class (ระดับชั้น)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== SUCCESS MODAL ==================== -->
+<div id="successModal"
+    class="fixed inset-0 hidden bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div
+        class="modal-content glass-dark rounded-3xl p-8 w-full max-w-md border border-white/20 transform scale-75 opacity-0 transition-all duration-300">
+        <div class="text-center mb-6">
+            <div
+                class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse-success">
+                <i class="fas fa-check text-2xl text-white"></i>
+            </div>
+            <h3 class="text-xl font-bold font-kanit mb-2 text-purple-400">นำเข้าข้อมูลสำเร็จ!</h3>
+            <p class="text-slate-400 font-prompt whitespace-pre-line" id="successMessage">
+                ข้อมูลได้รับการนำเข้าเรียบร้อยแล้ว</p>
+        </div>
+
+        <div class="flex space-x-3">
+            <button onclick="viewImportResults()"
+                class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-xl transition-all duration-300">
+                <i class="fas fa-eye mr-2"></i>ดูผลลัพธ์
+            </button>
+            <button onclick="closeSuccessModal()"
+                class="flex-1 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl transition-all duration-300">
+                <i class="fas fa-check mr-2"></i>ตกลง
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Django Messages Container (Hidden) -->
+<div id="djangoMessages" class="hidden">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="message" data-type="{{ message.tags }}" data-message="{{ message }}"></div>
+    {% endfor %}
+    {% endif %}
+</div>
+{% block extra_js %}{% endblock %}
+<script>
+    // ==================== NOTIFICATION SYSTEM ====================
+    function showNotification(message, type = 'info', duration = 5000) {
+        const notification = document.createElement('div');
+        const notificationId = 'notification-' + Date.now();
+        notification.id = notificationId;
+
+        let bgColor, textColor, icon;
+        switch (type) {
+            case 'success':
+                bgColor = 'bg-green-500';
+                textColor = 'text-white';
+                icon = 'fas fa-check-circle';
+                break;
+            case 'error':
+                bgColor = 'bg-red-500';
+                textColor = 'text-white';
+                icon = 'fas fa-exclamation-circle';
+                break;
+            case 'warning':
+                bgColor = 'bg-yellow-500';
+                textColor = 'text-black';
+                icon = 'fas fa-exclamation-triangle';
+                break;
+            default:
+                bgColor = 'bg-blue-500';
+                textColor = 'text-white';
+                icon = 'fas fa-info-circle';
+        }
+
+        notification.className = `fixed top-4 right-4 max-w-md ${bgColor} ${textColor} p-4 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full opacity-0`;
+        notification.innerHTML = `
+        <div class="flex items-start space-x-3">
+            <i class="${icon} text-lg mt-0.5 flex-shrink-0"></i>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium break-words">${message}</p>
+            </div>
+            <button onclick="removeNotification('${notificationId}')" class="ml-2 ${textColor} hover:opacity-75 flex-shrink-0">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full', 'opacity-0');
+        }, 10);
+
+        if (duration > 0) {
+            setTimeout(() => {
+                removeNotification(notificationId);
+            }, duration);
+        }
+
+        return notificationId;
+    }
+
+    function removeNotification(notificationId) {
+        const notification = document.getElementById(notificationId);
+        if (notification) {
+            notification.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+    }
+
+    function showLoading() {
+        const loading = document.createElement('div');
+        loading.id = 'globalLoading';
+        loading.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center';
+        loading.innerHTML = `
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-8 text-center">
+            <div class="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-white font-medium">กำลังประมวลผล...</p>
+        </div>
+    `;
+
+        document.body.appendChild(loading);
+    }
+
+    function hideLoading() {
+        const loading = document.getElementById('globalLoading');
+        if (loading) {
+            loading.remove();
+        }
+    }
+
+    // ==================== GLOBAL VARIABLES ====================
+    let selectedFile = null;
+    let isUploading = false;
+
+    // ==================== FILE HANDLING ====================
+    function initializeFileHandling() {
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        fileInput.addEventListener('change', function (e) {
+            handleFileSelect(e.target.files[0]);
+        });
+
+        uploadArea.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+    }
+
+    function handleFileSelect(file) {
+        if (!file) return;
+
+        const allowedTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+            'text/csv'
+        ];
+
+        if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().match(/\.(xlsx|xls|csv)$/)) {
+            showNotification('กรุณาเลือกไฟล์ .xlsx, .xls หรือ .csv เท่านั้น', 'error');
+            return;
+        }
+
+        if (file.size > 50 * 1024 * 1024) {
+            showNotification('ไฟล์ใหญ่เกิน 50MB กรุณาเลือกไฟล์ที่เล็กกว่า', 'error');
+            return;
+        }
+
+        selectedFile = file;
+
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = formatFileSize(file.size);
+        document.getElementById('fileInfo').classList.remove('hidden');
+
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        document.getElementById('fileInput').files = dataTransfer.files;
+
+        showNotification('เลือกไฟล์สำเร็จ: ' + file.name, 'success');
+    }
+
+    function removeFile() {
+        selectedFile = null;
+        document.getElementById('fileInfo').classList.add('hidden');
+        document.getElementById('fileInput').value = '';
+        showNotification('ลบไฟล์แล้ว', 'info');
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // ==================== FORM SUBMISSION ====================
+    function initializeFormSubmission() {
+        const form = document.getElementById('importForm');
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            if (!selectedFile) {
+                showNotification('กรุณาเลือกไฟล์ก่อนทำการอัพโหลด', 'error');
+                return;
+            }
+
+            if (isUploading) {
+                showNotification('กำลังอัพโหลดอยู่ กรุณารอสักครู่', 'warning');
+                return;
+            }
+
+            startUpload();
+        });
+    }
+
+    function startUpload() {
+        isUploading = true;
+
+        const submitBtn = document.getElementById('submitBtn');
+        const progressContainer = document.getElementById('progressContainer');
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>กำลังเตรียมการอัพโหลด...';
+        progressContainer.classList.remove('hidden');
+        showLoading();
+
+        // แสดงข้อความเริ่มต้น
+        showNotification('เริ่มการอัพโหลดไฟล์...', 'info');
+
+        const formData = new FormData(document.getElementById('importForm'));
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', function (e) {
+            if (e.lengthComputable) {
+                const percentComplete = (e.loaded / e.total) * 100;
+                updateProgress(percentComplete);
+
+                // อัพเดตข้อความในปุ่ม
+                if (percentComplete < 50) {
+                    submitBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>กำลังอัพโหลด...';
+                } else if (percentComplete < 100) {
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>กำลังส่งข้อมูล...';
+                } else {
+                    submitBtn.innerHTML = '<i class="fas fa-cog fa-spin mr-2"></i>กำลังประมวลผล...';
+                    showNotification('อัพโหลดเสร็จสิ้น กำลังประมวลผลข้อมูล...', 'info');
+                }
+            }
+        });
+
+        xhr.addEventListener('load', function () {
+            hideLoading();
+            isUploading = false;
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>เริ่มนำเข้าข้อมูล';
+
+            document.getElementById('progressContainer').classList.add('hidden');
+
+            if (xhr.status === 200) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+
+                    if (response.success) {
+                        // แสดงข้อความสำเร็จทันที
+                        showNotification('การประมวลผลเสร็จสิ้น! นำเข้าข้อมูลสำเร็จ', 'success');
+
+                        // แสดงข้อความชื่นชม
+                        setTimeout(() => {
+                            showCelebrationNotification(response.details);
+                        }, 500);
+
+                        // แสดง success modal หลังจากหน่วงเวลาเล็กน้อย
+                        setTimeout(() => {
+                            showSuccessModal(response.message, response.details);
+                        }, 1500);
+
+                        // Clear form
+                        document.getElementById('importForm').reset();
+                        removeFile();
+
+                        // แสดงสถิติการ import
+                        if (response.details) {
+                            const details = response.details;
+                            let summaryMessage = `สรุปผลการนำเข้า: `;
+                            summaryMessage += `สำเร็จ ${details.success_count} วิชา`;
+
+                            if (details.error_count > 0) {
+                                summaryMessage += `, ผิดพลาด ${details.error_count} รายการ`;
+                            }
+                            if (details.partial_assigned_count > 0) {
+                                summaryMessage += `, จัดอัตโนมัติไม่ครบ ${details.partial_assigned_count} วิชา`;
+                            }
+
+                            setTimeout(() => {
+                                showNotification(summaryMessage, 'info', 8000);
+                            }, 3000);
+                        }
+
+                    } else {
+                        showNotification('การประมวลผลเสร็จสิ้น แต่พบข้อผิดพลาด', 'warning');
+                        setTimeout(() => {
+                            showNotification(response.message || 'เกิดข้อผิดพลาดในการนำเข้าข้อมูล', 'error');
+                        }, 500);
+
+                        if (response.errors && response.errors.length > 0) {
+                            setTimeout(() => {
+                                showDetailedErrorNotification(response.message, response.errors);
+                            }, 1000);
+                        }
+                    }
+
+                } catch (e) {
+                    console.error('Error parsing response:', e);
+                    showNotification('เกิดข้อผิดพลาดในการประมวลผลข้อมูล', 'error');
+                }
+            } else {
+                showNotification('เกิดข้อผิดพลาดในการอัพโหลด กรุณาลองใหม่อีกครั้ง', 'error');
+            }
+        });
+
+        xhr.addEventListener('error', function () {
+            hideLoading();
+            isUploading = false;
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>เริ่มนำเข้าข้อมูล';
+
+            document.getElementById('progressContainer').classList.add('hidden');
+            showNotification('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง', 'error');
+        });
+
+        xhr.open('POST', window.location.href);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        xhr.setRequestHeader('X-CSRFToken', csrfToken);
+
+        xhr.send(formData);
+    }
+
+    function updateProgress(percent) {
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+
+        progressBar.style.width = percent + '%';
+        progressText.textContent = Math.round(percent) + '%';
+    }
+
+    // ==================== SUCCESS MODAL ==================== 
+    function showSuccessModal(message, details = null) {
+        const modal = document.getElementById('successModal');
+        const modalContent = modal.querySelector('.modal-content');
+        const messageElement = document.getElementById('successMessage');
+
+        // สร้างข้อความแสดงผลแบบ HTML สำหรับ Modal
+        let displayHTML = `<div class="text-center">
+        <h4 class="font-bold text-green-400 mb-3">การนำเข้าข้อมูลเสร็จสิ้น!</h4>
+        <p class="text-slate-300 mb-4">${message}</p>`;
+
+        if (details) {
+            displayHTML += `<div class="bg-slate-800/50 rounded-lg p-4 space-y-2 text-sm">
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400">สำเร็จ:</span>
+                <span class="text-green-400 font-semibold">${details.success_count} วิชา</span>
+            </div>`;
+
+            if (details.error_count > 0) {
+                displayHTML += `<div class="flex justify-between items-center">
+                <span class="text-slate-400">ผิดพลาด:</span>
+                <span class="text-red-400 font-semibold">${details.error_count} รายการ</span>
+            </div>`;
+            }
+
+            if (details.partial_assigned_count > 0) {
+                displayHTML += `<div class="flex justify-between items-center">
+                <span class="text-slate-400">จัดอัตโนมัติไม่ครบ:</span>
+                <span class="text-yellow-400 font-semibold">${details.partial_assigned_count} วิชา</span>
+            </div>`;
+            }
+
+            // คำแนะนำเพิ่มเติม
+            if (details.error_count > 0 || details.partial_assigned_count > 0) {
+                displayHTML += `<div class="mt-3 p-2 bg-blue-500/10 border border-blue-500/20 rounded text-blue-300 text-xs">
+                <i class="fas fa-info-circle mr-1"></i>
+                สามารถตรวจสอบรายละเอียดและแก้ไขได้ในหน้ารายการวิชาสอบ
+            </div>`;
+            }
+
+            displayHTML += `</div>`;
+        }
+
+        displayHTML += `</div>`;
+
+        messageElement.innerHTML = displayHTML;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+
+        // เพิ่มเอฟเฟกต์เสียง (ถ้าเบราว์เซอร์รองรับ)
+        playSuccessSound();
+
+        setTimeout(() => {
+            modalContent.style.transform = 'scale(1)';
+            modalContent.style.opacity = '1';
+        }, 10);
+    }
+
+    // ==================== CELEBRATION EFFECTS ====================
+    function showCelebrationNotification(details) {
+        const successCount = details ? details.success_count : 0;
+        let celebrationMessage = '';
+
+        if (successCount > 0) {
+            if (successCount >= 50) {
+                celebrationMessage = `🎉 ยอดเยี่ยม! นำเข้าข้อมูล ${successCount} วิชาสำเร็จ!`;
+            } else if (successCount >= 20) {
+                celebrationMessage = `🎊 เทริ่น! นำเข้าข้อมูล ${successCount} วิชาเรียบร้อย!`;
+            } else if (successCount >= 10) {
+                celebrationMessage = `✨ ดีมาก! นำเข้าข้อมูล ${successCount} วิชาแล้ว!`;
+            } else {
+                celebrationMessage = `👏 สำเร็จแล้ว! นำเข้าข้อมูล ${successCount} วิชา!`;
+            }
+        } else {
+            celebrationMessage = '🎯 การประมวลผลเสร็จสิ้น!';
+        }
+
+        showNotification(celebrationMessage, 'success', 4000);
+
+        // เพิ่มเอฟเฟกต์ confetti (ถ้าต้องการ)
+        if (successCount >= 10) {
+            createConfettiEffect();
+        }
+    }
+
+    function createConfettiEffect() {
+        // สร้างเอฟเฟกต์ confetti แบบเล็กๆ
+        const colors = ['#9333ea', '#a855f7', '#c084fc', '#e879f9', '#f0abfc'];
+
+        for (let i = 0; i < 20; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                confetti.style.cssText = `
+                position: fixed;
+                width: 10px;
+                height: 10px;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                top: -10px;
+                left: ${Math.random() * window.innerWidth}px;
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 9999;
+                animation: confetti-fall 3s linear forwards;
+            `;
+
+                document.body.appendChild(confetti);
+
+                setTimeout(() => {
+                    if (confetti.parentNode) {
+                        confetti.remove();
+                    }
+                }, 3000);
+            }, i * 100);
+        }
+    }
+
+    // เพิ่ม CSS animation สำหรับ confetti
+    const style = document.createElement('style');
+    style.textContent = `
+    @keyframes confetti-fall {
+        0% {
+            transform: translateY(-10px) rotate(0deg);
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(${window.innerHeight + 10}px) rotate(720deg);
+            opacity: 0;
+        }
+    }
+`;
+    // ==================== SOUND EFFECTS ====================
+    function playSuccessSound() {
+        try {
+            // สร้างเสียงแจ้งเตือนด้วย Web Audio API
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        } catch (e) {
+            // ไม่ต้องทำอะไรถ้าเล่นเสียงไม่ได้
+        }
+    }
+
+    // เพิ่มปุ่มเปิด/ปิดเสียง
+    function addSoundToggle() {
+        const soundToggle = document.createElement('button');
+        soundToggle.id = 'soundToggle';
+        soundToggle.className = 'fixed bottom-4 right-4 w-12 h-12 bg-purple-500 hover:bg-purple-600 rounded-full flex items-center justify-center text-white transition-all duration-300 z-40';
+        soundToggle.innerHTML = '<i class="fas fa-volume-up text-sm"></i>';
+        soundToggle.title = 'เปิด/ปิดเสียงแจ้งเตือน';
+
+        let soundEnabled = localStorage.getItem('importSoundEnabled') !== 'false';
+
+        function updateSoundToggle() {
+            if (soundEnabled) {
+                soundToggle.innerHTML = '<i class="fas fa-volume-up text-sm"></i>';
+                soundToggle.classList.remove('bg-gray-500');
+                soundToggle.classList.add('bg-purple-500', 'hover:bg-purple-600');
+            } else {
+                soundToggle.innerHTML = '<i class="fas fa-volume-mute text-sm"></i>';
+                soundToggle.classList.remove('bg-purple-500', 'hover:bg-purple-600');
+                soundToggle.classList.add('bg-gray-500');
+            }
+        }
+
+        soundToggle.addEventListener('click', function () {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('importSoundEnabled', soundEnabled);
+            updateSoundToggle();
+
+            if (soundEnabled) {
+                playSuccessSound();
+                showNotification('เปิดเสียงแจ้งเตือนแล้ว', 'info', 2000);
+            } else {
+                showNotification('ปิดเสียงแจ้งเตือนแล้ว', 'info', 2000);
+            }
+        });
+
+        updateSoundToggle();
+        document.body.appendChild(soundToggle);
+
+        // ส่งคืนสถานะเสียง
+        return () => soundEnabled;
+    }
+
+    // อัปเดตฟังก์ชัน playSuccessSound ให้ตรวจสอบการตั้งค่า
+    const getSoundEnabled = addSoundToggle();
+
+    function playSuccessSoundIfEnabled() {
+        if (getSoundEnabled()) {
+            playSuccessSound();
+        }
+    }
+
+    function closeSuccessModal() {
+        const modal = document.getElementById('successModal');
+        const modalContent = modal.querySelector('.modal-content');
+
+        modalContent.style.transform = 'scale(0.75)';
+        modalContent.style.opacity = '0';
+
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }, 300);
+    }
+
+    function viewImportResults() {
+        closeSuccessModal();
+        window.location.href = '{% url "exam_subjects" %}';
+    }
+
+    // ==================== ERROR DISPLAY ====================
+    function showDetailedErrorNotification(title, errors) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 max-w-lg bg-red-500 text-white p-4 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full opacity-0';
+
+        let errorHtml = `<div class="flex justify-between items-start">
+        <div class="flex-1">
+            <h4 class="font-bold mb-2">${title}</h4>
+            <div class="text-sm space-y-1">`;
+
+        errors.slice(0, 5).forEach(error => {
+            errorHtml += `<div class="flex items-start space-x-2">
+            <span class="text-red-200">•</span>
+            <span>แถว ${error.row}: ${error.message}</span>
+        </div>`;
+        });
+
+        if (errors.length > 5) {
+            errorHtml += `<div class="text-red-200 text-xs mt-1">... และอีก ${errors.length - 5} ข้อผิดพลาด</div>`;
+        }
+
+        errorHtml += `</div>
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>`;
+
+        notification.innerHTML = errorHtml;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full', 'opacity-0');
+        }, 10);
+
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }
+        }, 15000);
+    }
+
+    // ==================== DJANGO MESSAGES HANDLER ====================
+    function handleDjangoMessages() {
+        const messagesContainer = document.getElementById('djangoMessages');
+        if (messagesContainer) {
+            const messages = messagesContainer.querySelectorAll('.message');
+            messages.forEach(messageEl => {
+                const type = messageEl.getAttribute('data-type');
+                const message = messageEl.getAttribute('data-message');
+
+                let notificationType = 'info';
+                if (type === 'success') notificationType = 'success';
+                else if (type === 'error') notificationType = 'error';
+                else if (type === 'warning') notificationType = 'warning';
+
+                setTimeout(() => {
+                    showNotification(message, notificationType);
+                }, 500);
+            });
+        }
+    }
+
+    // ==================== KEYBOARD SHORTCUTS ====================
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            if (!document.getElementById('successModal').classList.contains('hidden')) {
+                closeSuccessModal();
+            }
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+            e.preventDefault();
+            if (!isUploading) {
+                document.getElementById('fileInput').click();
+            }
+        }
+    });
+
+    // เพิ่มใน function startUpload หลัง xhr.addEventListener('load')
+    if (response.success) {
+        console.log('Import result:', response.details);
+
+        // แสดงข้อความแจ้งเตือนเพิ่มเติม
+        if (response.details.partial_assigned_count > 0) {
+            showNotification(
+                `จัดอัตโนมัติไม่ครบ ${response.details.partial_assigned_count} วิชา - อาจไม่มีห้องหรือครูว่าง`,
+                'warning',
+                8000
+            );
+        }
+
+        // แสดง success modal
+        setTimeout(() => {
+            showSuccessModal(response.message, response.details);
+        }, 1500);
+    }
+
+    // ==================== PAGE INITIALIZATION ====================
+    function initializePage() {
+        console.log('Subject Import page loaded successfully!');
+
+        initializeFileHandling();
+        initializeFormSubmission();
+        handleDjangoMessages();
+
+        setTimeout(() => {
+            showNotification('เตรียมพร้อมสำหรับการนำเข้าข้อมูลรายวิชาสอบ', 'info');
+        }, 1000);
+
+        setTimeout(() => {
+            showNotification('เคล็ดลับ: ใช้ Ctrl+U เพื่อเลือกไฟล์ได้เร็วขึ้น', 'info', 6000);
+        }, 3000);
+    }
+
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', initializePage);
+</script>
+{% endblock %}

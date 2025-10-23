@@ -82,7 +82,7 @@ def logout_user(request):
 
 @login_required
 def qr_scanner(request):
-    """หน้าใช้สแกน QR เพื่อไป /checkin/<pk>/"""
+    """หน้าใช้สแกน QR """
     return render(request, 'app/staff/qr_scanner.html')
 
 # ========================= Dashboard สำหรับแต่ละบทบาท =========================

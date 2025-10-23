@@ -1,0 +1,1028 @@
+{% extends "app/base.html" %}
+
+{% block title %}แดชบอร์ดเจ้าหน้าที่ | ระบบจัดการการสอบ{% endblock %}
+{% block page_title %}แดชบอร์ดเจ้าหน้าที่{% endblock %}
+{% block page_subtitle %}ภาพรวมและสถิติการจัดการการสอบแบบเรียลไทม์{% endblock %}
+{% block current_page %}dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+  .chip{display:inline-flex;align-items:center;padding:.25rem .625rem;border-radius:9999px;font-size:.75rem;line-height:1rem;font-weight:600;border-width:1px}
+  .chip-blue{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.1);color:#3b82f6}
+  .chip-green{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.1);color:#22c55e}
+  .chip-yellow{border-color:rgba(234,179,8,.5);background:rgba(234,179,8,.12);color:#eab308}
+  .chip-red{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.1);color:#ef4444}
+  .chip-slate{border-color:rgba(148,163,184,.35);background:rgba(148,163,184,.12);color:#94a3b8}
+  .chip-purple{border-color:rgba(147,51,234,.5);background:rgba(147,51,234,.1);color:#9333ea}
+  
+  .stat-card {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.4);
+  }
+  
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .stat-card:hover::before {
+    opacity: 1;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .form-label {
+    display: block;
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-input, .form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(51, 65, 85, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.75rem;
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+  }
+  
+  .form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    transform: translateY(-1px);
+  }
+  
+  .btn-secondary {
+    background: rgba(51, 65, 85, 0.8);
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+  }
+  
+  .btn-secondary:hover {
+    background: rgba(71, 85, 105, 0.8);
+    border-color: rgba(148, 163, 184, 0.5);
+  }
+
+  .chart-container {
+    background: rgba(51, 65, 85, 0.3);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    min-height: 400px;
+    max-height: 600px;
+  }
+  
+  .chart-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(147, 51, 234, 0.05));
+    pointer-events: none;
+  }
+
+  .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1rem;
+    z-index: 10;
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #3b82f6;
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .trend-indicator {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .trend-up { color: #22c55e; }
+  .trend-down { color: #ef4444; }
+  .trend-neutral { color: #94a3b8; }
+
+  .chart-responsive {
+    position: relative;
+    height: 350px;
+    width: 100%;
+  }
+  
+  .chart-responsive canvas {
+    max-height: 100% !important;
+  }
+
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .shadow-glow-blue {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+  .shadow-glow-green {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+  }
+  .shadow-glow-purple {
+    box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
+  }
+  .shadow-glow-red {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+  }
+
+  @media (max-width: 768px) {
+    .grid.lg\\:grid-cols-4 {
+      grid-template-columns: 1fr;
+    }
+    
+    .flex.gap-4 {
+      flex-direction: column;
+    }
+    
+    .px-6.py-3 {
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- โหลด Chart.js ก่อน -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="mb-8 text-center space-y-6">
+    <div class="animate-slide-up">
+        <h2 class="text-4xl lg:text-5xl font-bold font-kanit mb-4">
+            <span class="text-gradient">แดชบอร์ดเจ้าหน้าที่</span>
+        </h2>
+        <p class="text-xl text-slate-300 font-prompt">ภาพรวมและสถิติการจัดการการสอบแบบเรียลไทม์</p>
+    </div>
+    <div class="flex justify-center">
+        <div class="w-32 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="glass rounded-2xl p-6 border border-white/20 mb-8">
+  <h3 class="text-lg font-semibold mb-4 flex items-center">
+    <i class="fas fa-filter mr-2 text-blue-400"></i>
+    ตัวกรองและการค้นหา
+  </h3>
+  <form id="filterForm" class="grid lg:grid-cols-4 md:grid-cols-2 gap-4">
+    <div class="form-group mb-0">
+      <label class="form-label">ปีการศึกษา</label>
+      <select id="yearFilter" name="year" class="form-select">
+        <option value="">ทั้งหมด</option>
+      </select>
+    </div>
+    
+    <div class="form-group mb-0">
+      <label class="form-label">เทอม</label>
+      <select id="termFilter" name="term" class="form-select">
+        <option value="">ทั้งหมด</option>
+        <option value="1">เทอม 1</option>
+        <option value="2">เทอม 2</option>
+        <option value="3">เทอม 3</option>
+      </select>
+    </div>
+    
+    <div class="form-group mb-0">
+      <label class="form-label">ระดับชั้น</label>
+      <select id="classFilter" name="class" class="form-select">
+        <option value="">ทั้งหมด</option>
+      </select>
+    </div>
+    
+    <div class="form-group mb-0">
+      <label class="form-label">&nbsp;</label>
+      <div class="flex gap-3">
+        <button type="button" id="updateChart" class="btn btn-primary">
+          <i class="fa-solid fa-filter mr-2"></i>กรองข้อมูล
+        </button>
+        <button type="button" id="resetFilters" class="btn btn-secondary">
+          <i class="fa-solid fa-rotate-right mr-2"></i>รีเซ็ต
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Action Buttons -->
+<div class="flex flex-wrap gap-4 mb-8">
+  <a href="{% url 'exam_subjects' %}" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold shadow-glow-blue">
+    <i class="fa-solid fa-list mr-2"></i>ดูรายวิชาทั้งหมด
+  </a>
+  <a href="{% url 'add_exam_subject' %}" class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold shadow-glow-green">
+    <i class="fa-solid fa-plus mr-2"></i>เพิ่มรายวิชาใหม่
+  </a>
+  <button onclick="location.reload()" class="px-6 py-3 bg-gradient-to-r from-slate-500 to-gray-500 hover:from-slate-600 hover:to-gray-600 rounded-xl transition-all duration-300 transform hover:scale-105 font-semibold">
+    <i class="fas fa-sync-alt mr-2"></i>รีเฟรชข้อมูล
+  </button>
+</div>
+
+<!-- Current Filter Display -->
+<div id="currentFilters" class="mb-6 hidden">
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="text-sm text-slate-400">ตัวกรองปัจจุบัน:</span>
+    <div id="filterTags" class="flex flex-wrap gap-2"></div>
+    <button onclick="clearAllFilters()" class="text-xs text-red-400 hover:text-red-300 ml-2">
+      <i class="fas fa-times mr-1"></i>ล้างทั้งหมด
+    </button>
+  </div>
+</div>
+
+<!-- Main Statistics Grid -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
+  <!-- การ์ดแถวที่ 1 -->
+  <div class="glass rounded-2xl p-4 lg:p-6 border border-white/20 hover:border-blue-500/50 stat-card animate-float">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-xs lg:text-sm mb-1">รายวิชาทั้งหมด</p>
+        <p class="text-2xl lg:text-3xl font-bold text-blue-400" id="stat-subjects">-</p>
+        <div class="trend-indicator trend-up mt-1">
+          <i class="fas fa-arrow-up mr-1"></i><span id="subjects-trend">+0.0%</span>
+        </div>
+      </div>
+      <div class="w-10 h-10 lg:w-12 lg:h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-book text-blue-400 text-lg lg:text-xl"></i>
+      </div>
+    </div>
+  </div>
+  
+  <div class="glass rounded-2xl p-4 lg:p-6 border border-white/20 hover:border-green-500/50 stat-card animate-float" style="animation-delay: 0.1s;">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-xs lg:text-sm mb-1">นักเรียนทั้งหมด</p>
+        <p class="text-2xl lg:text-3xl font-bold text-green-400" id="stat-students">-</p>
+        <div class="trend-indicator trend-up mt-1">
+          <i class="fas fa-arrow-up mr-1"></i><span id="students-trend">+0.0%</span>
+        </div>
+      </div>
+      <div class="w-10 h-10 lg:w-12 lg:h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-users text-green-400 text-lg lg:text-xl"></i>
+      </div>
+    </div>
+  </div>
+  
+  <div class="glass rounded-2xl p-4 lg:p-6 border border-white/20 hover:border-purple-500/50 stat-card animate-float" style="animation-delay: 0.2s;">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-xs lg:text-sm mb-1">เข้าสอบตรงเวลา</p>
+        <p class="text-2xl lg:text-3xl font-bold text-purple-400" id="stat-on-time">-</p>
+        <div class="trend-indicator trend-up mt-1">
+          <i class="fas fa-arrow-up mr-1"></i><span id="on-time-trend">+0.0%</span>
+        </div>
+      </div>
+      <div class="w-10 h-10 lg:w-12 lg:h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-clipboard-check text-purple-400 text-lg lg:text-xl"></i>
+      </div>
+    </div>
+  </div>
+  
+  <div class="glass rounded-2xl p-4 lg:p-6 border border-white/20 hover:border-yellow-500/50 stat-card animate-float" style="animation-delay: 0.3s;">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-xs lg:text-sm mb-1">อัตราเข้าสอบ</p>
+        <p class="text-2xl lg:text-3xl font-bold text-yellow-400" id="stat-rate">-</p>
+        <div class="trend-indicator trend-neutral mt-1">
+          <i class="fas fa-minus mr-1"></i><span id="rate-trend">0.0%</span>
+        </div>
+      </div>
+      <div class="w-10 h-10 lg:w-12 lg:h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-percentage text-yellow-400 text-lg lg:text-xl"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- การ์ดแถวที่ 2 - สถานะเพิ่มเติม -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
+  <div class="glass rounded-2xl p-4 lg:p-6 border border-white/20 hover:border-orange-500/50 stat-card animate-float" style="animation-delay: 0.4s;">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-xs lg:text-sm mb-1">มาสาย</p>
+        <p class="text-2xl lg:text-3xl font-bold text-orange-400" id="stat-late">-</p>
+        <div class="trend-indicator trend-neutral mt-1">
+          <i class="fas fa-minus mr-1"></i><span id="late-trend">0.0%</span>
+        </div>
+      </div>
+      <div class="w-10 h-10 lg:w-12 lg:h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-clock text-orange-400 text-lg lg:text-xl"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass rounded-2xl p-4 lg:p-6 border border-white/20 hover:border-red-500/50 stat-card animate-float" style="animation-delay: 0.5s;">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-xs lg:text-sm mb-1">ขาดสอบ</p>
+        <p class="text-2xl lg:text-3xl font-bold text-red-400" id="stat-absent">-</p>
+        <div class="trend-indicator trend-down mt-1">
+          <i class="fas fa-arrow-down mr-1"></i><span id="absent-trend">-0.0%</span>
+        </div>
+      </div>
+      <div class="w-10 h-10 lg:w-12 lg:h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-user-xmark text-red-400 text-lg lg:text-xl"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass rounded-2xl p-4 lg:p-6 border border-white/20 hover:border-cyan-500/50 stat-card animate-float" style="animation-delay: 0.6s;">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-xs lg:text-sm mb-1">ลาป่วย/ลากิจ</p>
+        <p class="text-2xl lg:text-3xl font-bold text-cyan-400" id="stat-excused">-</p>
+        <div class="trend-indicator trend-neutral mt-1">
+          <i class="fas fa-minus mr-1"></i><span id="excused-trend">0.0%</span>
+        </div>
+      </div>
+      <div class="w-10 h-10 lg:w-12 lg:h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-notes-medical text-cyan-400 text-lg lg:text-xl"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass rounded-2xl p-4 lg:p-6 border border-white/20 hover:border-pink-500/50 stat-card animate-float" style="animation-delay: 0.7s;">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-slate-400 text-xs lg:text-sm mb-1">ทุจริต</p>
+        <p class="text-2xl lg:text-3xl font-bold text-pink-400" id="stat-cheating">-</p>
+        <div class="trend-indicator trend-down mt-1">
+          <i class="fas fa-arrow-down mr-1"></i><span id="cheating-trend">0.0%</span>
+        </div>
+      </div>
+      <div class="w-10 h-10 lg:w-12 lg:h-12 bg-pink-500/20 rounded-xl flex items-center justify-center">
+        <i class="fa-solid fa-exclamation-triangle text-pink-400 text-lg lg:text-xl"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Section -->
+<div class="mb-8">
+  <div class="glass rounded-2xl border border-white/20 p-6">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold text-white flex items-center">
+        <i class="fas fa-chart-bar mr-3 text-blue-400"></i>
+        <span id="chart-title">สถิติการเข้าสอบรวม</span>
+      </h3>
+      <div class="flex gap-2">
+        <button id="chartType1" class="px-3 py-1 text-xs bg-blue-500/20 text-blue-400 rounded-lg transition hover:bg-blue-500/40 active" onclick="toggleChartType('bar')">Bar</button>
+        <button id="chartType2" class="px-3 py-1 text-xs bg-slate-500/20 text-slate-400 rounded-lg transition hover:bg-slate-500/40" onclick="toggleChartType('line')">Line</button>
+        <button id="chartType3" class="px-3 py-1 text-xs bg-slate-500/20 text-slate-400 rounded-lg transition hover:bg-slate-500/40" onclick="toggleChartType('pie')">Pie</button>
+      </div>
+    </div>
+    <div class="chart-container relative">
+      <div id="chartLoading" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+      </div>
+      <div class="chart-responsive">
+        <canvas id="mainChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// รอให้ Chart.js โหลดเสร็จก่อน
+document.addEventListener('DOMContentLoaded', function() {
+  // ตรวจสอบว่า Chart.js โหลดเสร็จแล้ว
+  if (typeof Chart === 'undefined') {
+    console.error('Chart.js is not loaded!');
+    return;
+  }
+
+  console.log('Chart.js loaded successfully, version:', Chart.version);
+
+  // Chart.js configuration
+  Chart.defaults.color = '#e2e8f0';
+  Chart.defaults.borderColor = 'rgba(148, 163, 184, 0.2)';
+  Chart.defaults.plugins.legend.display = true;
+  Chart.defaults.plugins.legend.position = 'bottom';
+
+  // ประกาศตัวแปร Global ที่ด้านบนสุด
+  let chart = null;
+  let currentChartType = 'bar';
+  let currentFilters = {
+    year: '',
+    term: '',
+    class: '',
+    lastStats: null
+  };
+
+  // Chart colors
+  const colors = {
+    blue: 'rgba(59, 130, 246, 0.8)',
+    purple: 'rgba(147, 51, 234, 0.8)',
+    green: 'rgba(34, 197, 94, 0.8)',
+    yellow: 'rgba(234, 179, 8, 0.8)',
+    red: 'rgba(239, 68, 68, 0.8)',
+    orange: 'rgba(249, 115, 22, 0.8)',
+    pink: 'rgba(236, 72, 153, 0.8)',
+    slate: 'rgba(148, 163, 184, 0.8)',
+    cyan: 'rgba(6, 182, 212, 0.8)',
+    indigo: 'rgba(99, 102, 241, 0.8)'
+  };
+
+  // Loading state
+  function showLoading(show = true) {
+    const loading = document.getElementById('chartLoading');
+    if (loading) {
+      loading.style.display = show ? 'flex' : 'none';
+    }
+  }
+
+  // Data fetching
+  async function fetchDashboardData(filters = {}) {
+    console.log('Fetching data with filters:', filters);
+    
+    try {
+      const params = new URLSearchParams();
+      if (filters.year) params.append('year', filters.year);
+      if (filters.term) params.append('term', filters.term);
+      if (filters.class) params.append('class', filters.class);
+      
+      const url = `/api/dashboard-data/?${params.toString()}`;
+      console.log('Requesting URL:', url);
+      
+      const response = await fetch(url);
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Received data:', data);
+      return data;
+      
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      return generateMockData(filters);
+    }
+  }
+
+  // Populate class filter options
+  async function populateClassOptions() {
+    try {
+      const response = await fetch('/ajax/get-class-list/');
+      
+      if (response.ok) {
+        const data = await response.json();
+        const classSelect = document.getElementById('classFilter');
+        
+        if (data.classes && data.classes.length > 0) {
+          data.classes.forEach(cls => {
+            const option = document.createElement('option');
+            option.value = cls.value;
+            option.textContent = cls.text;
+            classSelect.appendChild(option);
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.log('Could not fetch class list from server, using defaults');
+    }
+    
+    const classSelect = document.getElementById('classFilter');
+    const defaultClasses = ['ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5', 'ม.6'];
+    defaultClasses.forEach(cls => {
+      const option = document.createElement('option');
+      option.value = cls;
+      option.textContent = cls;
+      classSelect.appendChild(option);
+    });
+  }
+
+  // Filter functions
+  function updateFilterTags() {
+    const filterTags = document.getElementById('filterTags');
+    const currentFiltersDiv = document.getElementById('currentFilters');
+    
+    if (!filterTags || !currentFiltersDiv) return;
+    
+    filterTags.innerHTML = '';
+    let hasActiveFilters = false;
+    
+    if (currentFilters.year) {
+      filterTags.innerHTML += `<span class="chip chip-purple">ปี ${currentFilters.year} <button onclick="removeFilter('year')" class="ml-1 text-xs">×</button></span>`;
+      hasActiveFilters = true;
+    }
+    
+    if (currentFilters.term) {
+      filterTags.innerHTML += `<span class="chip chip-green">เทอม ${currentFilters.term} <button onclick="removeFilter('term')" class="ml-1 text-xs">×</button></span>`;
+      hasActiveFilters = true;
+    }
+    
+    if (currentFilters.class) {
+      filterTags.innerHTML += `<span class="chip chip-yellow">ชั้น ${currentFilters.class} <button onclick="removeFilter('class')" class="ml-1 text-xs">×</button></span>`;
+      hasActiveFilters = true;
+    }
+    
+    currentFiltersDiv.classList.toggle('hidden', !hasActiveFilters);
+  }
+
+  // ทำให้ functions เหล่านี้เป็น global เพื่อให้เรียกจาก onclick ได้
+  window.removeFilter = function(filterType) {
+    currentFilters[filterType] = '';
+    document.getElementById(`${filterType}Filter`).value = '';
+    updateFilterTags();
+    loadDashboardData();
+  };
+
+  window.clearAllFilters = function() {
+    currentFilters = { year: '', term: '', class: '', lastStats: null };
+    
+    document.getElementById('yearFilter').value = '';
+    document.getElementById('termFilter').value = '';
+    document.getElementById('classFilter').value = '';
+    
+    updateFilterTags();
+    loadDashboardData();
+  };
+
+  function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+      type === 'success' ? 'bg-green-500' : 
+      type === 'error' ? 'bg-red-500' : 
+      'bg-blue-500'
+    } text-white font-semibold animate-slide-down`;
+    
+    notification.innerHTML = `
+      <div class="flex items-center">
+        <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'} mr-2"></i>
+        ${message}
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+  }
+
+  // Generate mock data
+  function generateMockData(filters) {
+    console.log('Using mock data for filters:', filters);
+    
+    const totalStudents = Math.floor(Math.random() * 800) + 500;
+    const onTimeCount = Math.floor(totalStudents * 0.75);
+    const lateCount = Math.floor(totalStudents * 0.10);
+    const absentCount = Math.floor(totalStudents * 0.08);
+    const excusedCount = Math.floor(totalStudents * 0.05);
+    const cheatingCount = Math.floor(totalStudents * 0.02);
+    
+    let mockData = {
+      statistics: {
+        subjects: Math.floor(Math.random() * 30) + 20,
+        students: totalStudents,
+        on_time: onTimeCount,
+        late: lateCount,
+        absent: absentCount,
+        excused: excusedCount,
+        cheating: cheatingCount,
+        attended: onTimeCount + lateCount,
+        rate: ((onTimeCount + lateCount) / totalStudents * 100).toFixed(1)
+      },
+      chartData: {
+        labels: ['เข้าสอบตรงเวลา', 'เข้าสอบสาย', 'ขาดสอบ', 'ลาป่วย', 'ทุจริต'],
+        datasets: [{
+          label: 'จำนวนนักเรียน',
+          data: [onTimeCount, lateCount, absentCount, excusedCount, cheatingCount],
+          backgroundColor: [
+            'rgba(34, 197, 94, 0.8)',   // เขียว - ตรงเวลา
+            'rgba(234, 179, 8, 0.8)',   // เหลือง - สาย
+            'rgba(239, 68, 68, 0.8)',   // แดง - ขาด
+            'rgba(59, 130, 246, 0.8)',  // น้ำเงิน - ลา
+            'rgba(236, 72, 153, 0.8)'   // ชมพู - ทุจริต
+          ],
+          borderColor: 'rgba(34, 197, 94, 0.8)',
+          borderWidth: 2,
+          fill: false
+        }]
+      }
+    };
+    
+    return mockData;
+  }
+
+  // Chart creation function
+  function createChart(data, type = 'bar') {
+    console.log('Creating chart with type:', type, 'and data:', data);
+    
+    const ctx = document.getElementById('mainChart');
+    if (!ctx) {
+      console.error('Canvas element not found');
+      return;
+    }
+    
+    if (chart) {
+      chart.destroy();
+      chart = null;
+    }
+
+    const chartData = data.chartData;
+    if (!chartData || !chartData.labels || !chartData.datasets) {
+      console.error('Invalid chart data:', chartData);
+      return;
+    }
+    
+    const config = {
+      type: type,
+      data: chartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 20,
+              usePointStyle: type === 'pie',
+              font: {
+                size: 12
+              }
+            }
+          },
+          title: {
+            display: true,
+            text: getChartTitle(),
+            font: {
+              size: 16,
+              weight: 'bold'
+            },
+            color: '#e2e8f0'
+          }
+        }
+      }
+    };
+
+    if (type !== 'pie') {
+      config.options.scales = {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: getYAxisLabel(),
+            color: '#94a3b8'
+          },
+          ticks: {
+            color: '#94a3b8'
+          },
+          grid: {
+            color: 'rgba(148, 163, 184, 0.2)'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: getXAxisLabel(),
+            color: '#94a3b8'
+          },
+          ticks: {
+            color: '#94a3b8'
+          },
+          grid: {
+            color: 'rgba(148, 163, 184, 0.2)'
+          }
+        }
+      };
+    }
+
+    if (type === 'line') {
+      config.data.datasets[0].fill = false;
+      config.data.datasets[0].tension = 0.4;
+      config.data.datasets[0].pointBackgroundColor = config.data.datasets[0].borderColor;
+      config.data.datasets[0].pointBorderColor = '#ffffff';
+      config.data.datasets[0].pointBorderWidth = 2;
+      config.data.datasets[0].pointRadius = 6;
+    }
+    
+    try {
+      chart = new Chart(ctx, config);
+      console.log('Chart created successfully');
+    } catch (error) {
+      console.error('Error creating chart:', error);
+    }
+  }
+
+  // Helper functions
+  function getChartTitle() {
+    return 'สถิติการเข้าสอบรวม';
+  }
+
+  function getYAxisLabel() {
+    return 'จำนวนนักเรียน';
+  }
+
+  function getXAxisLabel() {
+    return 'สถานะ';
+  }
+
+  // Statistics updates
+  function updateStatistics(data) {
+    const stats = data.statistics;
+    
+    if (stats) {
+      // การ์ดแถวแรก
+      animateCounter(document.getElementById('stat-subjects'), stats.subjects || 0);
+      animateCounter(document.getElementById('stat-students'), stats.students || 0);
+      animateCounter(document.getElementById('stat-on-time'), stats.on_time || 0);
+      document.getElementById('stat-rate').textContent = `${stats.rate || 0}%`;
+      
+      // การ์ดแถวที่สอง
+      animateCounter(document.getElementById('stat-late'), stats.late || 0);
+      animateCounter(document.getElementById('stat-absent'), stats.absent || 0);
+      animateCounter(document.getElementById('stat-excused'), stats.excused || 0);
+      animateCounter(document.getElementById('stat-cheating'), stats.cheating || 0);
+    }
+  }
+
+  function animateCounter(element, target, duration = 1000) {
+    if (!element) return;
+    
+    const start = parseInt(element.textContent) || 0;
+    const increment = (target - start) / (duration / 16);
+    let current = start;
+    
+    const timer = setInterval(() => {
+      current += increment;
+      if ((increment > 0 && current >= target) || (increment < 0 && current <= target)) {
+        element.textContent = target;
+        clearInterval(timer);
+      } else {
+        element.textContent = Math.round(current);
+      }
+    }, 16);
+  }
+
+  // Chart type toggle - ทำเป็น global function
+  window.toggleChartType = function(type) {
+    currentChartType = type;
+    
+    document.querySelectorAll('[id^="chartType"]').forEach(btn => {
+      btn.classList.remove('bg-blue-500/20', 'text-blue-400');
+      btn.classList.add('bg-slate-500/20', 'text-slate-400');
+      btn.classList.remove('active');
+    });
+    
+    document.querySelectorAll('[id^="chartType"]').forEach(btn => {
+      if (btn.textContent.toLowerCase() === type.toLowerCase()) {
+        btn.classList.remove('bg-slate-500/20', 'text-slate-400');
+        btn.classList.add('bg-blue-500/20', 'text-blue-400', 'active');
+      }
+    });
+    
+    if (chart && chart.data) {
+      const currentData = {
+        chartData: chart.data,
+        statistics: currentFilters.lastStats || {}
+      };
+      createChart(currentData, currentChartType);
+    }
+  };
+
+  // Main data loading function
+  async function loadDashboardData() {
+    console.log('Loading dashboard data...');
+    showLoading(true);
+    
+    try {
+      const data = await fetchDashboardData(currentFilters);
+      
+      currentFilters.lastStats = data.statistics;
+      
+      updateStatistics(data);
+      
+      const titleElement = document.getElementById('chart-title');
+      if (titleElement) {
+        titleElement.textContent = getChartTitle();
+      }
+      
+      createChart(data, currentChartType);
+      
+      console.log('Dashboard data loaded successfully');
+      
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      const mockData = generateMockData(currentFilters);
+      updateStatistics(mockData);
+      createChart(mockData, currentChartType);
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  // Populate year filter options
+  async function populateYearOptions() {
+    try {
+      const response = await fetch('/api/academic-years/');
+      
+      if (response.ok) {
+        const data = await response.json();
+        const yearSelect = document.getElementById('yearFilter');
+        
+        if (data.years && data.years.length > 0) {
+          data.years.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = `ปี ${year}`;
+            yearSelect.appendChild(option);
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.log('Could not fetch academic years from server, using defaults');
+    }
+    
+    const yearSelect = document.getElementById('yearFilter');
+    const defaultYears = ['2564', '2565', '2566', '2567'];
+    defaultYears.forEach(year => {
+      const option = document.createElement('option');
+      option.value = year;
+      option.textContent = `ปี ${year}`;
+      yearSelect.appendChild(option);
+    });
+  }
+
+  // Initialize
+  async function initialize() {
+    console.log('Dashboard initializing...');
+    
+    await Promise.all([
+      populateYearOptions(),
+      populateClassOptions()
+    ]);
+    
+    loadDashboardData();
+    
+    const updateButton = document.getElementById('updateChart');
+    if (updateButton) {
+      updateButton.addEventListener('click', () => {
+        currentFilters.year = document.getElementById('yearFilter').value;
+        currentFilters.term = document.getElementById('termFilter').value;
+        currentFilters.class = document.getElementById('classFilter').value;
+        
+        updateFilterTags();
+        loadDashboardData();
+      });
+    }
+
+    const resetButton = document.getElementById('resetFilters');
+    if (resetButton) {
+      resetButton.addEventListener('click', window.clearAllFilters);
+    }
+    
+    ['yearFilter', 'termFilter', 'classFilter'].forEach(id => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.addEventListener('change', function() {
+          const filterKey = id.replace('Filter', '');
+          currentFilters[filterKey] = this.value;
+          updateFilterTags();
+        });
+      }
+    });
+    
+    console.log('Dashboard initialized successfully');
+  }
+
+  // Start initialization
+  initialize();
+
+  // Auto-refresh functionality
+  let autoRefreshInterval;
+
+  function startAutoRefresh() {
+    autoRefreshInterval = setInterval(() => {
+      console.log('Auto-refreshing dashboard data...');
+      loadDashboardData();
+    }, 300000); // 5 minutes
+  }
+
+  function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopAutoRefresh();
+    } else {
+      startAutoRefresh();
+      loadDashboardData();
+    }
+  });
+
+  window.addEventListener('load', () => {
+    startAutoRefresh();
+  });
+
+  window.addEventListener('beforeunload', () => {
+    stopAutoRefresh();
+    if (chart) {
+      chart.destroy();
+    }
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey && e.key === 'r') || e.key === 'F5') {
+      e.preventDefault();
+      loadDashboardData();
+      showNotification('รีเฟรชข้อมูลแล้ว', 'info');
+    }
+    
+    if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+      e.preventDefault();
+      window.clearAllFilters();
+      showNotification('รีเซ็ตตัวกรองแล้ว', 'info');
+    }
+  });
+
+}); // End of DOMContentLoaded
+</script>
+
+{% endblock %}
