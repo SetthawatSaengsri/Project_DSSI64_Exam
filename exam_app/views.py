@@ -115,7 +115,7 @@ def dashboard_staff(request):
 
 @login_required
 def dashboard_staff_stats(request):
-    """API สำรองสำหรับสถิติแดชบอร์ด - แก้ไขให้ส่งข้อมูลครบ"""
+    """API สำรองสำหรับสถิติแดชบอร์ด """
     if not request.user.is_staff:
         return JsonResponse({'error': 'ไม่มีสิทธิ์เข้าถึง'}, status=403)
     
@@ -819,7 +819,7 @@ def teacher_checkout(request):
             'success': False,
             'message': f'เกิดข้อผิดพลาด: {str(e)}'
         }, status=500)
-    
+     
 @login_required  
 def teacher_dashboard_data_api(request):
     """API สำหรับดึงข้อมูลแดชบอร์ดครู - รองรับทุกสถานะและกรองตามระดับชั้น"""
@@ -1137,7 +1137,7 @@ def student_dashboard_data_api(request):
         for att in recent_attendance:
             # แปลงเวลาเป็นรูปแบบที่อ่านง่าย
             checkin_time = att.checkin_time
-            if timezone.is_aware(checkin_time):
+            if checkin_time and timezone.is_aware(checkin_time):
                 checkin_time = timezone.localtime(checkin_time)
             
             recent_attendance_data.append({
@@ -1286,7 +1286,7 @@ def student_attendance_history_api(request):
         attendance_data = []
         for att in attendance_list:
             checkin_time = att.checkin_time
-            if timezone.is_aware(checkin_time):
+            if checkin_time and timezone.is_aware(checkin_time):
                 checkin_time = timezone.localtime(checkin_time)
             
             attendance_data.append({
@@ -1401,7 +1401,6 @@ def student_exam_schedule(request):
         'completed_count': completed_count,
         'attendance_rate': attendance_rate,
     })
-
 
 # ========================= จัดการผู้ใช้ (Admin) =========================
 
@@ -2553,7 +2552,7 @@ def delete_exam_subject(request, subject_id):
 @login_required
 @csrf_exempt
 def delete_exam_subject_ajax(request, subject_id):
-    """ลบรายวิชาสอบผ่าน AJAX - แก้ไขให้ทำงานได้"""
+    """ลบรายวิชาสอบผ่าน AJAX """
     if not request.user.is_staff:
         return JsonResponse({'error': 'ไม่มีสิทธิ์เข้าถึง', 'success': False}, status=403)
     
@@ -2718,7 +2717,7 @@ def bulk_delete_exam_subjects(request):
             'error': f'เกิดข้อผิดพลาด: {str(e)}'
         }, status=500)
     
-# ส่งออกตารางวิชาสอบเป็น Excel (พร้อมหัวตาราง/สไตล์/หมายเหตุ)
+# ส่งออกตารางวิชาสอบเป็น Excel (พร้อมหัวตาราง)
 @login_required
 def export_exam_subjects(request):
     """Export รายการวิชาสอบเป็น Excel"""
@@ -3216,8 +3215,6 @@ def check_room_suitability(request):
             'error': f'เกิดข้อผิดพลาด: {str(e)}',
             'success': False
         }, status=500)
-
-# ========================= แก้ไข/ลบวิชาสอบผ่าน AJAX =========================
     
 # ลบแบบบังคับ (เฉพาะ superuser) พร้อมลบ attendance ที่เกี่ยวข้อง
 @login_required  
@@ -4161,7 +4158,7 @@ logger = logging.getLogger(__name__)
 
 @contextmanager
 def acquire_lock(lock_key, timeout=10):
-    """Context manager สำหรับ distributed lock - ปรับปรุงแล้ว"""
+    """Context manager สำหรับ distributed lock """
     lock_acquired = False
     lock_value = f"{time_module.time()}_{hash(lock_key)}"  # Unique lock value
     
@@ -5434,6 +5431,7 @@ def exam_attendance(request, pk):
         },
     )
 
+# API ที่สรุปสถิติการเข้าสอบ
 @login_required
 def get_exam_stats(request, subject_id):
     subject = get_object_or_404(ExamSubject, id=subject_id)
@@ -5860,6 +5858,7 @@ def manual_checkin_student(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f'เกิดข้อผิดพลาด: {e}'}, status=500)
 
+#API บันทึกการเช็คชื่อด้วยมือ (manual_checkin)
 @login_required
 @csrf_exempt
 def manual_checkin(request):
@@ -5934,7 +5933,7 @@ def finalize_absent_students(subject, performed_by=None) -> int:
 # ========================= ผังที่นั่งสอบบ =========================
 @login_required
 def exam_seating_data(request, subject_id):
-    """AJAX endpoint สำหรับดึงข้อมูลอัปเดต seating chart - real time แก้ไขใหม่"""
+    """AJAX endpoint สำหรับดึงข้อมูลอัปเดต seating chart """
     subject = get_object_or_404(ExamSubject, id=subject_id)
     
     # ตรวจสอบสิทธิ์
@@ -6554,7 +6553,6 @@ def bulk_attendance_update(request, pk):
              subject.invigilator == request.user.teacher_profile)):
         return HttpResponseForbidden("คุณไม่มีสิทธิ์จัดการข้อมูลนี้")
     
-    # ... rests of the code remain the same
 
 @login_required
 def cheating_reports(request):

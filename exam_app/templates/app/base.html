@@ -2,9 +2,15 @@
 <html lang="th" class="scroll-smooth">
 
 <head>
+    {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ระบบจัดการการสอบ{% endblock %}</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="{% static 'img/favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
 
     <!-- External CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -434,7 +440,7 @@
                 <div class="sidebar-text">
                     <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">เครื่องมือ</p>
                 </div>
-                <a href="{% url 'exam_subjects' %}" class="sidebar-item flex items-center p-3 group" data-page="qr-scanner">
+                <a href="{% url 'qr_scanner' %}" class="sidebar-item flex items-center p-3 group" data-page="qr-scanner">
                     <div class="w-10 h-10 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-qrcode text-white"></i>
                     </div>
@@ -443,6 +449,7 @@
                         <p class="text-xs text-slate-400">QR Scanner</p>
                     </div>
                 </a>
+                
 
                 {% elif user.is_student %}
                 <!-- STUDENT MENU -->
@@ -475,17 +482,17 @@
                 <div class="sidebar-text">
                     <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider px-3 mb-2">เครื่องมือ</p>
                 </div>
-
-                <a href="{% url 'dashboard_student' %}" class="sidebar-item flex items-center p-3 group" data-page="qr-scan">
-                    <div class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
-                        <i class="fas fa-qrcode text-white">
-                            </i>
+               <a href="{% url 'qr_scanner' %}" class="sidebar-item flex items-center p-3 group" data-page="qr-scanner">
+                    <div class="w-10 h-10 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-qrcode text-white"></i>
                     </div>
                     <div class="sidebar-text">
-                        <span class="font-semibold">สแกน QR เข้าสอบ</span>
-                        <p class="text-xs text-slate-400">QR Check-in</p>
+                        <span class="font-semibold">สแกน QR Code</span>
+                        <p class="text-xs text-slate-400">QR Scanner</p>
                     </div>
                 </a>
+                
+
                 {% endif %}
                 {% endif %}
             </div>

@@ -1,764 +1,275 @@
-{% extends "app/base.html" %}
-{% block title %}สแกน QR Code - ระบบจัดการการสอบ{% endblock %}
-{% block page_title %}สแกน QR Code{% endblock %}
-{% block page_subtitle %}QR Scanner | เปิด/ปิดกล้องด้วยปุ่มเดียว{% endblock %}
+{% extends 'app/base.html' %}
+{% load static %}
 
-{% block extra_css %}
-<style>
-  /* การ์ดหลัก */
-  .scanner-card {
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    transition: all 0.3s ease;
-  }
-  
-  .scanner-card:hover {
-    border-color: rgba(139, 92, 246, 0.3);
-    box-shadow: 0 0 30px rgba(139, 92, 246, 0.15);
-  }
-  
-  /* ข้อความช่วยเหลือ */
-  .hint {
-    color: #9ca3af;
-    font-size: 0.875rem;
-    line-height: 1.5;
-  }
-  
-  /* ปุ่มทั่วไป */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.625rem 1rem;
-    border-radius: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    transition: all 0.15s ease;
-    cursor: pointer;
-    font-weight: 500;
-  }
-  
-  .btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-  }
-  
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .btn-primary {
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    color: #fff;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-  }
-  
-  .btn-primary:hover:not(:disabled) {
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-  }
-  
-  .btn-ghost {
-    background: rgba(255, 255, 255, 0.06);
-    color: #e5e7eb;
-  }
-  
-  .btn-ghost:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-  }
-  
-  /* พื้นที่แสดงกล้อง */
-  #qr-reader {
-    width: 100%;
-    min-height: 320px;
-    border-radius: 1rem;
-    overflow: hidden;
-    display: none;
-    background: #000;
-    position: relative;
-  }
-  
-  #qr-reader.active {
-    display: block;
-  }
-  
-  /* ปรับแต่ง QR Reader UI */
-  #qr-reader video {
-    border-radius: 1rem;
-  }
-  
-  #qr-reader__dashboard {
-    background: transparent !important;
-  }
-  
-  #qr-reader__dashboard_section {
-    display: none !important;
-  }
-  
-  /* สถานะกล้อง */
-  .pill {
-    padding: 0.25rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    transition: all 0.2s ease;
-  }
-  
-  .pill-on {
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    color: #a7f3d0;
-    animation: pulse-green 2s infinite;
-  }
-  
-  .pill-off {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    color: #fecaca;
-  }
-  
-  .pill-loading {
-    background: rgba(234, 179, 8, 0.1);
-    border: 1px solid rgba(234, 179, 8, 0.2);
-    color: #fef08a;
-    animation: pulse-yellow 1.5s infinite;
-  }
-  
-  /* จุดแสดงสถานะ */
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-  }
-  
-  .status-dot.on {
-    background: #10b981;
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
-  }
-  
-  .status-dot.off {
-    background: #ef4444;
-  }
-  
-  .status-dot.loading {
-    background: #eab308;
-  }
-  
-  /* Animation */
-  @keyframes pulse-green {
-    0%, 100% {
-      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
-    }
-    50% {
-      box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
-    }
-  }
-  
-  @keyframes pulse-yellow {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.6;
-    }
-  }
-  
-  /* ผลลัพธ์การสแกน */
-  #qr-result {
-    min-height: 24px;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    transition: all 0.3s ease;
-  }
-  
-  #qr-result:not(:empty) {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
-  #qr-result a {
-    color: #60a5fa;
-    text-decoration: underline;
-  }
-  
-  #qr-result code {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
-    font-size: 0.85rem;
-  }
-  
-  /* ข้อความแจ้งเตือน */
-  .alert {
-    padding: 1rem;
-    border-radius: 0.75rem;
-    margin-top: 1rem;
-    display: flex;
-    align-items: start;
-    gap: 0.75rem;
-    animation: slideIn 0.3s ease;
-  }
-  
-  .alert-info {
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    color: #93c5fd;
-  }
-  
-  .alert-success {
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    color: #a7f3d0;
-  }
-  
-  .alert-error {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    color: #fecaca;
-  }
-  
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  /* Loading spinner */
-  .spinner {
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-top: 2px solid #8b5cf6;
-    border-radius: 50%;
-    width: 16px;
-    height: 16px;
-    animation: spin 0.8s linear infinite;
-    display: inline-block;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  
-  /* คำแนะนำการใช้งาน */
-  .instructions {
-    background: rgba(59, 130, 246, 0.05);
-    border: 1px solid rgba(59, 130, 246, 0.1);
-    border-radius: 0.75rem;
-    padding: 1rem;
-    margin-top: 1rem;
-  }
-  
-  .instruction-item {
-    display: flex;
-    align-items: start;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-  
-  .instruction-item:last-child {
-    margin-bottom: 0;
-  }
-  
-  .instruction-number {
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    color: white;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-  
-  /* Responsive */
-  @media (max-width: 768px) {
-    .scanner-header {
-      flex-direction: column;
-      gap: 1rem;
-    }
-    
-    .scanner-controls {
-      width: 100%;
-      justify-content: space-between;
-    }
-    
-    .btn {
-      font-size: 0.875rem;
-      padding: 0.5rem 0.875rem;
-    }
-  }
-</style>
-{% endblock %}
+{% block title %}สแกน QR Code{% endblock %}
+{% block current_page %}qr-scanner{% endblock %}
+{% block page_title %}สแกน QR Code{% endblock %}
+{% block page_subtitle %}สแกนเพื่อยืนยันการเข้าห้องสอบ / เช็กชื่ออัตโนมัติ{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="max-w-5xl mx-auto">
   <!-- การ์ดหลัก -->
-  <div class="scanner-card rounded-2xl p-6 shadow-glow-purple">
-    <!-- หัวข้อและควบคุม -->
-    <div class="scanner-header flex items-start justify-between mb-4">
-      <div class="flex-1">
-        <h2 class="text-2xl font-bold text-white text-gradient mb-2">
-          <i class="fa-solid fa-qrcode mr-2"></i>ตัวสแกน QR Code
-        </h2>
-        <p class="hint">
-          กดปุ่ม <strong>"เปิดกล้อง"</strong> เพื่อเริ่มสแกน หรือ <strong>"อัปโหลดรูป"</strong> เพื่อสแกนจากรูปภาพ
-          <br>
-          หากข้อความที่สแกนเป็นลิงก์ <code>/checkin/&lt;id&gt;/</code> ระบบจะนำคุณไปยังหน้าเช็คชื่อโดยอัตโนมัติ
-        </p>
-      </div>
-      
-      <div class="scanner-controls flex items-center gap-3">
-        <!-- สถานะกล้อง -->
-        <span id="camStatus" class="pill pill-off">
-          <span class="status-dot off"></span>
-          <span>กล้อง: ปิดอยู่</span>
-        </span>
-        
-        <!-- ปุ่มควบคุม -->
-        <button id="btnToggle" class="btn btn-primary">
-          <i id="btnIcon" class="fa-solid fa-camera"></i>
-          <span id="btnText">เปิดกล้อง</span>
-        </button>
+  <div class="glass-dark rounded-3xl border border-white/20 overflow-hidden shadow-glow-purple animate-slide-up">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-8">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shadow-inner-glow">
+          <i class="fas fa-qrcode text-white text-2xl"></i>
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold font-kanit">สแกน QR Code</h2>
+          <p class="text-sm text-white/80 font-prompt">จ่อ QR ไปที่กล้อง แล้วกด “เริ่มสแกน”</p>
+        </div>
       </div>
     </div>
-    
-    <!-- พื้นที่แสดงกล้อง -->
-    <div id="qr-reader" class="bg-black/30"></div>
-    
-    <!-- ปุ่มและผลลัพธ์ -->
-    <div class="mt-4 flex items-center gap-3 flex-wrap">
-      <!-- ปุ่มอัปโหลดรูป -->
-      <label class="btn btn-ghost cursor-pointer">
-        <i class="fa-solid fa-image"></i>
-        <span>อัปโหลดรูปเพื่อสแกน</span>
-        <input id="fileScan" type="file" accept="image/*" class="hidden">
-      </label>
-      
-      <!-- แสดงผลลัพธ์ -->
-      <div id="qr-result" class="text-slate-300 text-sm flex-1"></div>
+
+    <!-- Body -->
+    <div class="p-6 lg:p-8">
+      <!-- Loading -->
+      <div id="loadingSpinner" class="hidden text-center py-8">
+        <div class="w-12 h-12 rounded-full border-4 border-white/10 border-t-white/70 animate-spin mx-auto"></div>
+        <p class="mt-4 text-slate-300">กำลังเริ่มต้นกล้อง...</p>
+      </div>
+
+      <!-- Controls -->
+      <div class="glass rounded-2xl border border-white/20 p-4 lg:p-6 mb-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
+          <div class="lg:col-span-2">
+            <label for="cameraSelect" class="block text-sm font-semibold mb-2">
+              <i class="fas fa-camera mr-2 text-slate-300"></i>เลือกกล้อง
+            </label>
+            <div class="relative">
+              <i class="fas fa-video absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <select id="cameraSelect"
+                      class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800/60 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <option value="">กำลังโหลดรายการกล้อง...</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <button id="startButton"
+                    class="flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-glow-purple transition-all">
+              <i class="fas fa-play mr-2"></i>เริ่มสแกน
+            </button>
+            <button id="stopButton"
+                    class="hidden flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600 shadow-glow-pink transition-all">
+              <i class="fas fa-stop mr-2"></i>หยุดสแกน
+            </button>
+          </div>
+        </div>
+        <div class="inline-flex items-center gap-2 text-xs mt-3 px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30">
+          <i class="fas fa-info-circle"></i><span>หากไม่พบกล้อง ให้ตรวจสิทธิ์การเข้าถึงในเบราว์เซอร์</span>
+        </div>
+      </div>
+
+      <!-- Scanner -->
+      <div id="reader" class="rounded-2xl overflow-hidden bg-slate-800/60 border border-white/10 mb-6"></div>
+
+      <!-- Result -->
+      <div class="glass rounded-2xl border border-white/20 p-5">
+        <h3 class="font-semibold mb-3 flex items-center gap-2">
+          <i class="fas fa-clipboard-check text-slate-300"></i>ผลการสแกน
+        </h3>
+        <div id="result"
+             class="min-h-[84px] rounded-xl border border-white/10 bg-slate-900/60 p-4 flex items-center justify-center text-slate-300 text-sm">
+          <span class="opacity-70"><i class="fas fa-hourglass-half mr-2"></i>รอการสแกน...</span>
+        </div>
+        <div id="alertContainer" class="mt-3"></div>
+      </div>
+
+      <!-- Stats -->
+      <div id="statsGrid" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+        <div class="rounded-2xl p-5 text-center bg-gradient-to-r from-indigo-500 to-purple-600">
+          <i class="fas fa-check-circle text-white/90 text-2xl"></i>
+          <div id="successCount" class="text-3xl font-extrabold mt-2">0</div>
+          <div class="text-white/80 text-sm">สแกนสำเร็จ</div>
+        </div>
+        <div class="rounded-2xl p-5 text-center bg-gradient-to-r from-cyan-500 to-blue-600">
+          <i class="fas fa-clock text-white/90 text-2xl"></i>
+          <div id="scanTime" class="text-3xl font-extrabold mt-2">-</div>
+          <div class="text-white/80 text-sm">เวลาล่าสุด</div>
+        </div>
+      </div>
     </div>
   </div>
-  
-  <!-- คำแนะนำการใช้งาน -->
-  <div class="instructions">
-    <h3 class="text-white font-semibold mb-3 flex items-center gap-2">
-      <i class="fa-solid fa-lightbulb text-yellow-400"></i>
-      <span>วิธีการใช้งาน</span>
-    </h3>
-    
-    <div class="instruction-item">
-      <div class="instruction-number">1</div>
-      <div class="text-slate-300 text-sm">
-        <strong>สแกนด้วยกล้อง:</strong> กดปุ่ม "เปิดกล้อง" และนำ QR Code เข้าใกล้กล้อง ระบบจะสแกนอัตโนมัติ
-      </div>
+
+  <noscript>
+    <div class="mt-6 p-4 rounded-xl bg-red-500/20 border border-red-400/40 text-red-200">
+      จำเป็นต้องเปิดใช้งาน JavaScript เพื่อสแกน QR Code
     </div>
-    
-    <div class="instruction-item">
-      <div class="instruction-number">2</div>
-      <div class="text-slate-300 text-sm">
-        <strong>สแกนจากรูป:</strong> กดปุ่ม "อัปโหลดรูปเพื่อสแกน" และเลือกรูปภาพที่มี QR Code
-      </div>
-    </div>
-    
-    <div class="instruction-item">
-      <div class="instruction-number">3</div>
-      <div class="text-slate-300 text-sm">
-        <strong>เช็คชื่อ:</strong> หลังสแกนสำเร็จ ระบบจะนำคุณไปหน้าเช็คชื่อโดยอัตโนมัติ
-      </div>
-    </div>
-    
-    <div class="instruction-item">
-      <div class="instruction-number">
-        <i class="fa-solid fa-triangle-exclamation text-xs"></i>
-      </div>
-      <div class="text-slate-300 text-sm">
-        <strong>หมายเหตุ:</strong> กรุณาอนุญาตให้เบราว์เซอร์เข้าถึงกล้องของคุณเมื่อมีการขออนุญาต
-      </div>
-    </div>
-  </div>
+  </noscript>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://unpkg.com/html5-qrcode@2.3.10/html5-qrcode.min.js"></script>
+<!-- html5-qrcode library -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
 <script>
-(function() {
-  'use strict';
-  
-  // ===== ตัวแปรหลัก =====
-  const readerEl = "qr-reader";
-  const btnToggle = document.getElementById('btnToggle');
-  const btnText = document.getElementById('btnText');
-  const btnIcon = document.getElementById('btnIcon');
-  const camStatus = document.getElementById('camStatus');
-  const qrBox = document.getElementById('qr-reader');
-  const resultBox = document.getElementById('qr-result');
-  const fileInput = document.getElementById('fileScan');
-  
-  let scanner = null;
-  let running = false;
-  let starting = false;
-  let lastScanTime = 0;
-  const SCAN_COOLDOWN = 2000; // ป้องกันการสแกนซ้ำภายใน 2 วินาที
-  
-  // ===== ฟังก์ชันอัปเดต UI =====
-  function setUI(state = 'off') {
-    const statusDot = camStatus.querySelector('.status-dot');
-    const statusText = camStatus.querySelector('span:last-child');
-    
-    switch(state) {
-      case 'loading':
-        btnText.textContent = 'กำลังเปิด...';
-        btnIcon.className = 'fa-solid fa-spinner fa-spin';
-        btnToggle.disabled = true;
-        
-        camStatus.className = 'pill pill-loading';
-        statusDot.className = 'status-dot loading';
-        statusText.textContent = 'กล้อง: กำลังเปิด';
-        
-        qrBox.style.display = 'none';
-        break;
-        
-      case 'on':
-        btnText.textContent = 'ปิดกล้อง';
-        btnIcon.className = 'fa-solid fa-camera-slash';
-        btnToggle.disabled = false;
-        
-        camStatus.className = 'pill pill-on';
-        statusDot.className = 'status-dot on';
-        statusText.textContent = 'กล้อง: กำลังทำงาน';
-        
-        qrBox.classList.add('active');
-        qrBox.style.display = 'block';
-        break;
-        
-      case 'off':
-      default:
-        btnText.textContent = 'เปิดกล้อง';
-        btnIcon.className = 'fa-solid fa-camera';
-        btnToggle.disabled = false;
-        
-        camStatus.className = 'pill pill-off';
-        statusDot.className = 'status-dot off';
-        statusText.textContent = 'กล้อง: ปิดอยู่';
-        
-        qrBox.classList.remove('active');
-        qrBox.style.display = 'none';
-        break;
+  let html5QrCode;
+  let isScanning = false;
+  let successCount = 0;
+
+  // ป้องกัน "สแกนรัวๆ" — ให้ทำงานครั้งแรกครั้งเดียวต่อการเริ่มสแกน
+  let hasHandledFirstScan = false;
+
+  // ป้องกัน initialize ซ้ำ หาก base.html เรียก initializePage ให้อัตโนมัติ
+  let qrPageInitialized = false;
+
+  function pageNotify(msg, type='info') {
+    // ใช้ระบบแจ้งเตือนกลางของ base.html ถ้ามี
+    if (typeof showNotification === 'function') {
+      showNotification(msg, type);
+    } else {
+      const box = document.createElement('div');
+      box.className = 'mt-3 px-4 py-3 rounded-xl ' +
+        (type==='success' ? 'bg-green-500/20 border border-green-400/40' :
+         type==='error'   ? 'bg-red-500/20 border border-red-400/40'   :
+         type==='warning' ? 'bg-yellow-500/20 border border-yellow-400/40' :
+                            'bg-blue-500/20 border border-blue-400/40');
+      box.textContent = msg;
+      document.getElementById('alertContainer').appendChild(box);
+      setTimeout(()=> box.remove(), 4000);
     }
   }
-  
-  // ===== ฟังก์ชันแสดงข้อความ =====
-  function showMessage(message, type = 'info') {
-    const icons = {
-      success: 'fa-circle-check',
-      error: 'fa-circle-xmark',
-      info: 'fa-circle-info'
-    };
-    
-    resultBox.innerHTML = `
-      <div class="flex items-center gap-2">
-        <i class="fa-solid ${icons[type]}"></i>
-        <span>${message}</span>
-      </div>
-    `;
-    
-    resultBox.className = `text-sm flex-1 alert-${type}`;
-    
-    // ล้างข้อความหลัง 5 วินาที (เฉพาะ error)
-    if (type === 'error') {
-      setTimeout(() => {
-        resultBox.innerHTML = '';
-        resultBox.className = 'text-slate-300 text-sm flex-1';
-      }, 5000);
-    }
+
+  function showLoading(show) {
+    document.getElementById('loadingSpinner').classList.toggle('hidden', !show);
   }
-  
-  // ===== ฟังก์ชันนำทางไปหน้าเช็คชื่อ =====
-  function goToCheckin(text) {
-    const now = Date.now();
-    
-    // ป้องกันการสแกนซ้ำเร็วเกินไป
-    if (now - lastScanTime < SCAN_COOLDOWN) {
-      console.log('Scan cooldown active, ignoring duplicate scan');
+
+  function updateStats() {
+    const now = new Date();
+    document.getElementById('successCount').textContent = successCount;
+    document.getElementById('scanTime').textContent = now.toLocaleTimeString('th-TH');
+    document.getElementById('statsGrid').classList.remove('hidden');
+  }
+
+  // แปลงข้อความจาก QR ให้เป็น URL ที่ปลอดภัย (อนุญาตเฉพาะ http/https หรือ path ภายในระบบ)
+  function resolveUrl(raw) {
+    const t = (raw || '').trim();
+    if (!t) return null;
+    // กัน schema อันตราย
+    if (/^(javascript|data):/i.test(t)) return null;
+    // อนุญาต http/https หรือ path ในแอป
+    if (/^https?:\/\//i.test(t) || t.startsWith('/')) return t;
+    // กรณีส่งเป็น path แบบไม่มี "/" นำหน้า เช่น "student/checkin?token=..."
+    return '/' + t;
+  }
+
+  // เรียกเมื่อสแกนสำเร็จ: หยุดกล้องและนำทางทันที (กันสแกนซ้ำด้วย hasHandledFirstScan)
+  async function onScanSuccess(decodedText, decodedResult) {
+    if (hasHandledFirstScan) return;
+    hasHandledFirstScan = true;
+
+    const url = resolveUrl(decodedText);
+    if (!url) {
+      hasHandledFirstScan = false; // ปลดล็อกให้สแกนใหม่ได้
+      pageNotify('ข้อมูลที่สแกนไม่ใช่ลิงก์ที่รองรับ', 'warning');
+      document.getElementById('result').textContent = decodedText;
       return;
     }
-    
-    lastScanTime = now;
-    
-    console.log('QR Code scanned:', text);
-    
-    // ตรวจสอบว่าเป็น URL ที่สมบูรณ์หรือไม่
+
+    successCount++;
+    updateStats();
+    document.getElementById('result').innerHTML =
+      `<div class="text-green-400"><i class="fas fa-check-circle mr-2"></i>พบลิงก์</div>
+       <div class="mt-2 break-words">${url}</div>`;
+    pageNotify('กำลังเปิดลิงก์ที่สแกน...', 'success');
+
     try {
-      const url = new URL(text);
-      showMessage(`กำลังไปยัง: ${url.pathname}`, 'success');
-      setTimeout(() => {
-        location.href = url.href;
-      }, 500);
-      return;
-    } catch (e) {
-      // ไม่ใช่ URL สมบูรณ์
-    }
-    
-    // ตรวจสอบว่าเป็น path ที่ขึ้นต้นด้วย /checkin/ หรือไม่
-    if (text.includes('/checkin/')) {
-      const match = text.match(/\/checkin\/(\d+)\/?/);
-      if (match && match[1]) {
-        showMessage(`กำลังไปหน้าเช็คชื่อ ID: ${match[1]}`, 'success');
-        setTimeout(() => {
-          location.href = `/checkin/${match[1]}/`;
-        }, 500);
-        return;
-      }
-    }
-    
-    // ตรวจสอบว่ามีแต่ตัวเลข (อาจเป็น ID)
-    const numMatch = String(text).match(/^(\d+)$/);
-    if (numMatch && numMatch[1]) {
-      showMessage(`กำลังไปหน้าเช็คชื่อ ID: ${numMatch[1]}`, 'success');
-      setTimeout(() => {
-        location.href = `/checkin/${numMatch[1]}/`;
-      }, 500);
-      return;
-    }
-    
-    // ไม่ตรงกับรูปแบบที่รู้จัก
-    showMessage(
-      `<strong>ผลลัพธ์:</strong> <code>${escapeHtml(text)}</code> 
-      <span class="ml-2 text-rose-400">
-        <i class="fa-solid fa-triangle-exclamation"></i> 
-        ไม่ใช่ลิงก์/รหัสที่รู้จัก
-      </span>`,
-      'error'
-    );
+      await stopScanning(); // หยุดกล้องเพื่อกัน callback ซ้ำ
+    } catch (e) { /* ignore */ }
+
+    // ไปยังลิงก์นั้นทันที
+    window.location.assign(url);
   }
-  
-  // ===== ฟังก์ชัน Escape HTML =====
-  function escapeHtml(text) {
-    const map = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, m => map[m]);
+
+  function onScanError(errorMessage) {
+    // เงียบไว้เพื่อลด spam ในคอนโซล
+    // console.log('Scan error:', errorMessage);
   }
-  
-  // ===== ฟังก์ชันเปิดกล้อง =====
-  async function startCamera() {
-    if (running || starting) {
-      console.log('Camera already running or starting');
+
+  async function startScanning() {
+    const cameraId = document.getElementById('cameraSelect').value;
+    if (!cameraId) {
+      pageNotify('กรุณาเลือกกล้องก่อนเริ่มสแกน', 'warning');
       return;
     }
-    
-    starting = true;
-    setUI('loading');
-    resultBox.innerHTML = '';
-    
+    showLoading(true);
     try {
-      // สร้าง scanner instance ถ้ายังไม่มี
-      if (!scanner) {
-        scanner = new Html5Qrcode(readerEl);
-      }
-      
-      // ขอ permission และหา cameras
-      const cameras = await Html5Qrcode.getCameras();
-      
-      if (!cameras || cameras.length === 0) {
-        throw new Error('ไม่พบกล้องในอุปกรณ์ของคุณ');
-      }
-      
-      console.log('Available cameras:', cameras);
-      
-      // เลือกกล้องหลัง (สำหรับมือถือ) หรือกล้องแรก (สำหรับคอมพิวเตอร์)
-      let cameraId = cameras[0].id;
-      
-      // พยายามหากล้องหลัง
-      const backCamera = cameras.find(cam => 
-        cam.label.toLowerCase().includes('back') || 
-        cam.label.toLowerCase().includes('rear') ||
-        cam.label.toLowerCase().includes('environment')
-      );
-      
-      if (backCamera) {
-        cameraId = backCamera.id;
-        console.log('Using back camera:', backCamera.label);
-      }
-      
-      // ตั้งค่ากล้อง
-      const config = {
-        fps: 10, // ลด FPS เพื่อประหยัด CPU
-        qrbox: { width: 280, height: 280 },
-        aspectRatio: 1.0
-      };
-      
-      // เริ่มกล้อง
-      await scanner.start(
-        { deviceId: { exact: cameraId } },
-        config,
+      // รีเซ็ตตัวล็อกเมื่อเริ่มสแกนใหม่
+      hasHandledFirstScan = false;
+
+      await html5QrCode.start(
+        cameraId,
+        { fps: 10, qrbox: { width: 280, height: 280 } },
         onScanSuccess,
         onScanError
       );
-      
-      running = true;
-      setUI('on');
-      showMessage('กล้องพร้อมใช้งาน กรุณานำ QR Code เข้าใกล้กล้อง', 'success');
-      
+      isScanning = true;
+      document.getElementById('startButton').classList.add('hidden');
+      document.getElementById('stopButton').classList.remove('hidden');
+      document.getElementById('cameraSelect').disabled = true;
+      pageNotify('เริ่มสแกนแล้ว', 'success');
     } catch (err) {
-      console.error('Camera start error:', err);
-      
-      let errorMessage = 'ไม่สามารถเปิดกล้องได้';
-      
-      if (err.name === 'NotAllowedError' || err.message.includes('Permission')) {
-        errorMessage = 'กรุณาอนุญาตให้เบราว์เซอร์เข้าถึงกล้อง';
-      } else if (err.message.includes('NotFoundError') || err.message.includes('ไม่พบกล้อง')) {
-        errorMessage = 'ไม่พบกล้องในอุปกรณ์ของคุณ';
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      showMessage(
-        `<i class="fa-solid fa-triangle-exclamation"></i> 
-        <strong>เกิดข้อผิดพลาด:</strong> ${errorMessage}`,
-        'error'
-      );
-      
-      running = false;
-      setUI('off');
+      pageNotify(`ไม่สามารถเริ่มกล้องได้: ${err}`, 'error');
+      console.error(err);
     } finally {
-      starting = false;
+      showLoading(false);
     }
   }
-  
-  // ===== ฟังก์ชันปิดกล้อง =====
-  async function stopCamera(skipUI = false) {
-    if (!scanner || !running) {
-      return;
-    }
-    
-    try {
-      await scanner.stop();
-      console.log('Camera stopped successfully');
-    } catch (err) {
-      console.error('Error stopping camera:', err);
-    } finally {
-      running = false;
-      if (!skipUI) {
-        setUI('off');
-        showMessage('ปิดกล้องแล้ว', 'info');
-      }
-    }
+
+  async function stopScanning() {
+    if (!isScanning) return;
+    await html5QrCode.stop();
+    isScanning = false;
+    document.getElementById('startButton').classList.remove('hidden');
+    document.getElementById('stopButton').classList.add('hidden');
+    document.getElementById('cameraSelect').disabled = false;
   }
-  
-  // ===== Callback เมื่อสแกนสำเร็จ =====
-  function onScanSuccess(decodedText, decodedResult) {
-    console.log('Scan success:', decodedText);
-    
-    // ปิดกล้องและไปหน้าเช็คชื่อ
-    stopCamera(true).finally(() => {
-      goToCheckin(decodedText);
-    });
-  }
-  
-  // ===== Callback เมื่อสแกนไม่สำเร็จ (ปกติเกิดขึ้นบ่อยมาก ไม่ต้องแสดง error) =====
-  function onScanError(error) {
-    // ไม่ต้องทำอะไร เพราะ error นี้เกิดขึ้นบ่อยมากขณะกำลังสแกน
-    // console.log('Scan error (normal):', error);
-  }
-  
-  // ===== ฟังก์ชันสแกนจากรูป =====
-  async function scanFromFile(file) {
-    if (!file) {
-      return;
-    }
-    
-    console.log('Scanning file:', file.name);
-    showMessage('กำลังวิเคราะห์รูปภาพ...', 'info');
-    
-    try {
-      // สร้าง scanner instance ถ้ายังไม่มี
-      if (!scanner) {
-        scanner = new Html5Qrcode(readerEl);
-      }
-      
-      // สแกนไฟล์
-      const result = await scanner.scanFile(file, true);
-      console.log('File scan result:', result);
-      
-      // ไปหน้าเช็คชื่อ
-      goToCheckin(result);
-      
-    } catch (err) {
-      console.error('File scan error:', err);
-      
-      let errorMessage = 'ไม่พบ QR Code ในรูปภาพ';
-      
-      if (err.message && err.message !== 'QR code parse error, error = NotFoundException: No MultiFormat Readers were able to detect the code.') {
-        errorMessage = err.message;
-      }
-      
-      showMessage(
-        `<i class="fa-solid fa-triangle-exclamation"></i> 
-        <strong>สแกนจากรูปไม่สำเร็จ:</strong> ${errorMessage}`,
-        'error'
-      );
-    } finally {
-      // รีเซ็ต input เพื่อให้สามารถเลือกไฟล์เดิมได้อีก
-      fileInput.value = '';
-    }
-  }
-  
-  // ===== Event Listeners =====
-  
-  // ปุ่มเปิด/ปิดกล้อง
-  btnToggle.addEventListener('click', () => {
-    if (running) {
-      stopCamera();
-    } else {
-      startCamera();
-    }
-  });
-  
-  // อัปโหลดไฟล์
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // ปิดกล้องก่อน (ถ้าเปิดอยู่)
-      if (running) {
-        stopCamera(true).finally(() => {
-          scanFromFile(file);
+
+  // ให้ base.html เรียกหลัง DOM พร้อม (ผ่าน initializePage) + มีตัวกันซ้ำ
+  function initializePage() {
+    if (qrPageInitialized) return;
+    qrPageInitialized = true;
+
+    html5QrCode = new Html5Qrcode('reader');
+
+    // โหลดรายชื่อกล้อง
+    Html5Qrcode.getCameras().then(devices => {
+      const select = document.getElementById('cameraSelect');
+      select.innerHTML = '';
+      if (devices && devices.length) {
+        devices.forEach((d, i) => {
+          const opt = document.createElement('option');
+          opt.value = d.id;
+          opt.text = d.label || `กล้อง ${i+1}`;
+          select.appendChild(opt);
         });
       } else {
-        scanFromFile(file);
+        select.innerHTML = '<option value="">ไม่พบกล้อง</option>';
+        pageNotify('ไม่พบกล้องในอุปกรณ์', 'warning');
       }
-    }
+    }).catch(err => {
+      pageNotify('ไม่สามารถเข้าถึงกล้องได้ กรุณาอนุญาตการเข้าถึง', 'error');
+      console.error(err);
+    });
+
+    document.getElementById('startButton').addEventListener('click', startScanning);
+    document.getElementById('stopButton').addEventListener('click', stopScanning);
+  }
+
+  // ให้ base.html เรียก initializePage() ได้
+  window.initializePage = initializePage;
+
+  // สำรอง: หาก base ไม่ได้เรียก ออโต้ทำงานเมื่อ DOM พร้อม
+  document.addEventListener('DOMContentLoaded', () => {
+    if (typeof initializePage === 'function') initializePage();
   });
-  
-  // ปิดกล้องเมื่อออกจากหน้า
+
+  // ปิดกล้องเมื่อเปลี่ยนหน้า
   window.addEventListener('beforeunload', () => {
-    if (scanner && running) {
-      stopCamera(true);
-    }
+    if (isScanning && html5QrCode) html5QrCode.stop();
   });
-  
-  // ===== เริ่มต้น =====
-  setUI('off');
-  showMessage('กรุณาเปิดกล้องหรืออัปโหลดรูปเพื่อเริ่มสแกน', 'info');
-  
-  console.log('QR Scanner initialized');
-  
-})();
 </script>
 {% endblock %}
