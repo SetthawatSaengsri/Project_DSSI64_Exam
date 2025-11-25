@@ -3216,6 +3216,7 @@ def check_room_suitability(request):
             'success': False
         }, status=500)
     
+
 # ลบแบบบังคับ (เฉพาะ superuser) พร้อมลบ attendance ที่เกี่ยวข้อง
 @login_required  
 @csrf_exempt

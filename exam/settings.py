@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'exam_app',
     'compressor', 
     'widget_tweaks',
+    
 
 ]
 
